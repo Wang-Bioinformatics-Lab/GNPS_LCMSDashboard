@@ -38,3 +38,4 @@ Werkzeug==1.0.1
 pymzml
 Pillow
 matplotlib
+tqdm
