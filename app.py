@@ -154,6 +154,11 @@ def create_map_fig(filename, map_selection=None):
 
             # Filtering peaks by mz
             peaks = spec.reduce(mz_range=(min_mz, max_mz))
+
+            # Sorting by intensity
+            peaks = peaks[peaks[:,1].argsort()]
+            peaks = peaks[-150:]
+
             mz, intensity = zip(*peaks)
 
             # TODO: We should filter to the top K here
@@ -173,8 +178,8 @@ def create_map_fig(filename, map_selection=None):
     df["index"] = all_index
 
     min_size = min(number_spectra, int(max_mz - min_mz))
-    width = min_size*4
-    height = min(int(min_size*1.75), 1000)
+    width = min(min_size*4, 500)
+    height = min(int(min_size*1.75), 500)
 
     import time
 
