@@ -49,7 +49,7 @@ DASHBOARD = [
 
             html.Br(),
             html.H3(children='GNPS USI'),
-            dbc.Input(className="mb-3", id='gnps_file', placeholder="Enter GNPS File USI"),
+            dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI"),
             html.Br(),
             dcc.Loading(
                 id="tic-plot",
@@ -71,7 +71,7 @@ BODY = dbc.Container(
 app.layout = html.Div(children=[NAVBAR, BODY])
 
 
-@app.callback(Output('gnps_file', 'value'),
+@app.callback(Output('usi', 'value'),
               [Input('url', 'pathname')])
 def determine_task(pathname):
     # Otherwise, lets use the url
@@ -82,7 +82,7 @@ def determine_task(pathname):
 
 
 @app.callback([Output('tic-plot', 'children')],
-              [Input('gnps_file', 'value')])
+              [Input('usi', 'value')])
 def draw_file(usi):
     usi_splits = usi.split(":")
 
