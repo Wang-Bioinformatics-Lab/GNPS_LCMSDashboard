@@ -64,7 +64,9 @@ DASHBOARD = [
             html.Br(),
             html.H3(children='GNPS USI'),
             dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI"),
-            html.Br(),
+            html.H3(children='XIC m/z'),
+            dbc.Input(className="mb-3", id='xic_mz', placeholder="Enter m/z to XIC"),
+            html.Hr(),
             dcc.Loading(
                 id="download-link",
                 children=[html.Div([html.Div(id="loading-output-1")])],
@@ -88,6 +90,12 @@ DASHBOARD = [
                 config={
                     'doubleClick': 'reset'
                 }
+            ),
+            html.Br(),
+            dcc.Loading(
+                id="xic-plot",
+                children=[html.Div([html.Div(id="loading-output-5")])],
+                type="default",
             )
         ]
     )
@@ -101,6 +109,47 @@ BODY = dbc.Container(
 )
 
 app.layout = html.Div(children=[NAVBAR, BODY])
+
+
+# Returns remote_link and local filepath
+def resolve_usi(usi):
+    usi_splits = usi.split(":")
+
+    if "MSV" in usi_splits[1]:
+        # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
+        # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
+        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
+        lookup_request = requests.get(lookup_url)
+
+        resolution_json = lookup_request.json()
+
+        mzML_filepath = None
+        # Figuring out which file is mzML
+        for resolution in resolution_json["row_data"]:
+            filename = resolution["file_descriptor"]
+            extension = os.path.splitext(filename)[1]
+
+            if extension == ".mzML":
+                mzML_filepath = filename
+                break
+
+        # Format into FTP link
+        remote_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
+    elif "GNPS" in usi_splits[1]:
+        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
+        filename = "-".join(usi_splits[2].split("-")[2:])
+        task = usi_splits[2].split("-")[1]
+
+        remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+
+
+    # Getting Data Local, TODO: likely should serialize it
+    local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
+    if not os.path.isfile(local_filename):
+        wget_cmd = "wget '{}' -O {}".format(remote_link, local_filename)
+        os.system(wget_cmd)
+
+    return remote_link, local_filename
 
 
 @app.callback(Output('usi', 'value'),
@@ -128,8 +177,6 @@ def create_map_fig(filename, map_selection=None):
             min_mz = float(map_selection["yaxis.range[0]"])
         if "yaxis.range[1]" in map_selection:
             max_mz = float(map_selection["yaxis.range[1]"])
-
-    
 
     all_mz = []
     all_rt = []
@@ -216,10 +263,10 @@ def create_map_fig(filename, map_selection=None):
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'), plot_bgcolor="white")
     print(time.time() - start)
 
-    fig.update_xaxes(showline=True, linewidth=2, linecolor='black')
-    fig.update_yaxes(showline=True, linewidth=2, linecolor='black')
+    fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
 
-    fig.add_trace(go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', marker=dict(color='green', size=6)))
+    fig.add_trace(go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', marker=dict(color='green', size=4)))
 
 
     return fig
@@ -228,41 +275,7 @@ def create_map_fig(filename, map_selection=None):
 @app.callback([Output('tic-plot', 'children')],
               [Input('usi', 'value')])
 def draw_tic(usi):
-    usi_splits = usi.split(":")
-
-    if "MSV" in usi_splits[1]:
-        # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
-        # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
-        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
-        lookup_request = requests.get(lookup_url)
-
-        resolution_json = lookup_request.json()
-
-        mzML_filepath = None
-        # Figuring out which file is mzML
-        for resolution in resolution_json["row_data"]:
-            filename = resolution["file_descriptor"]
-            extension = os.path.splitext(filename)[1]
-
-            if extension == ".mzML":
-                mzML_filepath = filename
-                break
-
-        # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
-    elif "GNPS" in usi_splits[1]:
-        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
-        filename = "-".join(usi_splits[2].split("-")[2:])
-        task = usi_splits[2].split("-")[1]
-
-        remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
-
-
-    # Getting Data Local, TODO: likely should serialize it
-    local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
-    if not os.path.isfile(local_filename):
-        wget_cmd = "wget '{}' -O {}".format(remote_link, local_filename)
-        os.system(wget_cmd)
+    remote_link, local_filename = resolve_usi(usi)
 
     # Performing TIC Plot
     tic_trace = []
@@ -280,6 +293,46 @@ def draw_tic(usi):
 
     return [dcc.Graph(figure=fig)]
 
+# Creating TIC plot
+@app.callback([Output('xic-plot', 'children')],
+              [Input('usi', 'value'), Input('xic_mz', 'value')])
+def draw_xic(usi, xic_mz):
+    if xic_mz is None:
+        return ["Please enter XIC"]
+    else:
+        xic_mz = float(xic_mz)
+
+    remote_link, local_filename = resolve_usi(usi)
+
+    # Performing TIC Plot
+    tic_trace = []
+    rt_trace = []
+    run = pymzml.run.Reader(local_filename)
+    for n, spec in enumerate(run):
+        if spec.ms_level == 1:
+            print("XIC", xic_mz)
+
+            try:
+                # Filtering peaks by mz
+                peaks = spec.reduce(mz_range=(xic_mz-0.1, xic_mz+0.1))
+
+                # summing intensity
+                sum_i = sum([peak[1] for peak in peaks])
+
+                tic_trace.append(sum_i)
+            except:
+                pass
+
+            rt_trace.append(spec.scan_time_in_minutes() * 60)
+
+    tic_df = pd.DataFrame()
+    tic_df["tic"] = tic_trace
+    tic_df["rt"] = rt_trace
+    fig = px.line(tic_df, x="rt", y="tic", title='XIC Plot')
+
+    return [dcc.Graph(figure=fig)]
+
+
 
 # Inspiration for structure from
 # https://github.com/plotly/dash-datashader
@@ -288,42 +341,7 @@ def draw_tic(usi):
 @app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
               [Input('usi', 'value'), Input('map-plot', 'relayoutData')])
 def draw_file(usi, map_selection):
-    usi_splits = usi.split(":")
-
-    if "MSV" in usi_splits[1]:
-        # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
-        # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
-        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
-        lookup_request = requests.get(lookup_url)
-
-        resolution_json = lookup_request.json()
-
-        mzML_filepath = None
-        # Figuring out which file is mzML
-        for resolution in resolution_json["row_data"]:
-            filename = resolution["file_descriptor"]
-            extension = os.path.splitext(filename)[1]
-
-            if extension == ".mzML":
-                mzML_filepath = filename
-                break
-
-        # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
-    elif "GNPS" in usi_splits[1]:
-        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
-        filename = "-".join(usi_splits[2].split("-")[2:])
-        task = usi_splits[2].split("-")[1]
-
-        remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
-
-
-    
-    # Getting Data Local, TODO: likely should serialize it
-    local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
-    if not os.path.isfile(local_filename):
-        wget_cmd = "wget '{}' -O {}".format(remote_link, local_filename)
-        os.system(wget_cmd)
+    remote_link, local_filename = resolve_usi(usi)
 
     # Doing LCMS Map
     map_fig = create_map_fig(local_filename, map_selection=map_selection)
