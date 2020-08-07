@@ -26,11 +26,11 @@ app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTST
 server = app.server
 
 df = pd.DataFrame()
-df["index"] = [1]
+df["rt"] = [1]
 df["mz"] = [1]
 df["i"] = [1]
 cvs = ds.Canvas(plot_width=1, plot_height=1)
-agg = cvs.points(df,'index','mz', agg=ds.sum("i"))
+agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
 fig1 = px.imshow(agg, origin='lower', labels={'color':'Log10(count)'}, color_continuous_scale="Hot")
@@ -83,13 +83,6 @@ DASHBOARD = [
             html.Br(),
             dcc.Graph(
                 id='map-plot',
-                figure=fig1,
-                config={
-                    'doubleClick': 'reset'
-                }
-            ),
-            dcc.Graph(
-                id='zoom-map-plot',
                 figure=fig1,
                 config={
                     'doubleClick': 'reset'
@@ -149,11 +142,10 @@ def create_map_fig(filename, map_selection=None):
             spectrum_index += 1
 
             try:
-                # if min_rt > spec.scan_time_in_minutes():
-                #     print(min_rt, spec.scan_time_in_minutes(), spec.ID)
-                #     continue
-                if min_rt > spectrum_index or max_rt < spectrum_index:
+                if min_rt > spec.scan_time_in_minutes() or max_rt < spec.scan_time_in_minutes():
                     continue
+                # if min_rt > spectrum_index or max_rt < spectrum_index:
+                #     continue
             except:
                 pass
 
@@ -184,24 +176,28 @@ def create_map_fig(filename, map_selection=None):
     width = min_size*4
     height = min(int(min_size*1.75), 1000)
 
-    cvs = ds.Canvas(plot_width=min_size*4, plot_height=int(min_size*1.75))
-    #agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
-    agg = cvs.points(df,'index','mz', agg=ds.sum("i"))
+    import time
+
+    start = time.time()
+
+    cvs = ds.Canvas(plot_width=width, plot_height=height)
+    agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
+    #agg = cvs.points(df,'index','mz', agg=ds.sum("i"))
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(count)'}, color_continuous_scale="Hot_r")
+    print(time.time() - start)
+    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", width=1000, height=600)
+    print(time.time() - start)
     fig.update_traces(hoverongaps=False)
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'), plot_bgcolor="white")
+    print(time.time() - start)
 
     return fig
 
-# Inspiration for structure from
-# https://github.com/plotly/dash-datashader
-# https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
-
-@app.callback([Output('tic-plot', 'children'), Output('map-plot', 'figure'), Output('download-link', 'children')],
-              [Input('usi', 'value'), Input('map-plot', 'relayoutData')])
-def draw_file(usi, map_selection):
+# Creating TIC plot
+@app.callback([Output('tic-plot', 'children')],
+              [Input('usi', 'value')])
+def draw_tic(usi):
     usi_splits = usi.split(":")
 
     if "MSV" in usi_splits[1]:
@@ -245,10 +241,59 @@ def draw_file(usi, map_selection):
         tic_df["rt"] = rt_trace
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
 
+        return [dcc.Graph(figure=fig)]
+        
+    if "GNPS" in usi_splits[1]:
+        
+        # Test: mzspec:GNPS:TASK-ea65c1b165054c3492974b8e4f0bf675-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171
+        filename = usi_splits[2].split("-")[2]
+        task = usi_splits[2].split("-")[1]
+
+        return "GNPS"
+    
+    return "X"
+
+
+# Inspiration for structure from
+# https://github.com/plotly/dash-datashader
+# https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
+
+@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
+              [Input('usi', 'value'), Input('map-plot', 'relayoutData')])
+def draw_file(usi, map_selection):
+    usi_splits = usi.split(":")
+
+    if "MSV" in usi_splits[1]:
+        # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
+        # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
+        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
+        lookup_request = requests.get(lookup_url)
+
+        resolution_json = lookup_request.json()
+
+        mzML_filepath = None
+        # Figuring out which file is mzML
+        for resolution in resolution_json["row_data"]:
+            filename = resolution["file_descriptor"]
+            extension = os.path.splitext(filename)[1]
+
+            if extension == ".mzML":
+                mzML_filepath = filename
+                break
+
+        # Format into FTP link
+        ftp_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
+
+        # Getting Data Local, TODO: likely should serialize it
+        local_filename = os.path.join("temp", werkzeug.utils.secure_filename(ftp_link))
+        if not os.path.isfile(local_filename):
+            wget_cmd = "wget '{}' -O {}".format(ftp_link, local_filename)
+            os.system(wget_cmd)
+
         # Doing LCMS Map
         map_fig = create_map_fig(local_filename, map_selection=map_selection)
 
-        return [dcc.Graph(figure=fig), map_fig, ftp_link]
+        return [map_fig, ftp_link]
         
     if "GNPS" in usi_splits[1]:
         
