@@ -17,6 +17,8 @@ import uuid
 import werkzeug
 
 import pymzml
+import numpy as np
+
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -55,8 +57,13 @@ DASHBOARD = [
                 id="tic-plot",
                 children=[html.Div([html.Div(id="loading-output-4")])],
                 type="default",
+            ),
+            html.Br(),
+            dcc.Loading(
+                id="map-plot",
+                children=[html.Div([html.Div(id="loading-output-5")])],
+                type="default",
             )
-
         ]
     )
 ]
@@ -80,8 +87,90 @@ def determine_task(pathname):
     else:
         return dash.no_update
 
+# This will create a graph object
+def create_map_fig(filepath):
+    N = 1000
+    M = 500
+    xx = np.arange(N, dtype=np.float64)
+    yy = np.arange(M, dtype=np.float64)
+    x, y = np.meshgrid(xx, yy)
+    b = N/20.0
+    c = M/2.0
+    r = np.sqrt(((x-c)/b)**2 + ((y-c)/b)**2)
+    a = np.sin(r)
 
-@app.callback([Output('tic-plot', 'children')],
+    # Limits
+    xmin = xx[0]
+    xmax = xx[-1]
+    ymin = yy[0]
+    ymax = yy[-1]
+    amin = np.amin(a)
+    amax = np.amax(a)
+
+    from PIL import Image
+    from matplotlib import cm
+    from matplotlib.colors import Normalize
+
+    # Some normalization from matplotlib
+    cNorm = Normalize(vmin=amin, vmax=amax)
+    scalarMap  = cm.ScalarMappable(norm=cNorm, cmap='viridis' )
+    seg_colors = scalarMap.to_rgba(a) 
+    img = Image.fromarray(np.uint8(seg_colors*255))
+
+    # Now the plotly code
+    import plotly.graph_objects as go
+
+    # Create figure
+    fig = go.Figure()
+
+    # Constants
+    img_width = 1000
+    img_height = 600
+
+    # Add invisible scatter trace.
+    # This trace is added to help the autoresize logic work.
+    # We also add a color to the scatter points so we can have a colorbar next to our image
+    fig.add_trace(
+        go.Scatter(
+            x=[xmin, xmax],
+            y=[ymin, ymax],
+            mode="markers",
+            marker={"color":[np.amin(a), np.amax(a)],
+                    "colorscale":'Viridis',
+                    "showscale":True,
+                    "colorbar":{"title":"Counts",
+                                "titleside": "right"},
+                    "opacity": 0
+                }
+        )
+    )
+
+    # Add image
+    fig.update_layout(
+        images=[go.layout.Image(
+            x=xmin,
+            sizex=xmax-xmin,
+            y=ymax,
+            sizey=ymax-ymin,
+            xref="x",
+            yref="y",
+            opacity=1.0,
+            layer="below",
+            sizing="stretch",
+            source=img)]
+    )
+
+    # Configure other layout
+    fig.update_layout(
+            xaxis=dict(showgrid=False, zeroline=False, range=[xmin, xmax]),
+            yaxis=dict(showgrid=False, zeroline=False, range=[ymin, ymax]),
+        width=img_width,
+        height=img_height,
+    )
+
+    return fig
+
+@app.callback([Output('tic-plot', 'children'), Output('map-plot', 'children')],
               [Input('usi', 'value')])
 def draw_file(usi):
     usi_splits = usi.split(":")
@@ -126,7 +215,12 @@ def draw_file(usi):
         tic_df["rt"] = rt_trace
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
 
-        return [dcc.Graph(figure=fig)]
+        # Doing LCMS Map
+        # Using this as starting code: https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
+        map_fig = create_map_fig(local_filename)
+
+
+        return [dcc.Graph(figure=fig), dcc.Graph(figure=map_fig)]
     if "GNPS" in usi_splits[1]:
         
         # Test: mzspec:GNPS:TASK-ea65c1b165054c3492974b8e4f0bf675-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171
@@ -136,11 +230,7 @@ def draw_file(usi):
         return "GNPS"
     
 
-
-
-    
-
-    return filename
+    return "X"
 
 
 if __name__ == "__main__":
