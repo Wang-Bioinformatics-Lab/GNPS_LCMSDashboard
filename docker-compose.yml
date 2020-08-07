@@ -1,14 +1,14 @@
 version: '3'
 services:
-  gnpslibrary-dash:
+  gnpslcms-dash:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: gnpslibrary-dash
+    container_name: gnpslcms-dash
     volumes:
       - ./output:/app/output:rw
       - ./logs:/app/logs:rw
-      - ./data:/app/data:rw
+      - ./temp:/app/temp
     ports:
     - "6548:5000"
     networks:
