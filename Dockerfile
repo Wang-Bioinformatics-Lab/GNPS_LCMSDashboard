@@ -1,13 +1,10 @@
 FROM continuumio/miniconda3:latest
 MAINTAINER Mingxun Wang "mwang87@gmail.com"
 
+RUN conda install -c conda-forge datashader
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-# Mounting
-RUN apt-get update
-RUN apt-get install -y curlftpfs 
-RUN mkdir /data/massive -p
 
 COPY . /app
 WORKDIR /app
