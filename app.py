@@ -5,6 +5,7 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_table
 import plotly.express as px
+import plotly.graph_objects as go 
 from dash.dependencies import Input, Output
 import os
 from zipfile import ZipFile
@@ -33,7 +34,7 @@ cvs = ds.Canvas(plot_width=1, plot_height=1)
 agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-fig1 = px.imshow(agg, origin='lower', labels={'color':'Log10(count)'}, color_continuous_scale="Hot")
+fig1 = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
 
 NAVBAR = dbc.Navbar(
     children=[
@@ -128,6 +129,8 @@ def create_map_fig(filename, map_selection=None):
         if "yaxis.range[1]" in map_selection:
             max_mz = float(map_selection["yaxis.range[1]"])
 
+    
+
     all_mz = []
     all_rt = []
     all_i = []
@@ -135,39 +138,55 @@ def create_map_fig(filename, map_selection=None):
     all_index = []
     spectrum_index = 0
     number_spectra = 0
+
+    all_ms2_mz = []
+    all_ms2_rt = []
+
     # Understand parameters
     run = pymzml.run.Reader(filename)
     for spec in tqdm(run):
+        try:
+            if min_rt > spec.scan_time_in_minutes() or max_rt < spec.scan_time_in_minutes():
+                continue
+            # if min_rt > spectrum_index or max_rt < spectrum_index:
+            #     continue
+        except:
+            pass
+        
         if spec.ms_level == 1:
             spectrum_index += 1
-
-            try:
-                if min_rt > spec.scan_time_in_minutes() or max_rt < spec.scan_time_in_minutes():
-                    continue
-                # if min_rt > spectrum_index or max_rt < spectrum_index:
-                #     continue
-            except:
-                pass
 
             number_spectra += 1
             rt = spec.scan_time_in_minutes()
 
-            # Filtering peaks by mz
-            peaks = spec.reduce(mz_range=(min_mz, max_mz))
+            try:
+                # Filtering peaks by mz
+                peaks = spec.reduce(mz_range=(min_mz, max_mz))
 
-            # Sorting by intensity
-            peaks = peaks[peaks[:,1].argsort()]
-            peaks = peaks[-150:]
+                # Sorting by intensity
+                peaks = peaks[peaks[:,1].argsort()]
+                peaks = peaks[-150:]
 
-            mz, intensity = zip(*peaks)
+                mz, intensity = zip(*peaks)
 
-            # TODO: We should filter to the top K here
+                # TODO: We should filter to the top K here
 
-            all_mz += list(mz)
-            all_i += list(intensity)
-            all_rt += len(mz) * [rt]
-            all_scan += len(mz) * [spec.ID]
-            all_index += len(mz) * [number_spectra]
+                all_mz += list(mz)
+                all_i += list(intensity)
+                all_rt += len(mz) * [rt]
+                all_scan += len(mz) * [spec.ID]
+                all_index += len(mz) * [number_spectra]
+            except:
+                pass
+        elif spec.ms_level == 2:
+            try:
+                ms2_mz = spec.selected_precursors[0]["mz"]
+                if ms2_mz < min_mz or ms2_mz > max_mz:
+                    continue
+                all_ms2_mz.append(ms2_mz)
+                all_ms2_rt.append(spec.scan_time_in_minutes())
+            except:
+                pass
             
             
     df = pd.DataFrame()
@@ -197,6 +216,12 @@ def create_map_fig(filename, map_selection=None):
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'), plot_bgcolor="white")
     print(time.time() - start)
 
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black')
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black')
+
+    fig.add_trace(go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', marker=dict(color='green', size=6)))
+
+
     return fig
 
 # Creating TIC plot
@@ -224,39 +249,36 @@ def draw_tic(usi):
                 break
 
         # Format into FTP link
-        ftp_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
-
-        # Getting Data Local, TODO: likely should serialize it
-        local_filename = os.path.join("temp", werkzeug.utils.secure_filename(ftp_link))
-        if not os.path.isfile(local_filename):
-            wget_cmd = "wget '{}' -O {}".format(ftp_link, local_filename)
-            os.system(wget_cmd)
-
-        # Performing TIC Plot
-        tic_trace = []
-        rt_trace = []
-        run = pymzml.run.Reader(local_filename)
-        for n, spec in enumerate(run):
-            if spec.ms_level == 1:
-                rt_trace.append(spec.scan_time_in_minutes() * 60)
-                tic_trace.append(sum(spec.i))
-
-        tic_df = pd.DataFrame()
-        tic_df["tic"] = tic_trace
-        tic_df["rt"] = rt_trace
-        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
-
-        return [dcc.Graph(figure=fig)]
-        
-    if "GNPS" in usi_splits[1]:
-        
-        # Test: mzspec:GNPS:TASK-ea65c1b165054c3492974b8e4f0bf675-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171
-        filename = usi_splits[2].split("-")[2]
+        remote_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
+    elif "GNPS" in usi_splits[1]:
+        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
+        filename = "-".join(usi_splits[2].split("-")[2:])
         task = usi_splits[2].split("-")[1]
 
-        return "GNPS"
-    
-    return "X"
+        remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+
+
+    # Getting Data Local, TODO: likely should serialize it
+    local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
+    if not os.path.isfile(local_filename):
+        wget_cmd = "wget '{}' -O {}".format(remote_link, local_filename)
+        os.system(wget_cmd)
+
+    # Performing TIC Plot
+    tic_trace = []
+    rt_trace = []
+    run = pymzml.run.Reader(local_filename)
+    for n, spec in enumerate(run):
+        if spec.ms_level == 1:
+            rt_trace.append(spec.scan_time_in_minutes() * 60)
+            tic_trace.append(sum(spec.i))
+
+    tic_df = pd.DataFrame()
+    tic_df["tic"] = tic_trace
+    tic_df["rt"] = rt_trace
+    fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
+
+    return [dcc.Graph(figure=fig)]
 
 
 # Inspiration for structure from
@@ -287,28 +309,26 @@ def draw_file(usi, map_selection):
                 break
 
         # Format into FTP link
-        ftp_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
-
-        # Getting Data Local, TODO: likely should serialize it
-        local_filename = os.path.join("temp", werkzeug.utils.secure_filename(ftp_link))
-        if not os.path.isfile(local_filename):
-            wget_cmd = "wget '{}' -O {}".format(ftp_link, local_filename)
-            os.system(wget_cmd)
-
-        # Doing LCMS Map
-        map_fig = create_map_fig(local_filename, map_selection=map_selection)
-
-        return [map_fig, ftp_link]
-        
-    if "GNPS" in usi_splits[1]:
-        
-        # Test: mzspec:GNPS:TASK-ea65c1b165054c3492974b8e4f0bf675-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171
-        filename = usi_splits[2].split("-")[2]
+        remote_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
+    elif "GNPS" in usi_splits[1]:
+        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
+        filename = "-".join(usi_splits[2].split("-")[2:])
         task = usi_splits[2].split("-")[1]
 
-        return "GNPS"
+        remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+
+
     
-    return "X"
+    # Getting Data Local, TODO: likely should serialize it
+    local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
+    if not os.path.isfile(local_filename):
+        wget_cmd = "wget '{}' -O {}".format(remote_link, local_filename)
+        os.system(wget_cmd)
+
+    # Doing LCMS Map
+    map_fig = create_map_fig(local_filename, map_selection=map_selection)
+
+    return [map_fig, remote_link]
 
 
 # @app.callback([Output('zoom-map-plot', 'figure'), Output('debug-output', 'children')],
