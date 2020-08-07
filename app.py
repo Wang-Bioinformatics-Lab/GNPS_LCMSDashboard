@@ -62,7 +62,7 @@ DASHBOARD = [
 
             html.Br(),
             html.H3(children='GNPS USI'),
-            dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI", value="mzspec:MSV000084494:GNPS00002_A3_p:scan:1"),
+            dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI"),
             html.Br(),
             dcc.Loading(
                 id="download-link",
@@ -116,7 +116,7 @@ def determine_task(pathname):
     if pathname is not None and len(pathname) > 1:
         return pathname[1:]
     else:
-        return dash.no_update
+        return "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
 
 def create_map_fig(filename, map_selection=None):
     min_rt = 0
@@ -200,69 +200,6 @@ def create_map_fig(filename, map_selection=None):
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
 @app.callback([Output('tic-plot', 'children'), Output('map-plot', 'figure'), Output('download-link', 'children')],
-              [Input('usi', 'value')])
-def draw_file(usi):
-    usi_splits = usi.split(":")
-
-    if "MSV" in usi_splits[1]:
-        # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
-        # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
-        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
-        lookup_request = requests.get(lookup_url)
-
-        resolution_json = lookup_request.json()
-
-        mzML_filepath = None
-        # Figuring out which file is mzML
-        for resolution in resolution_json["row_data"]:
-            filename = resolution["file_descriptor"]
-            extension = os.path.splitext(filename)[1]
-
-            if extension == ".mzML":
-                mzML_filepath = filename
-                break
-
-        # Format into FTP link
-        ftp_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
-
-        # Getting Data Local, TODO: likely should serialize it
-        local_filename = os.path.join("temp", werkzeug.utils.secure_filename(ftp_link))
-        wget_cmd = "wget '{}' -O {}".format(ftp_link, local_filename)
-
-        os.system(wget_cmd)
-
-        # Performing TIC Plot
-        tic_trace = []
-        rt_trace = []
-        run = pymzml.run.Reader(local_filename)
-        for n, spec in enumerate(run):
-            if spec.ms_level == 1:
-                rt_trace.append(spec.scan_time_in_minutes() * 60)
-                tic_trace.append(sum(spec.i))
-
-        tic_df = pd.DataFrame()
-        tic_df["tic"] = tic_trace
-        tic_df["rt"] = rt_trace
-        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
-
-        # Doing LCMS Map
-        map_fig = create_map_fig(local_filename)
-
-
-        return [dcc.Graph(figure=fig), map_fig, ftp_link]
-        
-    if "GNPS" in usi_splits[1]:
-        
-        # Test: mzspec:GNPS:TASK-ea65c1b165054c3492974b8e4f0bf675-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171
-        filename = usi_splits[2].split("-")[2]
-        task = usi_splits[2].split("-")[1]
-
-        return "GNPS"
-    
-    return "X"
-
-
-@app.callback([Output('zoom-map-plot', 'figure'), Output('debug-output', 'children')],
               [Input('usi', 'value'), Input('map-plot', 'relayoutData')])
 def draw_file(usi, map_selection):
     usi_splits = usi.split(":")
@@ -290,12 +227,74 @@ def draw_file(usi, map_selection):
 
         # Getting Data Local, TODO: likely should serialize it
         local_filename = os.path.join("temp", werkzeug.utils.secure_filename(ftp_link))
-        
+        if not os.path.isfile(local_filename):
+            wget_cmd = "wget '{}' -O {}".format(ftp_link, local_filename)
+            os.system(wget_cmd)
+
+        # Performing TIC Plot
+        tic_trace = []
+        rt_trace = []
+        run = pymzml.run.Reader(local_filename)
+        for n, spec in enumerate(run):
+            if spec.ms_level == 1:
+                rt_trace.append(spec.scan_time_in_minutes() * 60)
+                tic_trace.append(sum(spec.i))
+
+        tic_df = pd.DataFrame()
+        tic_df["tic"] = tic_trace
+        tic_df["rt"] = rt_trace
+        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
+
         # Doing LCMS Map
-        # Using this as starting code: https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
         map_fig = create_map_fig(local_filename, map_selection=map_selection)
 
-        return [map_fig, str(map_selection)]
+        return [dcc.Graph(figure=fig), map_fig, ftp_link]
+        
+    if "GNPS" in usi_splits[1]:
+        
+        # Test: mzspec:GNPS:TASK-ea65c1b165054c3492974b8e4f0bf675-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171
+        filename = usi_splits[2].split("-")[2]
+        task = usi_splits[2].split("-")[1]
+
+        return "GNPS"
+    
+    return "X"
+
+
+# @app.callback([Output('zoom-map-plot', 'figure'), Output('debug-output', 'children')],
+#               [Input('usi', 'value'), Input('map-plot', 'relayoutData')])
+# def draw_file(usi, map_selection):
+#     usi_splits = usi.split(":")
+
+#     if "MSV" in usi_splits[1]:
+#         # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
+#         # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
+#         lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
+#         lookup_request = requests.get(lookup_url)
+
+#         resolution_json = lookup_request.json()
+
+#         mzML_filepath = None
+#         # Figuring out which file is mzML
+#         for resolution in resolution_json["row_data"]:
+#             filename = resolution["file_descriptor"]
+#             extension = os.path.splitext(filename)[1]
+
+#             if extension == ".mzML":
+#                 mzML_filepath = filename
+#                 break
+
+#         # Format into FTP link
+#         ftp_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
+
+#         # Getting Data Local, TODO: likely should serialize it
+#         local_filename = os.path.join("temp", werkzeug.utils.secure_filename(ftp_link))
+        
+#         # Doing LCMS Map
+#         # Using this as starting code: https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
+#         map_fig = create_map_fig(local_filename, map_selection=map_selection)
+
+#         return [map_fig, str(map_selection)]
         
 
 if __name__ == "__main__":
