@@ -96,6 +96,11 @@ DASHBOARD = [
                 id="xic-plot",
                 children=[html.Div([html.Div(id="loading-output-5")])],
                 type="default",
+            ),
+            dcc.Loading(
+                id="ms2-plot",
+                children=[html.Div([html.Div(id="loading-output-6")])],
+                type="default",
             )
         ]
     )
@@ -152,6 +157,45 @@ def resolve_usi(usi):
     return remote_link, local_filename
 
 
+
+@app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
+              [Input('usi', 'value'), Input('map-plot', 'clickData')])
+def click_plot(usi, clickData):
+    clicked_target = clickData["points"][0]
+
+    # This is an MS2
+    if clicked_target["curveNumber"] == 1:
+        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(clicked_target["customdata"])
+        usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
+        usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
+        return [str(clickData), html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank")]
+
+    # This is an MS1
+    if clicked_target["curveNumber"] == 0:
+        rt_target = clicked_target["x"]
+
+        remote_link, local_filename = resolve_usi(usi)
+
+        # Understand parameters
+        min_rt_delta = 1000
+        closest_scan = 0
+        run = pymzml.run.Reader(local_filename)
+        for spec in tqdm(run):
+            if spec.ms_level == 1:
+                try:
+                    delta = abs(spec.scan_time_in_minutes() - rt_target)
+                    if delta < min_rt_delta:
+                        closest_scan = spec.ID
+                        min_rt_delta = delta
+                except:
+                    pass
+
+        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(closest_scan)
+        usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
+        usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
+        
+        return [str(clickData), html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank")]
+    
 @app.callback(Output('usi', 'value'),
               [Input('url', 'pathname')])
 def determine_task(pathname):
@@ -160,6 +204,8 @@ def determine_task(pathname):
         return pathname[1:]
     else:
         return "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
+
+
 
 def create_map_fig(filename, map_selection=None):
     min_rt = 0
@@ -188,6 +234,7 @@ def create_map_fig(filename, map_selection=None):
 
     all_ms2_mz = []
     all_ms2_rt = []
+    all_ms2_scan = []
 
     # Understand parameters
     run = pymzml.run.Reader(filename)
@@ -232,6 +279,7 @@ def create_map_fig(filename, map_selection=None):
                     continue
                 all_ms2_mz.append(ms2_mz)
                 all_ms2_rt.append(spec.scan_time_in_minutes())
+                all_ms2_scan.append(spec.ID)
             except:
                 pass
             
@@ -266,7 +314,9 @@ def create_map_fig(filename, map_selection=None):
     fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
     fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
 
-    fig.add_trace(go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', marker=dict(color='green', size=4)))
+    scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='green', size=4))
+
+    fig.add_trace(scatter_fig)
 
 
     return fig
@@ -310,8 +360,6 @@ def draw_xic(usi, xic_mz):
     run = pymzml.run.Reader(local_filename)
     for n, spec in enumerate(run):
         if spec.ms_level == 1:
-            print("XIC", xic_mz)
-
             try:
                 # Filtering peaks by mz
                 peaks = spec.reduce(mz_range=(xic_mz-0.1, xic_mz+0.1))
