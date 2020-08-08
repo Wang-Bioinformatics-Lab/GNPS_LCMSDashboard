@@ -333,7 +333,7 @@ def draw_tic(usi):
     run = pymzml.run.Reader(local_filename)
     for n, spec in enumerate(run):
         if spec.ms_level == 1:
-            rt_trace.append(spec.scan_time_in_minutes() * 60)
+            rt_trace.append(spec.scan_time_in_minutes())
             tic_trace.append(sum(spec.i))
 
     tic_df = pd.DataFrame()
@@ -371,7 +371,7 @@ def draw_xic(usi, xic_mz):
             except:
                 pass
 
-            rt_trace.append(spec.scan_time_in_minutes() * 60)
+            rt_trace.append(spec.scan_time_in_minutes())
 
     tic_df = pd.DataFrame()
     tic_df["tic"] = tic_trace
