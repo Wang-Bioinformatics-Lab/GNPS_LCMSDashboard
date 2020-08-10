@@ -468,10 +468,7 @@ def draw_xic(usi, xic_mz, xic_tolerance):
     tic_df["rt"] = rt_trace
 
     df_long = pd.melt(tic_df, id_vars="rt", value_vars=all_line_names)
-
     fig = px.line(df_long, x="rt", y="value", color="variable", title='XIC Plot - {}'.format(":".join(all_line_names)))
-
-    print(df_long)
 
     return [dcc.Graph(figure=fig)]
 
