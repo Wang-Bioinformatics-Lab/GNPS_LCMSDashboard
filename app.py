@@ -250,18 +250,17 @@ def click_plot(usi, clickData):
         return [str(clickData), html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank")]
     
 @app.callback(Output('usi', 'value'),
-              [Input('url', 'pathname')])
-def determine_task(pathname):
-    # Otherwise, lets use the url
-    if pathname is not None and len(pathname) > 1:
-        return pathname[1:]
-    else:
-        return "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
+              [Input('url', 'search')])
+def determine_task(search):
+    try:
+        return str(urllib.parse.parse_qs(search[1:])["usi"][0])
+    except:
+        return "mzspec:MSV000084494:GNPS00002_A3_p:scan:1" 
 
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
-              [Input('url', 'query'), Input('map-plot', 'clickData')])
-def determine_xic_target(query, clickData):
+              [Input('url', 'search'), Input('map-plot', 'clickData')])
+def determine_xic_target(search, clickData):
     try:
         clicked_target = clickData["points"][0]
 
@@ -274,7 +273,7 @@ def determine_xic_target(query, clickData):
         pass
     
     try:
-        return str(float(query))
+        return str(urllib.parse.parse_qs(search[1:])["xicmz"][0])
     except:
         pass
     
