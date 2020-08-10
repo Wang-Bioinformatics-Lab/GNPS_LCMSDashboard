@@ -53,14 +53,10 @@ NAVBAR = dbc.Navbar(
     sticky="top",
 )
 
-DASHBOARD = [
-    dbc.CardHeader(html.H5("GNPS LCMS Dashboard")),
+DATASELECTION_CARD = [
+    dbc.CardHeader(html.H5("Data Selection")),
     dbc.CardBody(
         [   
-            dcc.Location(id='url', refresh=False),
-
-            html.Div(id='version', children="Version - 1.0"),
-
             html.Br(),
             html.H3(children='GNPS USI'),
             dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI"),
@@ -68,7 +64,42 @@ DASHBOARD = [
             dbc.Input(className="mb-3", id='xic_mz', placeholder="Enter m/z to XIC"),
             html.H3(children='XIC Da Tolerance'),
             dbc.Input(className="mb-3", id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
-            html.Hr(),
+            html.H3(children='Show MS2 Markers'),
+            dbc.Select(
+                id="show_ms2_markers",
+                options=[
+                    {"label": "Yes", "value": "1"},
+                    {"label": "No", "value": "0"},
+                ],
+                value="1"
+            )
+        ]
+    )
+]
+
+DATASLICE_CARD = [
+    dbc.CardHeader(html.H5("XIC Panel")),
+    dbc.CardBody(
+        [   
+            html.Br(),
+            dcc.Loading(
+                id="ms2-plot",
+                children=[html.Div([html.Div(id="loading-output-6")])],
+                type="default",
+            ),
+            dcc.Loading(
+                id="xic-plot",
+                children=[html.Div([html.Div(id="loading-output-5")])],
+                type="default",
+            )
+        ]
+    )
+]   
+
+DEBUG_CARD = [
+    dbc.CardHeader(html.H5("DEBUG Panel")),
+    dbc.CardBody(
+        [
             dcc.Loading(
                 id="download-link",
                 children=[html.Div([html.Div(id="loading-output-1")])],
@@ -79,6 +110,24 @@ DASHBOARD = [
                 children=[html.Div([html.Div(id="loading-output-2")])],
                 type="default",
             ),
+        ]
+    )
+]
+
+LEFT_DASHBOARD = [
+    html.Div(
+        [
+            html.Div(DATASELECTION_CARD),
+            html.Div(DATASLICE_CARD),
+            html.Div(DEBUG_CARD),
+        ]
+    )
+]
+
+MIDDLE_DASHBOARD = [
+    dbc.CardHeader(html.H5("Data Exploration")),
+    dbc.CardBody(
+        [
             html.Br(),
             dcc.Loading(
                 id="tic-plot",
@@ -93,26 +142,27 @@ DASHBOARD = [
                     'doubleClick': 'reset'
                 }
             ),
-            html.Br(),
-            dcc.Loading(
-                id="xic-plot",
-                children=[html.Div([html.Div(id="loading-output-5")])],
-                type="default",
-            ),
-            dcc.Loading(
-                id="ms2-plot",
-                children=[html.Div([html.Div(id="loading-output-6")])],
-                type="default",
-            )
         ]
     )
 ]
 
 BODY = dbc.Container(
     [
-        dbc.Row([dbc.Col(dbc.Card(DASHBOARD)),], style={"marginTop": 30}),
+        dcc.Location(id='url', refresh=False),
+        html.Div(id='version', children="Version - 1.0"),
+        dbc.Row([
+            dbc.Col(
+                dbc.Card(LEFT_DASHBOARD),
+                className="w-50"
+            ),
+            dbc.Col(
+                dbc.Card(MIDDLE_DASHBOARD),
+                className="w-50"
+            ),
+        ], style={"marginTop": 30}),
     ],
-    className="mt-12",
+    fluid=True,
+    className="",
 )
 
 app.layout = html.Div(children=[NAVBAR, BODY])
@@ -230,7 +280,7 @@ def determine_xic_target(query, clickData):
     
     return ""
 
-def create_map_fig(filename, map_selection=None):
+def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     min_rt = 0
     max_rt = 1000000
     min_mz = 0
@@ -325,9 +375,13 @@ def create_map_fig(filename, map_selection=None):
     fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
     fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
 
-    scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"))
+    too_many_ms2 = False
+    if len(all_ms2_scan) > 5000:
+        too_many_ms2 = True
 
-    fig.add_trace(scatter_fig)
+    if show_ms2_markers is True and too_many_ms2 is False:
+        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"))
+        fig.add_trace(scatter_fig)
 
     return fig
 
@@ -402,12 +456,17 @@ def draw_xic(usi, xic_mz, xic_tolerance):
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
 @app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
-              [Input('usi', 'value'), Input('map-plot', 'relayoutData')])
-def draw_file(usi, map_selection):
+              [Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
+def draw_file(usi, map_selection, show_ms2_markers):
     remote_link, local_filename = resolve_usi(usi)
 
+    if show_ms2_markers == "1":
+        show_ms2_markers = True
+    else:
+        show_ms2_markers = False
+
     # Doing LCMS Map
-    map_fig = create_map_fig(local_filename, map_selection=map_selection)
+    map_fig = create_map_fig(local_filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers)
 
     return [map_fig, remote_link]
         
