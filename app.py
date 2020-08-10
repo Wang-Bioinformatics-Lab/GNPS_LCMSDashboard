@@ -73,7 +73,7 @@ DATASELECTION_CARD = [
                     {"label": "Yes", "value": "1"},
                     {"label": "No", "value": "0"},
                 ],
-                value="1"
+                value="0"
             )
         ]
     )
@@ -423,7 +423,7 @@ def draw_xic(usi, xic_mz, xic_tolerance):
     if xic_mz is None:
         return ["Please enter XIC"]
     else:
-        for xic_value in xic_mz.split(":"):
+        for xic_value in xic_mz.split(";"):
             all_xic_values.append((str(xic_value), float(xic_value)))
 
     if xic_tolerance is None:
