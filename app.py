@@ -22,6 +22,8 @@ import numpy as np
 import datashader as ds
 from tqdm import tqdm
 
+from collections import defaultdict
+
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
@@ -416,10 +418,13 @@ def draw_tic(usi):
 @app.callback([Output('xic-plot', 'children')],
               [Input('usi', 'value'), Input('xic_mz', 'value'), Input('xic_tolerance', 'value'), ])
 def draw_xic(usi, xic_mz, xic_tolerance):
+    all_xic_values = []
+
     if xic_mz is None:
         return ["Please enter XIC"]
     else:
-        xic_mz = float(xic_mz)
+        for xic_value in xic_mz.split(":"):
+            all_xic_values.append((str(xic_value), float(xic_value)))
 
     if xic_tolerance is None:
         return ["Please enter XIC Tolerance"]
@@ -429,28 +434,44 @@ def draw_xic(usi, xic_mz, xic_tolerance):
     remote_link, local_filename = resolve_usi(usi)
 
     # Performing TIC Plot
-    tic_trace = []
+    tic_trace = defaultdict(list)
     rt_trace = []
     run = pymzml.run.Reader(local_filename)
     for n, spec in enumerate(run):
         if spec.ms_level == 1:
             try:
-                # Filtering peaks by mz
-                peaks = spec.reduce(mz_range=(xic_mz - xic_tolerance, xic_mz + xic_tolerance))
+                for target_mz in all_xic_values:
+                    lower_tolerance = target_mz[1] - xic_tolerance
+                    upper_tolerance = target_mz[1] + xic_tolerance
 
-                # summing intensity
-                sum_i = sum([peak[1] for peak in peaks])
+                    # Filtering peaks by mz
+                    peaks_full = spec.peaks("raw")
+                    peaks = peaks_full[
+                        np.where(np.logical_and(peaks_full[:, 0] >= lower_tolerance, peaks_full[:, 0] <= upper_tolerance))
+                    ]
 
-                tic_trace.append(sum_i)
+                    # summing intensity
+                    sum_i = sum([peak[1] for peak in peaks])
+                    tic_trace[target_mz[0]].append(sum_i)
             except:
                 pass
 
             rt_trace.append(spec.scan_time_in_minutes())
-
+    
     tic_df = pd.DataFrame()
-    tic_df["tic"] = tic_trace
+    all_line_names = []
+    for target_xic in tic_trace:
+        target_name = "XIC {}".format(target_xic)
+        tic_df[target_name] = tic_trace[target_xic]
+
+        all_line_names.append(target_name)
     tic_df["rt"] = rt_trace
-    fig = px.line(tic_df, x="rt", y="tic", title='XIC Plot - {}'.format(xic_mz))
+
+    df_long = pd.melt(tic_df, id_vars="rt", value_vars=all_line_names)
+
+    fig = px.line(df_long, x="rt", y="value", color="variable", title='XIC Plot - {}'.format(":".join(all_line_names)))
+
+    print(df_long)
 
     return [dcc.Graph(figure=fig)]
 
