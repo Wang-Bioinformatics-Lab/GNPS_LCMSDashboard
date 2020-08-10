@@ -80,7 +80,7 @@ DATASELECTION_CARD = [
 ]
 
 DATASLICE_CARD = [
-    dbc.CardHeader(html.H5("XIC Panel")),
+    dbc.CardHeader(html.H5("Details Panel")),
     dbc.CardBody(
         [   
             html.Br(),
