@@ -312,8 +312,14 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     run = pymzml.run.Reader(filename)
     for spec in tqdm(run):
         try:
-            if min_rt > spec.scan_time_in_minutes() or max_rt < spec.scan_time_in_minutes():
+            # Still waiting for the window
+            if spec.scan_time_in_minutes() < min_rt:
                 continue
+            
+            # We've passed the window
+            if spec.scan_time_in_minutes() > max_rt:
+                print("BREAKING")
+                break
         except:
             pass
         
@@ -329,7 +335,7 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
 
                 # Sorting by intensity
                 peaks = peaks[peaks[:,1].argsort()]
-                peaks = peaks[-150:]
+                peaks = peaks[-100:]
 
                 mz, intensity = zip(*peaks)
 
@@ -406,7 +412,7 @@ def draw_tic(usi):
 
     return [dcc.Graph(figure=fig)]
 
-# Creating TIC plot
+# Creating XIC plot
 @app.callback([Output('xic-plot', 'children')],
               [Input('usi', 'value'), Input('xic_mz', 'value'), Input('xic_tolerance', 'value'), ])
 def draw_xic(usi, xic_mz, xic_tolerance):
