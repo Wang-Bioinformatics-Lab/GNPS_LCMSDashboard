@@ -66,6 +66,8 @@ DASHBOARD = [
             dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI"),
             html.H3(children='XIC m/z'),
             dbc.Input(className="mb-3", id='xic_mz', placeholder="Enter m/z to XIC"),
+            html.H3(children='XIC Da Tolerance'),
+            dbc.Input(className="mb-3", id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
             html.Hr(),
             dcc.Loading(
                 id="download-link",
@@ -168,6 +170,7 @@ def click_plot(usi, clickData):
         updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(clicked_target["customdata"])
         usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
+
         return [str(clickData), html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank")]
 
     # This is an MS1
@@ -205,7 +208,27 @@ def determine_task(pathname):
     else:
         return "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
 
+# Calculating which xic value to use
+@app.callback(Output('xic_mz', 'value'),
+              [Input('url', 'query'), Input('map-plot', 'clickData')])
+def determine_xic_target(query, clickData):
+    try:
+        clicked_target = clickData["points"][0]
 
+        # This is MS1
+        if clicked_target["curveNumber"] == 0:
+            mz_target = clicked_target["y"]
+
+            return str(mz_target)
+    except:
+        pass
+    
+    try:
+        return str(float(query))
+    except:
+        pass
+    
+    return ""
 
 def create_map_fig(filename, map_selection=None):
     min_rt = 0
@@ -242,8 +265,6 @@ def create_map_fig(filename, map_selection=None):
         try:
             if min_rt > spec.scan_time_in_minutes() or max_rt < spec.scan_time_in_minutes():
                 continue
-            # if min_rt > spectrum_index or max_rt < spectrum_index:
-            #     continue
         except:
             pass
         
@@ -262,8 +283,6 @@ def create_map_fig(filename, map_selection=None):
                 peaks = peaks[-150:]
 
                 mz, intensity = zip(*peaks)
-
-                # TODO: We should filter to the top K here
 
                 all_mz += list(mz)
                 all_i += list(intensity)
@@ -295,29 +314,20 @@ def create_map_fig(filename, map_selection=None):
     width = min(min_size*4, 500)
     height = min(int(min_size*1.75), 500)
 
-    import time
-
-    start = time.time()
-
     cvs = ds.Canvas(plot_width=width, plot_height=height)
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
-    #agg = cvs.points(df,'index','mz', agg=ds.sum("i"))
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-    print(time.time() - start)
     fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", width=1000, height=600)
-    print(time.time() - start)
     fig.update_traces(hoverongaps=False)
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'), plot_bgcolor="white")
-    print(time.time() - start)
 
     fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
     fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
 
-    scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='green', size=4))
+    scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"))
 
     fig.add_trace(scatter_fig)
-
 
     return fig
 
@@ -345,12 +355,17 @@ def draw_tic(usi):
 
 # Creating TIC plot
 @app.callback([Output('xic-plot', 'children')],
-              [Input('usi', 'value'), Input('xic_mz', 'value')])
-def draw_xic(usi, xic_mz):
+              [Input('usi', 'value'), Input('xic_mz', 'value'), Input('xic_tolerance', 'value'), ])
+def draw_xic(usi, xic_mz, xic_tolerance):
     if xic_mz is None:
         return ["Please enter XIC"]
     else:
         xic_mz = float(xic_mz)
+
+    if xic_tolerance is None:
+        return ["Please enter XIC Tolerance"]
+    else:
+        xic_tolerance = float(xic_tolerance)
 
     remote_link, local_filename = resolve_usi(usi)
 
@@ -362,7 +377,7 @@ def draw_xic(usi, xic_mz):
         if spec.ms_level == 1:
             try:
                 # Filtering peaks by mz
-                peaks = spec.reduce(mz_range=(xic_mz-0.1, xic_mz+0.1))
+                peaks = spec.reduce(mz_range=(xic_mz - xic_tolerance, xic_mz + xic_tolerance))
 
                 # summing intensity
                 sum_i = sum([peak[1] for peak in peaks])
@@ -376,7 +391,7 @@ def draw_xic(usi, xic_mz):
     tic_df = pd.DataFrame()
     tic_df["tic"] = tic_trace
     tic_df["rt"] = rt_trace
-    fig = px.line(tic_df, x="rt", y="tic", title='XIC Plot')
+    fig = px.line(tic_df, x="rt", y="tic", title='XIC Plot - {}'.format(xic_mz))
 
     return [dcc.Graph(figure=fig)]
 
@@ -395,42 +410,6 @@ def draw_file(usi, map_selection):
     map_fig = create_map_fig(local_filename, map_selection=map_selection)
 
     return [map_fig, remote_link]
-
-
-# @app.callback([Output('zoom-map-plot', 'figure'), Output('debug-output', 'children')],
-#               [Input('usi', 'value'), Input('map-plot', 'relayoutData')])
-# def draw_file(usi, map_selection):
-#     usi_splits = usi.split(":")
-
-#     if "MSV" in usi_splits[1]:
-#         # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
-#         # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
-#         lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
-#         lookup_request = requests.get(lookup_url)
-
-#         resolution_json = lookup_request.json()
-
-#         mzML_filepath = None
-#         # Figuring out which file is mzML
-#         for resolution in resolution_json["row_data"]:
-#             filename = resolution["file_descriptor"]
-#             extension = os.path.splitext(filename)[1]
-
-#             if extension == ".mzML":
-#                 mzML_filepath = filename
-#                 break
-
-#         # Format into FTP link
-#         ftp_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
-
-#         # Getting Data Local, TODO: likely should serialize it
-#         local_filename = os.path.join("temp", werkzeug.utils.secure_filename(ftp_link))
-        
-#         # Doing LCMS Map
-#         # Using this as starting code: https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
-#         map_fig = create_map_fig(local_filename, map_selection=map_selection)
-
-#         return [map_fig, str(map_selection)]
         
 
 if __name__ == "__main__":
