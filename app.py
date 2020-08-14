@@ -21,6 +21,7 @@ import pymzml
 import numpy as np
 import datashader as ds
 from tqdm import tqdm
+import json
 
 from collections import defaultdict
 
@@ -223,7 +224,24 @@ def click_plot(usi, clickData):
         usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
-        return [str(clickData), html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank")]
+        # Lets also make a MASST link here
+        # We'll have to get the MS2 peaks from USI
+        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
+        r = requests.get(usi_json_url)
+        spectrum_json = r.json()
+        peaks = spectrum_json["peaks"]
+        precursor_mz = spectrum_json["precursor_mz"]
+
+        masst_dict = {}
+        masst_dict["workflow"] = "SEARCH_SINGLE_SPECTRUM"
+        masst_dict["precursor_mz"] = str(precursor_mz)
+        masst_dict["spectrum_string"] = "\n".join(["{}\t{}".format(peak[0], peak[1]) for peak in peaks])
+
+        masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
+
+        masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
+
+        return [str(clickData), [html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank"), masst_button]]
 
     # This is an MS1
     if clicked_target["curveNumber"] == 0:
@@ -407,7 +425,7 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
         too_many_ms2 = True
 
     if show_ms2_markers is True and too_many_ms2 is False:
-        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"))
+        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"), name="MS2s")
         fig.add_trace(scatter_fig)
 
     return fig
@@ -514,7 +532,7 @@ def draw_xic(usi, xic_mz, xic_tolerance):
 
     # Plotting the MS2 on the XIC
     if len(all_ms2_rt) > 0:
-        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"), name="MS2 Acquisitions")
+        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=5, symbol="x"), name="MS2 Acquisitions")
         fig.add_trace(scatter_fig)
 
 
