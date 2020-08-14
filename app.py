@@ -219,7 +219,7 @@ def resolve_usi(usi):
     if file_extension == ".mzXML":
         # Lets do a conversion
         converted_local_filename = filename + ".mzML"
-        conversion_cmd = "./bin/msconvert {} --mzML --outfile {} --outdir {}".format(local_filename, converted_local_filename, os.path.dirname(converted_local_filename))
+        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --outfile {} --outdir {}".format(local_filename, converted_local_filename, os.path.dirname(converted_local_filename))
         os.system(conversion_cmd)
 
         local_filename = converted_local_filename
