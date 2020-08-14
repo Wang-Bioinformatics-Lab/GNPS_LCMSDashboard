@@ -6,7 +6,7 @@ import dash_html_components as html
 import dash_table
 import plotly.express as px
 import plotly.graph_objects as go 
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import os
 from zipfile import ZipFile
 import urllib.parse
@@ -261,8 +261,16 @@ def determine_task(search):
 
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
-              [Input('url', 'search'), Input('map-plot', 'clickData')])
-def determine_xic_target(search, clickData):
+              [Input('url', 'search'), Input('map-plot', 'clickData')], [State('xic_mz', 'value')])
+def determine_xic_target(search, clickData, existing_xic):
+    try:
+        if existing_xic is None:
+            existing_xic = ""
+        else:
+            existing_xic = str(existing_xic)
+    except:
+        existing_xic = ""
+
     # Clicked points for MS1
     try:
         clicked_target = clickData["points"][0]
@@ -271,12 +279,22 @@ def determine_xic_target(search, clickData):
         if clicked_target["curveNumber"] == 0:
             mz_target = clicked_target["y"]
 
+            if len(existing_xic) > 0:
+                return existing_xic + ";" + str(mz_target)
+
+            return str(mz_target)
+        # This is MS2
+        elif clicked_target["curveNumber"] == 1:
+            mz_target = clicked_target["y"]
+
+            if len(existing_xic) > 0:
+                return existing_xic + ";" + str(mz_target)
+
             return str(mz_target)
     except:
-        pass
+        raise
 
-    # Clicked points for MS2
-    
+    # Reading from the URL    
     try:
         return str(urllib.parse.parse_qs(search[1:])["xicmz"][0])
     except:
@@ -322,8 +340,7 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
                 continue
             
             # We've passed the window
-            if spec.scan_time_in_minutes() > max_rt:
-                print("BREAKING")
+            if spec.scan_time_in_minutes() > max_rt:            
                 break
         except:
             pass
