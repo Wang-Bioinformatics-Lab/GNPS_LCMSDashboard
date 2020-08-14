@@ -532,7 +532,7 @@ def draw_xic(usi, xic_mz, xic_tolerance):
 
     # Plotting the MS2 on the XIC
     if len(all_ms2_rt) > 0:
-        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=5, symbol="x"), name="MS2 Acquisitions")
+        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
         fig.add_trace(scatter_fig)
 
 
