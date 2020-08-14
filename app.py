@@ -388,8 +388,8 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     df["index"] = all_index
 
     min_size = min(number_spectra, int(max_mz - min_mz))
-    width = min(min_size*4, 500)
-    height = min(int(min_size*1.75), 500)
+    width = max(min(min_size*4, 500), 20)
+    height = max(min(int(min_size*1.75), 500), 20)
 
     cvs = ds.Canvas(plot_width=width, plot_height=height)
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
