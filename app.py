@@ -453,10 +453,16 @@ def draw_xic(usi, xic_mz, xic_tolerance):
 
     remote_link, local_filename = resolve_usi(usi)
 
-    # Performing TIC Plot
+    # Saving out MS2 locations
+    all_ms2_ms1_int = []
+    all_ms2_rt = []
+    all_ms2_scan = []
+
+    # Performing XIC Plot
     tic_trace = defaultdict(list)
     rt_trace = []
     run = pymzml.run.Reader(local_filename)
+    sum_i = 0 # Used by MS2 height
     for n, spec in enumerate(run):
         if spec.ms_level == 1:
             try:
@@ -477,6 +483,22 @@ def draw_xic(usi, xic_mz, xic_tolerance):
                 pass
 
             rt_trace.append(spec.scan_time_in_minutes())
+
+        # Saving out the MS2 scans for the XIC
+        elif spec.ms_level == 2:
+            if len(all_xic_values) == 1:
+                try:
+                    lower_tolerance = target_mz[1] - xic_tolerance
+                    upper_tolerance = target_mz[1] + xic_tolerance
+
+                    ms2_mz = spec.selected_precursors[0]["mz"]
+                    if ms2_mz < lower_tolerance or ms2_mz > upper_tolerance:
+                        continue
+                    all_ms2_ms1_int.append(sum_i)
+                    all_ms2_rt.append(spec.scan_time_in_minutes())
+                    all_ms2_scan.append(spec.ID)
+                except:
+                    pass
     
     tic_df = pd.DataFrame()
     all_line_names = []
@@ -489,6 +511,12 @@ def draw_xic(usi, xic_mz, xic_tolerance):
 
     df_long = pd.melt(tic_df, id_vars="rt", value_vars=all_line_names)
     fig = px.line(df_long, x="rt", y="value", color="variable", title='XIC Plot - {}'.format(":".join(all_line_names)))
+
+    # Plotting the MS2 on the XIC
+    if len(all_ms2_rt) > 0:
+        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"), name="MS2 Acquisitions")
+        fig.add_trace(scatter_fig)
+
 
     return [dcc.Graph(figure=fig)]
 
