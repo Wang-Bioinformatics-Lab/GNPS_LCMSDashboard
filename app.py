@@ -204,6 +204,11 @@ def resolve_usi(usi):
         task = usi_splits[2].split("-")[1]
 
         remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+    elif "MTBLS" in usi_splits[1]:
+        dataset_accession = usi_splits[1]
+        filename = usi_splits[2]
+        remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
+
 
 
     # Getting Data Local, TODO: likely should serialize it
