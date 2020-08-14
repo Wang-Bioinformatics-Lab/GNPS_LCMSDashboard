@@ -91,11 +91,6 @@ DATASLICE_CARD = [
                 children=[html.Div([html.Div(id="loading-output-6")])],
                 type="default",
             ),
-            # dcc.Loading(
-            #     id="xic-plot",
-            #     children=[html.Div([html.Div(id="loading-output-5")])],
-            #     type="default",
-            # )
             dcc.Graph(
                 id='xic-plot',
                 figure=placeholder_xic_plot,
@@ -224,11 +219,15 @@ def resolve_usi(usi):
 @app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
               [Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')])
 def click_plot(usi, mapclickData, xicclickData):
-    map_clicked_target = mapclickData["points"][0]
+    clicked_target = None
+    try:
+        clicked_target = mapclickData["points"][0]
+    except:
+        clicked_target = xicclickData["points"][0]
 
     # This is an MS2
-    if map_clicked_target["curveNumber"] == 1:
-        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(map_clicked_target["customdata"])
+    if clicked_target["curveNumber"] == 1:
+        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(clicked_target["customdata"])
         usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
@@ -251,8 +250,8 @@ def click_plot(usi, mapclickData, xicclickData):
         return [str(xicclickData), [html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank"), masst_button]]
 
     # This is an MS1
-    if map_clicked_target["curveNumber"] == 0:
-        rt_target = map_clicked_target["x"]
+    if clicked_target["curveNumber"] == 0:
+        rt_target = clicked_target["x"]
 
         remote_link, local_filename = resolve_usi(usi)
 
