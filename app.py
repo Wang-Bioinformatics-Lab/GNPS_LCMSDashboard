@@ -209,13 +209,20 @@ def resolve_usi(usi):
         filename = usi_splits[2]
         remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
 
-
-
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
     if not os.path.isfile(local_filename):
         wget_cmd = "wget '{}' -O {}".format(remote_link, local_filename)
         os.system(wget_cmd)
+
+    filename, file_extension = os.path.splitext(local_filename)
+    if file_extension == ".mzXML":
+        # Lets do a conversion
+        converted_local_filename = filename + ".mzML"
+        conversion_cmd = "./bin/msconvert {} --mzML --outfile {} --outdir {}".format(local_filename, converted_local_filename, os.path.dirname(converted_local_filename))
+        os.system(conversion_cmd)
+
+        local_filename = converted_local_filename
 
     return remote_link, local_filename
 
