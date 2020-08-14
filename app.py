@@ -37,7 +37,8 @@ cvs = ds.Canvas(plot_width=1, plot_height=1)
 agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-fig1 = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
+placeholder_ms2_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
+placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder')
 
 NAVBAR = dbc.Navbar(
     children=[
@@ -90,10 +91,17 @@ DATASLICE_CARD = [
                 children=[html.Div([html.Div(id="loading-output-6")])],
                 type="default",
             ),
-            dcc.Loading(
-                id="xic-plot",
-                children=[html.Div([html.Div(id="loading-output-5")])],
-                type="default",
+            # dcc.Loading(
+            #     id="xic-plot",
+            #     children=[html.Div([html.Div(id="loading-output-5")])],
+            #     type="default",
+            # )
+            dcc.Graph(
+                id='xic-plot',
+                figure=placeholder_xic_plot,
+                config={
+                    'doubleClick': 'reset'
+                }
             )
         ]
     )
@@ -134,7 +142,7 @@ MIDDLE_DASHBOARD = [
             html.Br(),
             dcc.Graph(
                 id='map-plot',
-                figure=fig1,
+                figure=placeholder_ms2_plot,
                 config={
                     'doubleClick': 'reset'
                 }
@@ -212,15 +220,15 @@ def resolve_usi(usi):
     return remote_link, local_filename
 
 
-
+# This helps to update the ms2 plot
 @app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
-              [Input('usi', 'value'), Input('map-plot', 'clickData')])
-def click_plot(usi, clickData):
-    clicked_target = clickData["points"][0]
+              [Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')])
+def click_plot(usi, mapclickData, xicclickData):
+    map_clicked_target = mapclickData["points"][0]
 
     # This is an MS2
-    if clicked_target["curveNumber"] == 1:
-        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(clicked_target["customdata"])
+    if map_clicked_target["curveNumber"] == 1:
+        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(map_clicked_target["customdata"])
         usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
@@ -238,14 +246,13 @@ def click_plot(usi, clickData):
         masst_dict["spectrum_string"] = "\n".join(["{}\t{}".format(peak[0], peak[1]) for peak in peaks])
 
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
-
         masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
 
-        return [str(clickData), [html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank"), masst_button]]
+        return [str(xicclickData), [html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank"), masst_button]]
 
     # This is an MS1
-    if clicked_target["curveNumber"] == 0:
-        rt_target = clicked_target["x"]
+    if map_clicked_target["curveNumber"] == 0:
+        rt_target = map_clicked_target["x"]
 
         remote_link, local_filename = resolve_usi(usi)
 
@@ -310,7 +317,7 @@ def determine_xic_target(search, clickData, existing_xic):
 
             return str(mz_target)
     except:
-        raise
+        pass
 
     # Reading from the URL    
     try:
@@ -453,7 +460,7 @@ def draw_tic(usi):
     return [dcc.Graph(figure=fig)]
 
 # Creating XIC plot
-@app.callback([Output('xic-plot', 'children')],
+@app.callback([Output('xic-plot', 'figure')],
               [Input('usi', 'value'), Input('xic_mz', 'value'), Input('xic_tolerance', 'value'), ])
 def draw_xic(usi, xic_mz, xic_tolerance):
     all_xic_values = []
@@ -462,6 +469,7 @@ def draw_xic(usi, xic_mz, xic_tolerance):
         return ["Please enter XIC"]
     else:
         for xic_value in xic_mz.split(";"):
+            print(xic_value)
             all_xic_values.append((str(xic_value), float(xic_value)))
 
     if xic_tolerance is None:
@@ -536,7 +544,7 @@ def draw_xic(usi, xic_mz, xic_tolerance):
         fig.add_trace(scatter_fig)
 
 
-    return [dcc.Graph(figure=fig)]
+    return [fig]
 
 
 
