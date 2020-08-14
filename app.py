@@ -131,18 +131,18 @@ MIDDLE_DASHBOARD = [
     dbc.CardBody(
         [
             html.Br(),
-            dcc.Loading(
-                id="tic-plot",
-                children=[html.Div([html.Div(id="loading-output-4")])],
-                type="default",
-            ),
-            html.Br(),
             dcc.Graph(
                 id='map-plot',
                 figure=fig1,
                 config={
                     'doubleClick': 'reset'
                 }
+            ),
+            html.Br(),
+            dcc.Loading(
+                id="tic-plot",
+                children=[html.Div([html.Div(id="loading-output-4")])],
+                type="default",
             ),
         ]
     )
@@ -263,6 +263,7 @@ def determine_task(search):
 @app.callback(Output('xic_mz', 'value'),
               [Input('url', 'search'), Input('map-plot', 'clickData')])
 def determine_xic_target(search, clickData):
+    # Clicked points for MS1
     try:
         clicked_target = clickData["points"][0]
 
@@ -273,6 +274,8 @@ def determine_xic_target(search, clickData):
             return str(mz_target)
     except:
         pass
+
+    # Clicked points for MS2
     
     try:
         return str(urllib.parse.parse_qs(search[1:])["xicmz"][0])
