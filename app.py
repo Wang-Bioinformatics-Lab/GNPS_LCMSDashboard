@@ -91,12 +91,16 @@ DATASLICE_CARD = [
                 children=[html.Div([html.Div(id="loading-output-6")])],
                 type="default",
             ),
-            dcc.Graph(
-                id='xic-plot',
-                figure=placeholder_xic_plot,
-                config={
-                    'doubleClick': 'reset'
-                }
+            dcc.Loading(
+                id="loading-20",
+                children=[dcc.Graph(
+                    id='xic-plot',
+                    figure=placeholder_xic_plot,
+                    config={
+                        'doubleClick': 'reset'
+                    }
+                )],
+                type="default",
             )
         ]
     )
