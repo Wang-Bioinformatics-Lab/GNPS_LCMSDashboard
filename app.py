@@ -160,7 +160,7 @@ MIDDLE_DASHBOARD = [
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
-        html.Div(id='version', children="Version - 1.0"),
+        html.Div(id='version', children="Version - 0.1"),
         dbc.Row([
             dbc.Col(
                 dbc.Card(LEFT_DASHBOARD),
@@ -217,7 +217,9 @@ def resolve_usi(usi):
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
-    if not os.path.isfile(local_filename):
+    converted_local_filename = filename + ".mzML"
+    
+    if not os.path.isfile(converted_local_filename):
         temp_filename = os.path.join("temp", str(uuid.uuid4()) + file_extension)
         wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
         os.system(wget_cmd)
@@ -225,7 +227,6 @@ def resolve_usi(usi):
 
         temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
         # Lets do a conversion
-        converted_local_filename = filename + ".mzML"
         conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --outfile {} --outdir {} --filter 'threshold count 200 most-intense'".format(local_filename, temp_filename, os.path.dirname(temp_filename))
         os.system(conversion_cmd)
 
@@ -233,7 +234,7 @@ def resolve_usi(usi):
 
         local_filename = converted_local_filename
 
-    return remote_link, local_filename
+    return remote_link, converted_local_filename
 
 
 # This helps to update the ms2/ms1 plot
