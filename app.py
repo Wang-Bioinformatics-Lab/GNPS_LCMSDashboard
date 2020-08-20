@@ -24,6 +24,7 @@ from tqdm import tqdm
 import json
 
 from collections import defaultdict
+import uuid
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -215,30 +216,36 @@ def resolve_usi(usi):
 
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
-    if not os.path.isfile(local_filename):
-        wget_cmd = "wget '{}' -O {}".format(remote_link, local_filename)
-        os.system(wget_cmd)
-
     filename, file_extension = os.path.splitext(local_filename)
-    if file_extension == ".mzXML":
+    if not os.path.isfile(local_filename):
+        temp_filename = os.path.join("temp", str(uuid.uuid4()) + file_extension)
+        wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
+        os.system(wget_cmd)
+        os.rename(temp_filename, local_filename)
+
+        temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
         # Lets do a conversion
         converted_local_filename = filename + ".mzML"
-        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --outfile {} --outdir {}".format(local_filename, converted_local_filename, os.path.dirname(converted_local_filename))
+        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --outfile {} --outdir {} --filter 'threshold count 200 most-intense'".format(local_filename, temp_filename, os.path.dirname(temp_filename))
         os.system(conversion_cmd)
+
+        os.rename(temp_filename, converted_local_filename)
 
         local_filename = converted_local_filename
 
     return remote_link, local_filename
 
 
-# This helps to update the ms2 plot
+# This helps to update the ms2/ms1 plot
 @app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
-              [Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')])
-def click_plot(usi, mapclickData, xicclickData):
+              [Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')], [State('xic_mz', 'value')])
+def click_plot(usi, mapclickData, xicclickData, xic_mz):
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0] 
+
     clicked_target = None
-    try:
+    if "map-plot" in triggered_id:
         clicked_target = mapclickData["points"][0]
-    except:
+    elif "xic-plot" in triggered_id:
         clicked_target = xicclickData["points"][0]
 
     # This is an MS2
@@ -263,7 +270,7 @@ def click_plot(usi, mapclickData, xicclickData):
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
         masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
 
-        return [str(xicclickData), [html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank"), masst_button]]
+        return ["MS2" + str(xicclickData) + str(xicclickData), [html.A(html.Img(src=usi_png_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
 
     # This is an MS1
     if clicked_target["curveNumber"] == 0:
@@ -288,8 +295,20 @@ def click_plot(usi, mapclickData, xicclickData):
         updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(closest_scan)
         usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
+
+        try:
+            xic_mz = float(xic_mz)
+
+            # Adding zoom in the USI plotter
+            min_mz = xic_mz - 10
+            max_mz = xic_mz + 10
+            
+            usi_png_url += "&mz_min={}&mz_max={}".format(min_mz, max_mz)
+            usi_url += "&mz_min={}&mz_max={}".format(min_mz, max_mz)
+        except:
+            pass
         
-        return [str(clickData), html.A(html.Img(src=usi_png_url), href=usi_url, target="_blank")]
+        return ["MS1" + str(mapclickData) + str(xicclickData), html.A(html.Img(src=usi_png_url, style={"width":"100%"}), href=usi_url, target="_blank")]
     
 @app.callback(Output('usi', 'value'),
               [Input('url', 'search')])
