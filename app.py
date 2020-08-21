@@ -252,7 +252,7 @@ def click_plot(usi, mapclickData, xicclickData, xic_mz):
     # This is an MS2
     if clicked_target["curveNumber"] == 1:
         updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(clicked_target["customdata"])
-        usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
+        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
         # Lets also make a MASST link here
@@ -271,7 +271,7 @@ def click_plot(usi, mapclickData, xicclickData, xic_mz):
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
         masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
 
-        return ["MS2" + str(xicclickData) + str(xicclickData), [html.A(html.Img(src=usi_png_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
+        return ["MS2" + str(xicclickData) + str(xicclickData), [html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
 
     # This is an MS1
     if clicked_target["curveNumber"] == 0:
@@ -294,7 +294,7 @@ def click_plot(usi, mapclickData, xicclickData, xic_mz):
                     pass
 
         updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(closest_scan)
-        usi_png_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
+        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
         try:
@@ -309,7 +309,7 @@ def click_plot(usi, mapclickData, xicclickData, xic_mz):
         except:
             pass
         
-        return ["MS1" + str(mapclickData) + str(xicclickData), html.A(html.Img(src=usi_png_url, style={"width":"100%"}), href=usi_url, target="_blank")]
+        return ["MS1" + str(mapclickData) + str(xicclickData), html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
     
 @app.callback(Output('usi', 'value'),
               [Input('url', 'search')])
