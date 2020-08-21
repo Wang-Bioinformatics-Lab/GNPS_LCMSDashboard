@@ -227,7 +227,7 @@ def resolve_usi(usi):
 
         temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
         # Lets do a conversion
-        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 200 most-intense'".format(local_filename, temp_filename, os.path.dirname(temp_filename))
+        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(local_filename, temp_filename, os.path.dirname(temp_filename))
         os.system(conversion_cmd)
 
         os.rename(temp_filename, converted_local_filename)
