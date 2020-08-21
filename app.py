@@ -294,7 +294,7 @@ def click_plot(usi, mapclickData, xicclickData, xic_mz):
                     pass
 
         updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(closest_scan)
-        usi_png_url = "https://metabolomics-usi.ucsd.edu/png/?usi={}".format(updated_usi)
+        usi_png_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
         try:
