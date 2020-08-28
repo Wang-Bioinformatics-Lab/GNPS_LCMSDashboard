@@ -265,8 +265,9 @@ def resolve_usi(usi):
 
 # This helps to update the ms2/ms1 plot
 @app.callback([Output("ms2_identifier", "value")],
-              [Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')])
-def click_plot(usi, mapclickData, xicclickData):
+              [Input('url', 'search'), Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')])
+def click_plot(url_search, usi, mapclickData, xicclickData):
+
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0] 
 
     clicked_target = None
@@ -275,6 +276,10 @@ def click_plot(usi, mapclickData, xicclickData):
     elif "xic-plot" in triggered_id:
         clicked_target = xicclickData["points"][0]
 
+    # nothing was clicked, so read from URL
+    if clicked_target is None:
+        return [str(urllib.parse.parse_qs(url_search[1:])["ms2_identifier"][0])]
+    
     # This is an MS2
     if clicked_target["curveNumber"] == 1:
         return ["MS2:" + str(clicked_target["customdata"])]
@@ -300,6 +305,8 @@ def click_plot(usi, mapclickData, xicclickData):
                     pass
 
         return ["MS1:" + str(closest_scan)]
+
+    
 
 
 # This helps to update the ms2/ms1 plot
@@ -350,13 +357,35 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         
         return ["MS1", html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
 
-@app.callback(Output('usi', 'value'),
+@app.callback([Output('usi', 'value'), Output("xic_tolerance", "value"), Output("xic_norm", "value"), Output("show_ms2_markers", "value")],
               [Input('url', 'search')])
-def determine_task(search):
+def determine_url_only_parameters(search):
+    usi = "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
+    xic_tolerance = "0.5"
+    xic_norm = "No"
+    show_ms2_markers = "No"
+
     try:
-        return str(urllib.parse.parse_qs(search[1:])["usi"][0])
+        usi = str(urllib.parse.parse_qs(search[1:])["usi"][0])
     except:
-        return "mzspec:MSV000084494:GNPS00002_A3_p:scan:1" 
+        pass
+
+    try:
+        xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
+    except:
+        pass
+
+    try:
+        xic_norm = str(urllib.parse.parse_qs(search[1:])["xic_norm"][0])
+    except:
+        pass
+
+    try:
+        show_ms2_markers = str(urllib.parse.parse_qs(search[1:])["show_ms2_markers"][0])
+    except:
+        pass
+
+    return [usi, xic_tolerance, xic_norm, show_ms2_markers]
 
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
