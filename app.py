@@ -186,7 +186,7 @@ MIDDLE_DASHBOARD = [
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
-        html.Div(id='version', children="Version - 0.1"),
+        html.Div(id='version', children="Version - 0.2"),
         dbc.Row([
             dbc.Col(
                 dbc.Card(LEFT_DASHBOARD),
@@ -313,10 +313,12 @@ def click_plot(url_search, usi, mapclickData, xicclickData):
 @app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
               [Input('usi', 'value'), Input('ms2_identifier', 'value')], [State('xic_mz', 'value')])
 def draw_spectrum(usi, ms2_identifier, xic_mz):
-    if "MS2" in ms2_identifier:
-        # TODO: update this
-        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(ms2_identifier.split(":")[-1])
+    usi_splits = ":".join(usi.split(":"))
+    dataset = usi_splits[1]
+    filename = usi_splits[2]
+    updated_usi = "mzpec:{}:{}:scan{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
 
+    if "MS2" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
@@ -339,7 +341,6 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         return ["MS2", [html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
 
     if "MS1" in ms2_identifier:
-        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(ms2_identifier.split(":")[-1])
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
@@ -639,14 +640,14 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
         all_line_names.append(target_name)
     tic_df["rt"] = rt_trace
 
-    # Performing Normalization
-    if xic_norm == "Yes":
+    # Performing Normalization only if we have multiple XICs available
+    if xic_norm == "Yes" and len(all_line_names) > 1:
         for key in tic_df.columns:
             if key == "rt":
                 continue
             tic_df[key] = tic_df[key] / max(tic_df[key])
 
-
+    # Formatting for Plotting
     df_long = pd.melt(tic_df, id_vars="rt", value_vars=all_line_names)
     fig = px.line(df_long, x="rt", y="value", color="variable", title='XIC Plot - {}'.format(":".join(all_line_names)))
 
