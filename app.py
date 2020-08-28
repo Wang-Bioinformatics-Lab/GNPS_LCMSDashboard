@@ -346,7 +346,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
     usi_splits = usi.split(":")
     dataset = usi_splits[1]
     filename = usi_splits[2]
-    updated_usi = "mzpec:{}:{}:scan:{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
+    updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
 
     if "MS2" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
