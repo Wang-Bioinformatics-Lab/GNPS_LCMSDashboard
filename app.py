@@ -96,8 +96,14 @@ DATASELECTION_CARD = [
                 value="0"
             ),
             html.Br(),
-            html.H3(children='MS2 Spectrum Identifier'),
+            html.Br(),
+            html.H3(children='Display Spectrum Identifier'),
             dbc.Input(className="mb-3", id='ms2_identifier', placeholder="Enter Spectrum Identifier", value=""),
+            dcc.Loading(
+                id="link-button",
+                children=[html.Div([html.Div(id="loading-output-9")])],
+                type="default",
+            )
         ]
     )
 ]
@@ -343,7 +349,6 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
             pass
         
         return ["MS1", html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
-
 
 @app.callback(Output('usi', 'value'),
               [Input('url', 'search')])
@@ -645,6 +650,27 @@ def draw_file(usi, map_selection, show_ms2_markers):
 
     return [map_fig, remote_link]
         
+
+@app.callback(Output('link-button', 'children'),
+              [Input('usi', 'value'), 
+              Input('xic_mz', 'value'), 
+              Input('xic_tolerance', 'value'), 
+              Input("xic_norm", "value"),
+              Input("show_ms2_markers", "value"),
+              Input("ms2_identifier", "value")])
+def create_link(usi, xic_mz, xic_tolerance, xic_norm, show_ms2_markers, ms2_identifier):
+    url_params = {}
+    url_params["usi"] = usi
+    url_params["xicmz"] = xic_mz
+    url_params["xic_tolerance"] = xic_tolerance
+    url_params["xic_norm"] = xic_norm
+    url_params["show_ms2_markers"] = show_ms2_markers
+    url_params["ms2_identifier"] = ms2_identifier
+
+    url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
+    provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
+
+    return provenance_link_object
 
 if __name__ == "__main__":
     app.run_server(debug=True, port=5000, host="0.0.0.0")
