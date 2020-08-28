@@ -313,10 +313,10 @@ def click_plot(url_search, usi, mapclickData, xicclickData):
 @app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
               [Input('usi', 'value'), Input('ms2_identifier', 'value')], [State('xic_mz', 'value')])
 def draw_spectrum(usi, ms2_identifier, xic_mz):
-    usi_splits = ":".join(usi.split(":"))
+    usi_splits = usi.split(":")
     dataset = usi_splits[1]
     filename = usi_splits[2]
-    updated_usi = "mzpec:{}:{}:scan{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
+    updated_usi = "mzpec:{}:{}:scan:{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
 
     if "MS2" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
@@ -325,6 +325,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         # Lets also make a MASST link here
         # We'll have to get the MS2 peaks from USI
         usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
+        print(usi_json_url)
         r = requests.get(usi_json_url)
         spectrum_json = r.json()
         peaks = spectrum_json["peaks"]
