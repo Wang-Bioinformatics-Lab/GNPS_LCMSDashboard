@@ -441,8 +441,6 @@ def update_output(search, filecontent, filename, filedate):
 
     return [usi, "Using URL USI"]
     
-    #return ["FILE Uploaded {}".format(filename)]
-
 
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
