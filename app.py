@@ -25,6 +25,8 @@ import json
 
 from collections import defaultdict
 import uuid
+import base64
+
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -65,6 +67,25 @@ DATASELECTION_CARD = [
             html.Br(),
             html.H3(children='GNPS USI'),
             dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI"),
+            dcc.Upload(
+                id='upload-data',
+                children=html.Div([
+                    'Enter USI Above or Drag and Drop your own file',
+                    html.A('Select Files')
+                ]),
+                style={
+                    'width': '95%',
+                    'height': '60px',
+                    'lineHeight': '60px',
+                    'borderWidth': '1px',
+                    'borderStyle': 'dashed',
+                    'borderRadius': '5px',
+                    'textAlign': 'center',
+                    'margin': '10px'
+                },
+                # Allow multiple files to be uploaded
+                multiple=False
+            ),
             html.H3(children='XIC m/z'),
             dbc.Input(className="mb-3", id='xic_mz', placeholder="Enter m/z to XIC"),
             html.H3(children='XIC Da Tolerance'),
@@ -147,6 +168,11 @@ DEBUG_CARD = [
                 children=[html.Div([html.Div(id="loading-output-2")])],
                 type="default",
             ),
+            dcc.Loading(
+                id="debug-output-2",
+                children=[html.Div([html.Div(id="loading-output-16")])],
+                type="default",
+            ),
         ]
     )
 ]
@@ -208,6 +234,9 @@ app.layout = html.Div(children=[NAVBAR, BODY])
 # Returns remote_link and local filepath
 def resolve_usi(usi):
     usi_splits = usi.split(":")
+
+    if "LOCAL" in usi_splits[1]:
+        return "", os.path.join("temp", os.path.basename(usi_splits[2]))
 
     if "MSV" in usi_splits[1]:
         # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
@@ -289,6 +318,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData):
         rt_target = clicked_target["x"]
 
         remote_link, local_filename = resolve_usi(usi)
+        print(local_filename)
 
         # Understand parameters
         min_rt_delta = 1000
@@ -325,7 +355,6 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         # Lets also make a MASST link here
         # We'll have to get the MS2 peaks from USI
         usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
-        print(usi_json_url)
         r = requests.get(usi_json_url)
         spectrum_json = r.json()
         peaks = spectrum_json["peaks"]
@@ -359,18 +388,13 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         
         return ["MS1", html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
 
-@app.callback([Output('usi', 'value'), Output("xic_tolerance", "value"), Output("xic_norm", "value"), Output("show_ms2_markers", "value")],
+@app.callback([Output("xic_tolerance", "value"), Output("xic_norm", "value"), Output("show_ms2_markers", "value")],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
-    usi = "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
+    
     xic_tolerance = "0.5"
     xic_norm = "No"
     show_ms2_markers = "No"
-
-    try:
-        usi = str(urllib.parse.parse_qs(search[1:])["usi"][0])
-    except:
-        pass
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -387,7 +411,38 @@ def determine_url_only_parameters(search):
     except:
         pass
 
-    return [usi, xic_tolerance, xic_norm, show_ms2_markers]
+    return [xic_tolerance, xic_norm, show_ms2_markers]
+
+# Handling file upload
+@app.callback([Output('usi', 'value'), Output('debug-output-2', 'children')],
+              [Input('url', 'search'), Input('upload-data', 'contents')],
+              [State('upload-data', 'filename'),
+               State('upload-data', 'last_modified')])
+def update_output(search, filecontent, filename, filedate):
+    usi = "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
+
+    if filecontent is not None:
+        extension = os.path.splitext(filename)[1]
+        if extension == ".mzML" and len(filecontent) < 100000000:
+            temp_filename = os.path.join("temp", "{}.mzML".format(str(uuid.uuid4())))
+            data = filecontent.encode("utf8").split(b";base64,")[1]
+
+            with open(temp_filename, "wb") as temp_file:
+                temp_file.write(base64.decodebytes(data))
+
+            output_usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+            return [output_usi, "FILE Uploaded {}".format(filename)]
+
+    try:
+        usi = str(urllib.parse.parse_qs(search[1:])["usi"][0])
+    except:
+        pass
+
+    return [usi, "Using URL USI"]
+    
+    #return ["FILE Uploaded {}".format(filename)]
+
 
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
