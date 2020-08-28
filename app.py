@@ -69,6 +69,23 @@ DATASELECTION_CARD = [
             dbc.Input(className="mb-3", id='xic_mz', placeholder="Enter m/z to XIC"),
             html.H3(children='XIC Da Tolerance'),
             dbc.Input(className="mb-3", id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
+            html.H3(children='XIC Normalization'),
+            dcc.Dropdown(
+                id='xic_norm',
+                options=[
+                    {
+                        "label": "Yes",
+                        "value" : "Yes"
+                    },
+                    {
+                        "label": "No",
+                        "value" : "No"
+                    }
+                ],
+                value="No",
+                clearable=False
+            ),
+            html.Br(),
             html.H3(children='Show MS2 Markers'),
             dbc.Select(
                 id="show_ms2_markers",
@@ -191,18 +208,18 @@ def resolve_usi(usi):
 
         resolution_json = lookup_request.json()
 
-        mzML_filepath = None
-        # Figuring out which file is mzML
-        for resolution in resolution_json["row_data"]:
-            filename = resolution["file_descriptor"]
-            extension = os.path.splitext(filename)[1]
+        remote_path = None
+        
+        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
+        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
 
-            if extension == ".mzML":
-                mzML_filepath = filename
-                break
+        if len(mzML_resolutions) > 0:
+            remote_path = mzML_resolutions[0]["file_descriptor"]
+        elif len(mzXML_resolutions) > 0:
+            remote_path = mzXML_resolutions[0]["file_descriptor"]
 
         # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{mzML_filepath[2:]}"
+        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
     elif "GNPS" in usi_splits[1]:
         # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
         filename = "-".join(usi_splits[2].split("-")[2:])
@@ -496,8 +513,8 @@ def draw_tic(usi):
 
 # Creating XIC plot
 @app.callback([Output('xic-plot', 'figure')],
-              [Input('usi', 'value'), Input('xic_mz', 'value'), Input('xic_tolerance', 'value'), ])
-def draw_xic(usi, xic_mz, xic_tolerance):
+              [Input('usi', 'value'), Input('xic_mz', 'value'), Input('xic_tolerance', 'value'), Input('xic_norm', 'value')])
+def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
     all_xic_values = []
 
     if xic_mz is None:
@@ -561,6 +578,7 @@ def draw_xic(usi, xic_mz, xic_tolerance):
                 except:
                     pass
     
+    # Formatting Data Frame
     tic_df = pd.DataFrame()
     all_line_names = []
     for target_xic in tic_trace:
@@ -569,6 +587,14 @@ def draw_xic(usi, xic_mz, xic_tolerance):
 
         all_line_names.append(target_name)
     tic_df["rt"] = rt_trace
+
+    # Performing Normalization
+    if xic_norm == "Yes":
+        for key in tic_df.columns:
+            if key == "rt":
+                continue
+            tic_df[key] = tic_df[key] / max(tic_df[key])
+
 
     df_long = pd.melt(tic_df, id_vars="rt", value_vars=all_line_names)
     fig = px.line(df_long, x="rt", y="value", color="variable", title='XIC Plot - {}'.format(":".join(all_line_names)))
