@@ -94,7 +94,10 @@ DATASELECTION_CARD = [
                     {"label": "No", "value": "0"},
                 ],
                 value="0"
-            )
+            ),
+            html.Br(),
+            html.H3(children='MS2 Spectrum Identifier'),
+            dbc.Input(className="mb-3", id='ms2_identifier', placeholder="Enter Spectrum Identifier", value=""),
         ]
     )
 ]
@@ -255,9 +258,9 @@ def resolve_usi(usi):
 
 
 # This helps to update the ms2/ms1 plot
-@app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
-              [Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')], [State('xic_mz', 'value')])
-def click_plot(usi, mapclickData, xicclickData, xic_mz):
+@app.callback([Output("ms2_identifier", "value")],
+              [Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')])
+def click_plot(usi, mapclickData, xicclickData):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0] 
 
     clicked_target = None
@@ -268,28 +271,8 @@ def click_plot(usi, mapclickData, xicclickData, xic_mz):
 
     # This is an MS2
     if clicked_target["curveNumber"] == 1:
-        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(clicked_target["customdata"])
-        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
-        usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
-
-        # Lets also make a MASST link here
-        # We'll have to get the MS2 peaks from USI
-        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
-        r = requests.get(usi_json_url)
-        spectrum_json = r.json()
-        peaks = spectrum_json["peaks"]
-        precursor_mz = spectrum_json["precursor_mz"]
-
-        masst_dict = {}
-        masst_dict["workflow"] = "SEARCH_SINGLE_SPECTRUM"
-        masst_dict["precursor_mz"] = str(precursor_mz)
-        masst_dict["spectrum_string"] = "\n".join(["{}\t{}".format(peak[0], peak[1]) for peak in peaks])
-
-        masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
-        masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
-
-        return ["MS2" + str(xicclickData) + str(xicclickData), [html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
-
+        return ["MS2:" + str(clicked_target["customdata"])]
+    
     # This is an MS1
     if clicked_target["curveNumber"] == 0:
         rt_target = clicked_target["x"]
@@ -310,7 +293,40 @@ def click_plot(usi, mapclickData, xicclickData, xic_mz):
                 except:
                     pass
 
-        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(closest_scan)
+        return ["MS1:" + str(closest_scan)]
+
+
+# This helps to update the ms2/ms1 plot
+@app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
+              [Input('usi', 'value'), Input('ms2_identifier', 'value')], [State('xic_mz', 'value')])
+def draw_spectrum(usi, ms2_identifier, xic_mz):
+    if "MS2" in ms2_identifier:
+        # TODO: update this
+        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(ms2_identifier.split(":")[-1])
+
+        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
+        usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
+
+        # Lets also make a MASST link here
+        # We'll have to get the MS2 peaks from USI
+        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
+        r = requests.get(usi_json_url)
+        spectrum_json = r.json()
+        peaks = spectrum_json["peaks"]
+        precursor_mz = spectrum_json["precursor_mz"]
+
+        masst_dict = {}
+        masst_dict["workflow"] = "SEARCH_SINGLE_SPECTRUM"
+        masst_dict["precursor_mz"] = str(precursor_mz)
+        masst_dict["spectrum_string"] = "\n".join(["{}\t{}".format(peak[0], peak[1]) for peak in peaks])
+
+        masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
+        masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
+
+        return ["MS2", [html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
+
+    if "MS1" in ms2_identifier:
+        updated_usi = ":".join(usi.split(":")[:-1]) + ":" + str(ms2_identifier.split(":")[-1])
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
@@ -326,8 +342,9 @@ def click_plot(usi, mapclickData, xicclickData, xic_mz):
         except:
             pass
         
-        return ["MS1" + str(mapclickData) + str(xicclickData), html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
-    
+        return ["MS1", html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
+
+
 @app.callback(Output('usi', 'value'),
               [Input('url', 'search')])
 def determine_task(search):
