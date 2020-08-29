@@ -7,6 +7,7 @@ import dash_table
 import plotly.express as px
 import plotly.graph_objects as go 
 from dash.dependencies import Input, Output, State
+import dash_daq as daq
 import os
 from zipfile import ZipFile
 import urllib.parse
@@ -70,14 +71,19 @@ DATASELECTION_CARD = [
     dbc.CardHeader(html.H5("Data Selection")),
     dbc.CardBody(
         [   
-            html.Br(),
-            html.H3(children='GNPS USI'),
-            dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI"),
+            html.H5(children='File Selection'),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
+                    dbc.Input(id='usi', placeholder="Enter GNPS File USI"),
+                ],
+                className="mb-3",
+            ),
             dcc.Upload(
                 id='upload-data',
                 children=html.Div([
                     'Enter USI Above or Drag and Drop your own file',
-                    html.A('Select Files')
+                    html.A(' or Select Files')
                 ]),
                 style={
                     'width': '95%',
@@ -92,40 +98,63 @@ DATASELECTION_CARD = [
                 # Allow multiple files to be uploaded
                 multiple=False
             ),
-            html.H3(children='XIC m/z'),
-            dbc.Input(className="mb-3", id='xic_mz', placeholder="Enter m/z to XIC"),
-            html.H3(children='XIC Da Tolerance'),
-            dbc.Input(className="mb-3", id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
-            html.H3(children='XIC Normalization'),
-            dcc.Dropdown(
-                id='xic_norm',
-                options=[
-                    {
-                        "label": "Yes",
-                        "value" : "Yes"
-                    },
-                    {
-                        "label": "No",
-                        "value" : "No"
-                    }
+            html.H5(children='XIC Options'),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
+                    dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC"),
                 ],
-                value="No",
-                clearable=False
+                className="mb-3",
             ),
-            html.Br(),
-            html.H3(children='Show MS2 Markers'),
-            dbc.Select(
-                id="show_ms2_markers",
-                options=[
-                    {"label": "Yes", "value": "1"},
-                    {"label": "No", "value": "0"},
-                ],
-                value="0"
-            ),
-            html.Br(),
-            html.Br(),
-            html.H3(children='Display Spectrum Identifier'),
-            dbc.Input(className="mb-3", id='ms2_identifier', placeholder="Enter Spectrum Identifier", value=""),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("XIC Tolerance", addon_type="prepend"),
+                            dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+                dbc.Col([
+                    dbc.Checklist(
+                        options=[
+                            {"label": "XIC Normalization", "value": 0},
+                        ],
+                        value=[],
+                        id="xic_norm",
+                        switch=True,
+                        style={
+                            "marginTop": "6px"
+                        }
+                    ),
+                ]),
+            ]),
+            html.H5(children='MS2 Options'),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
+                            dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+                dbc.Col([
+                    dbc.Checklist(
+                        options=[
+                            {"label": "Show MS2 Markers", "value": 0},
+                        ],
+                        value=[],
+                        id="show_ms2_markers",
+                        switch=True,
+                        style={
+                            "marginTop": "6px"
+                        }
+                    ),
+                ]),
+            ]),
             dcc.Loading(
                 id="link-button",
                 children=[html.Div([html.Div(id="loading-output-9")])],
