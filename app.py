@@ -653,12 +653,12 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", height=600)
+    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", height=600, template="plotly_white")
     fig.update_traces(hoverongaps=False)
-    fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'), plot_bgcolor="white")
+    fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'))
 
-    fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
-    fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
+    fig.update_xaxes(showline=True, linewidth=1, linecolor='black', showgrid=False)
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='black', gridwidth=3)
 
     too_many_ms2 = False
     if len(all_ms2_scan) > 5000:
