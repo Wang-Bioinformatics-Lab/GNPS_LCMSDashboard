@@ -441,7 +441,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
 def determine_url_only_parameters(search):
     
     xic_tolerance = "0.5"
-    xic_norm = "No"
+    xic_norm = False
     show_ms2_markers = True
 
     try:
@@ -451,6 +451,10 @@ def determine_url_only_parameters(search):
 
     try:
         xic_norm = str(urllib.parse.parse_qs(search[1:])["xic_norm"][0])
+        if xic_norm == "True":
+            xic_norm = True
+        else:
+            xic_norm = False
     except:
         pass
 
@@ -462,8 +466,6 @@ def determine_url_only_parameters(search):
             show_ms2_markers = True
     except:
         pass
-
-    print(show_ms2_markers, urllib.parse.parse_qs(search[1:])["show_ms2_markers"][0])
 
     return [xic_tolerance, xic_norm, show_ms2_markers]
 
@@ -752,7 +754,7 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
     tic_df["rt"] = rt_trace
 
     # Performing Normalization only if we have multiple XICs available
-    if xic_norm == "Yes" and len(all_line_names) > 1:
+    if xic_norm is True and len(all_line_names) > 1:
         for key in tic_df.columns:
             if key == "rt":
                 continue
