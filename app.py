@@ -58,7 +58,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard", href="#")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.2", href="#")),
             ],
         navbar=True)
     ],
@@ -95,7 +95,6 @@ DATASELECTION_CARD = [
                     'textAlign': 'center',
                     'margin': '10px'
                 },
-                # Allow multiple files to be uploaded
                 multiple=False
             ),
             html.H5(children='XIC Options'),
@@ -260,7 +259,6 @@ MIDDLE_DASHBOARD = [
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
-        html.Div(id='version', children="Version - 0.2"),
         dbc.Row([
             dbc.Col(
                 dbc.Card(LEFT_DASHBOARD),
