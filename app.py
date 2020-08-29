@@ -7,6 +7,7 @@ import dash_table
 import plotly.express as px
 import plotly.graph_objects as go 
 from dash.dependencies import Input, Output, State
+import dash_daq as daq
 import os
 from zipfile import ZipFile
 import urllib.parse
@@ -57,7 +58,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard", href="#")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.2", href="#")),
             ],
         navbar=True)
     ],
@@ -70,14 +71,19 @@ DATASELECTION_CARD = [
     dbc.CardHeader(html.H5("Data Selection")),
     dbc.CardBody(
         [   
-            html.Br(),
-            html.H3(children='GNPS USI'),
-            dbc.Input(className="mb-3", id='usi', placeholder="Enter GNPS File USI"),
+            html.H5(children='File Selection'),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
+                    dbc.Input(id='usi', placeholder="Enter GNPS File USI"),
+                ],
+                className="mb-3",
+            ),
             dcc.Upload(
                 id='upload-data',
                 children=html.Div([
                     'Enter USI Above or Drag and Drop your own file',
-                    html.A('Select Files')
+                    html.A(' or Select Files')
                 ]),
                 style={
                     'width': '95%',
@@ -89,43 +95,78 @@ DATASELECTION_CARD = [
                     'textAlign': 'center',
                     'margin': '10px'
                 },
-                # Allow multiple files to be uploaded
                 multiple=False
             ),
-            html.H3(children='XIC m/z'),
-            dbc.Input(className="mb-3", id='xic_mz', placeholder="Enter m/z to XIC"),
-            html.H3(children='XIC Da Tolerance'),
-            dbc.Input(className="mb-3", id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
-            html.H3(children='XIC Normalization'),
-            dcc.Dropdown(
-                id='xic_norm',
-                options=[
-                    {
-                        "label": "Yes",
-                        "value" : "Yes"
-                    },
-                    {
-                        "label": "No",
-                        "value" : "No"
-                    }
+            html.H5(children='XIC Options'),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
+                    dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC"),
                 ],
-                value="No",
-                clearable=False
+                className="mb-3",
             ),
-            html.Br(),
-            html.H3(children='Show MS2 Markers'),
-            dbc.Select(
-                id="show_ms2_markers",
-                options=[
-                    {"label": "Yes", "value": "1"},
-                    {"label": "No", "value": "0"},
-                ],
-                value="0"
-            ),
-            html.Br(),
-            html.Br(),
-            html.H3(children='Display Spectrum Identifier'),
-            dbc.Input(className="mb-3", id='ms2_identifier', placeholder="Enter Spectrum Identifier", value=""),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("XIC Tolerance", addon_type="prepend"),
+                            dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+                
+                dbc.Col(
+                    dbc.FormGroup(
+                        [
+                            dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"150px"}),
+                            dbc.Col(
+                                daq.ToggleSwitch(
+                                    id='xic_norm',
+                                    value=False,
+                                    size=50,
+                                    style={
+                                        "marginTop": "4px",
+                                        "width": "100px"
+                                    }
+                                )
+                            ),
+                        ],
+                        row=True,
+                        className="mb-3",
+                    )),
+            ]),
+            html.H5(children='MS2 Options'),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
+                            dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+                dbc.Col(
+                    dbc.FormGroup(
+                        [
+                            dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"150px"}),
+                            dbc.Col(
+                                daq.ToggleSwitch(
+                                    id='show_ms2_markers',
+                                    value=False,
+                                    size=50,
+                                    style={
+                                        "marginTop": "4px",
+                                        "width": "100px"
+                                    }
+                                )
+                            ),
+                        ],
+                        row=True,
+                        className="mb-3",
+                    )),
+            ]),
             dcc.Loading(
                 id="link-button",
                 children=[html.Div([html.Div(id="loading-output-9")])],
@@ -218,7 +259,6 @@ MIDDLE_DASHBOARD = [
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
-        html.Div(id='version', children="Version - 0.2"),
         dbc.Row([
             dbc.Col(
                 dbc.Card(LEFT_DASHBOARD),
@@ -399,8 +439,8 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
 def determine_url_only_parameters(search):
     
     xic_tolerance = "0.5"
-    xic_norm = "No"
-    show_ms2_markers = "No"
+    xic_norm = False
+    show_ms2_markers = True
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -409,11 +449,19 @@ def determine_url_only_parameters(search):
 
     try:
         xic_norm = str(urllib.parse.parse_qs(search[1:])["xic_norm"][0])
+        if xic_norm == "True":
+            xic_norm = True
+        else:
+            xic_norm = False
     except:
         pass
 
     try:
         show_ms2_markers = str(urllib.parse.parse_qs(search[1:])["show_ms2_markers"][0])
+        if show_ms2_markers == "False":
+            show_ms2_markers = False
+        else:
+            show_ms2_markers = True
     except:
         pass
 
@@ -704,7 +752,7 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
     tic_df["rt"] = rt_trace
 
     # Performing Normalization only if we have multiple XICs available
-    if xic_norm == "Yes" and len(all_line_names) > 1:
+    if xic_norm is True and len(all_line_names) > 1:
         for key in tic_df.columns:
             if key == "rt":
                 continue
@@ -719,7 +767,6 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
         scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
         fig.add_trace(scatter_fig)
 
-
     return [fig]
 
 
@@ -731,9 +778,11 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
 @app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
               [Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
 def draw_file(usi, map_selection, show_ms2_markers):
+    print("XXXXXXXXXXXX", show_ms2_markers)
+
     remote_link, local_filename = resolve_usi(usi)
 
-    if show_ms2_markers == "1":
+    if show_ms2_markers == 1:
         show_ms2_markers = True
     else:
         show_ms2_markers = False
