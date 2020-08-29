@@ -38,3 +38,4 @@ Werkzeug==1.0.1
 pymzml==2.4.7
 Pillow
 matplotlib
+dash_daq
