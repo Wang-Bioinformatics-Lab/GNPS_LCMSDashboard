@@ -116,19 +116,26 @@ DATASELECTION_CARD = [
                         className="mb-3",
                     ),
                 ),
-                dbc.Col([
-                    dbc.Checklist(
-                        options=[
-                            {"label": "XIC Normalization", "value": 0},
+                
+                dbc.Col(
+                    dbc.FormGroup(
+                        [
+                            dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8),
+                            dbc.Col(
+                                daq.ToggleSwitch(
+                                    id='xic_norm',
+                                    value=False,
+                                    size=50,
+                                    style={
+                                        "marginTop": "4px",
+                                        "width": "100px"
+                                    }
+                                )
+                            ),
                         ],
-                        value=[],
-                        id="xic_norm",
-                        switch=True,
-                        style={
-                            "marginTop": "6px"
-                        }
-                    ),
-                ]),
+                        row=True,
+                        className="mb-3",
+                    )),
             ]),
             html.H5(children='MS2 Options'),
             dbc.Row([
@@ -141,19 +148,25 @@ DATASELECTION_CARD = [
                         className="mb-3",
                     ),
                 ),
-                dbc.Col([
-                    dbc.Checklist(
-                        options=[
-                            {"label": "Show MS2 Markers", "value": 0},
+                dbc.Col(
+                    dbc.FormGroup(
+                        [
+                            dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8),
+                            dbc.Col(
+                                daq.ToggleSwitch(
+                                    id='show_ms2_markers',
+                                    value=False,
+                                    size=50,
+                                    style={
+                                        "marginTop": "4px",
+                                        "width": "100px"
+                                    }
+                                )
+                            ),
                         ],
-                        value=[],
-                        id="show_ms2_markers",
-                        switch=True,
-                        style={
-                            "marginTop": "6px"
-                        }
-                    ),
-                ]),
+                        row=True,
+                        className="mb-3",
+                    )),
             ]),
             dcc.Loading(
                 id="link-button",
@@ -429,7 +442,7 @@ def determine_url_only_parameters(search):
     
     xic_tolerance = "0.5"
     xic_norm = "No"
-    show_ms2_markers = "No"
+    show_ms2_markers = True
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -443,8 +456,14 @@ def determine_url_only_parameters(search):
 
     try:
         show_ms2_markers = str(urllib.parse.parse_qs(search[1:])["show_ms2_markers"][0])
+        if show_ms2_markers == "False":
+            show_ms2_markers = False
+        else:
+            show_ms2_markers = True
     except:
         pass
+
+    print(show_ms2_markers, urllib.parse.parse_qs(search[1:])["show_ms2_markers"][0])
 
     return [xic_tolerance, xic_norm, show_ms2_markers]
 
@@ -760,9 +779,11 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
 @app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
               [Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
 def draw_file(usi, map_selection, show_ms2_markers):
+    print("XXXXXXXXXXXX", show_ms2_markers)
+
     remote_link, local_filename = resolve_usi(usi)
 
-    if show_ms2_markers == "1":
+    if show_ms2_markers == 1:
         show_ms2_markers = True
     else:
         show_ms2_markers = False
