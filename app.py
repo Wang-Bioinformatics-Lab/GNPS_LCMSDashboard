@@ -32,6 +32,12 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
+MS_precisions = {
+    1 : 5e-6,
+    2 : 20e-6,
+    3 : 20e-6
+}
+
 df = pd.DataFrame()
 df["rt"] = [1]
 df["mz"] = [1]
@@ -323,7 +329,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData):
         # Understand parameters
         min_rt_delta = 1000
         closest_scan = 0
-        run = pymzml.run.Reader(local_filename)
+        run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
         for spec in tqdm(run):
             if spec.ms_level == 1:
                 try:
@@ -515,7 +521,7 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     all_ms2_scan = []
 
     # Understand parameters
-    run = pymzml.run.Reader(filename)
+    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
     for spec in tqdm(run):
         try:
             # Still waiting for the window
@@ -604,7 +610,10 @@ def draw_tic(usi):
     # Performing TIC Plot
     tic_trace = []
     rt_trace = []
-    run = pymzml.run.Reader(local_filename)
+
+    
+    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
+    
     for n, spec in enumerate(run):
         if spec.ms_level == 1:
             rt_trace.append(spec.scan_time_in_minutes())
@@ -645,7 +654,7 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
     # Performing XIC Plot
     tic_trace = defaultdict(list)
     rt_trace = []
-    run = pymzml.run.Reader(local_filename)
+    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
     sum_i = 0 # Used by MS2 height
     for n, spec in enumerate(run):
         if spec.ms_level == 1:
