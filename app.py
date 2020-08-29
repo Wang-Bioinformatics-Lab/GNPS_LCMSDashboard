@@ -120,7 +120,7 @@ DATASELECTION_CARD = [
                 dbc.Col(
                     dbc.FormGroup(
                         [
-                            dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8),
+                            dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"150px"}),
                             dbc.Col(
                                 daq.ToggleSwitch(
                                     id='xic_norm',
@@ -151,7 +151,7 @@ DATASELECTION_CARD = [
                 dbc.Col(
                     dbc.FormGroup(
                         [
-                            dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8),
+                            dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"150px"}),
                             dbc.Col(
                                 daq.ToggleSwitch(
                                     id='show_ms2_markers',
@@ -768,7 +768,6 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
     if len(all_ms2_rt) > 0:
         scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
         fig.add_trace(scatter_fig)
-
 
     return [fig]
 
