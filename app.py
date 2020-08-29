@@ -69,110 +69,117 @@ NAVBAR = dbc.Navbar(
 
 DATASELECTION_CARD = [
     dbc.CardHeader(html.H5("Data Selection")),
-    dbc.CardBody(
-        [   
-            html.H5(children='File Selection'),
-            dbc.InputGroup(
-                [
-                    dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
-                    dbc.Input(id='usi', placeholder="Enter GNPS File USI"),
-                ],
-                className="mb-3",
-            ),
-            dcc.Upload(
-                id='upload-data',
-                children=html.Div([
-                    'Enter USI Above or Drag and Drop your own file',
-                    html.A(' or Select Files')
+    dbc.CardBody(dbc.Row(
+        [   ## Left Panel
+            dbc.Col([
+                html.H5(children='File Selection'),
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
+                        dbc.Input(id='usi', placeholder="Enter GNPS File USI"),
+                    ],
+                    className="mb-3",
+                ),
+                dcc.Upload(
+                    id='upload-data',
+                    children=html.Div([
+                        'Enter USI Above or Drag and Drop your own file',
+                        html.A(' or Select Files')
+                    ]),
+                    style={
+                        'width': '95%',
+                        'height': '60px',
+                        'lineHeight': '60px',
+                        'borderWidth': '1px',
+                        'borderStyle': 'dashed',
+                        'borderRadius': '5px',
+                        'textAlign': 'center',
+                        'margin': '10px'
+                    },
+                    multiple=False
+                ),
+                html.Br(),
+                # Linkouts
+                dcc.Loading(
+                    id="link-button",
+                    children=[html.Div([html.Div(id="loading-output-9")])],
+                    type="default",
+                )
+            ], className="col-sm"),
+            ## Right Panel
+            dbc.Col([
+                html.H5(children='XIC Options'),
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
+                        dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC"),
+                    ],
+                    className="mb-3",
+                ),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("XIC Tolerance", addon_type="prepend"),
+                                dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"150px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='xic_norm',
+                                        value=False,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
                 ]),
-                style={
-                    'width': '95%',
-                    'height': '60px',
-                    'lineHeight': '60px',
-                    'borderWidth': '1px',
-                    'borderStyle': 'dashed',
-                    'borderRadius': '5px',
-                    'textAlign': 'center',
-                    'margin': '10px'
-                },
-                multiple=False
-            ),
-            html.H5(children='XIC Options'),
-            dbc.InputGroup(
-                [
-                    dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
-                    dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC"),
-                ],
-                className="mb-3",
-            ),
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("XIC Tolerance", addon_type="prepend"),
-                            dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
-                        ],
-                        className="mb-3",
+                html.H5(children='MS2 Options'),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
+                                dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
+                            ],
+                            className="mb-3",
+                        ),
                     ),
-                ),
-                
-                dbc.Col(
-                    dbc.FormGroup(
-                        [
-                            dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"150px"}),
-                            dbc.Col(
-                                daq.ToggleSwitch(
-                                    id='xic_norm',
-                                    value=False,
-                                    size=50,
-                                    style={
-                                        "marginTop": "4px",
-                                        "width": "100px"
-                                    }
-                                )
-                            ),
-                        ],
-                        row=True,
-                        className="mb-3",
-                    )),
-            ]),
-            html.H5(children='MS2 Options'),
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
-                            dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
-                        ],
-                        className="mb-3",
-                    ),
-                ),
-                dbc.Col(
-                    dbc.FormGroup(
-                        [
-                            dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"150px"}),
-                            dbc.Col(
-                                daq.ToggleSwitch(
-                                    id='show_ms2_markers',
-                                    value=False,
-                                    size=50,
-                                    style={
-                                        "marginTop": "4px",
-                                        "width": "100px"
-                                    }
-                                )
-                            ),
-                        ],
-                        row=True,
-                        className="mb-3",
-                    )),
-            ]),
-            dcc.Loading(
-                id="link-button",
-                children=[html.Div([html.Div(id="loading-output-9")])],
-                type="default",
-            )
-        ]
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"150px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='show_ms2_markers',
+                                        value=False,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
+                ]),
+            ], className="col-sm")
+        ])
     )
 ]
 
@@ -181,11 +188,6 @@ DATASLICE_CARD = [
     dbc.CardBody(
         [   
             html.Br(),
-            dcc.Loading(
-                id="ms2-plot",
-                children=[html.Div([html.Div(id="loading-output-6")])],
-                type="default",
-            ),
             dcc.Loading(
                 id="loading-20",
                 children=[dcc.Graph(
@@ -196,7 +198,12 @@ DATASLICE_CARD = [
                     }
                 )],
                 type="default",
-            )
+            ),
+            dcc.Loading(
+                id="ms2-plot",
+                children=[html.Div([html.Div(id="loading-output-6")])],
+                type="default",
+            ),
         ]
     )
 ]   
@@ -224,10 +231,17 @@ DEBUG_CARD = [
     )
 ]
 
-LEFT_DASHBOARD = [
+TOP_DASHBOARD = [
     html.Div(
         [
             html.Div(DATASELECTION_CARD),
+        ]
+    )
+]
+
+LEFT_DASHBOARD = [
+    html.Div(
+        [
             html.Div(DATASLICE_CARD),
             html.Div(DEBUG_CARD),
         ]
@@ -251,6 +265,7 @@ MIDDLE_DASHBOARD = [
                 id="tic-plot",
                 children=[html.Div([html.Div(id="loading-output-4")])],
                 type="default",
+                style={"width": "100%"}
             ),
         ]
     )
@@ -261,11 +276,17 @@ BODY = dbc.Container(
         dcc.Location(id='url', refresh=False),
         dbc.Row([
             dbc.Col(
-                dbc.Card(LEFT_DASHBOARD),
+                dbc.Card(TOP_DASHBOARD), 
+                className="w-100"
+            ),
+        ], style={"marginTop": 30}),
+        dbc.Row([
+            dbc.Col(
+                dbc.Card(MIDDLE_DASHBOARD),
                 className="w-50"
             ),
             dbc.Col(
-                dbc.Card(MIDDLE_DASHBOARD),
+                dbc.Card(LEFT_DASHBOARD),
                 className="w-50"
             ),
         ], style={"marginTop": 30}),
@@ -632,7 +653,7 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", width=1000, height=600)
+    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", height=600)
     fig.update_traces(hoverongaps=False)
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'), plot_bgcolor="white")
 
