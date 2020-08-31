@@ -380,6 +380,10 @@ def click_plot(url_search, usi, mapclickData, xicclickData):
     if clicked_target["curveNumber"] == 1:
         return ["MS2:" + str(clicked_target["customdata"])]
     
+    # This is an MS3
+    if clicked_target["curveNumber"] == 2:
+        return ["MS3:" + str(clicked_target["customdata"])]
+    
     # This is an MS1
     if clicked_target["curveNumber"] == 0:
         rt_target = clicked_target["x"]
@@ -415,7 +419,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
     filename = usi_splits[2]
     updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
 
-    if "MS2" in ms2_identifier:
+    if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
@@ -589,6 +593,10 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     all_ms2_rt = []
     all_ms2_scan = []
 
+    all_ms3_mz = []
+    all_ms3_rt = []
+    all_ms3_scan = []
+
     # Understand parameters
     run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
     for spec in tqdm(run):
@@ -636,6 +644,17 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
                 all_ms2_scan.append(spec.ID)
             except:
                 pass
+        elif spec.ms_level == 3:
+            try:
+                ms3_mz = spec.selected_precursors[0]["mz"]
+                if ms3_mz < min_mz or ms3_mz > max_mz:
+                    continue
+                all_ms3_mz.append(ms3_mz)
+                all_ms3_rt.append(spec.scan_time_in_minutes())
+                all_ms3_scan.append(spec.ID)
+            except:
+                pass
+            
             
             
     df = pd.DataFrame()
@@ -661,12 +680,16 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     fig.update_yaxes(showline=True, linewidth=1, linecolor='black', gridwidth=3)
 
     too_many_ms2 = False
-    if len(all_ms2_scan) > 5000:
+    if len(all_ms2_scan) > 5000 or len(all_ms3_scan) > 5000:
         too_many_ms2 = True
 
     if show_ms2_markers is True and too_many_ms2 is False:
         scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"), name="MS2s")
         fig.add_trace(scatter_fig)
+
+        if len(all_ms3_scan) > 0:
+            scatter_ms3_fig = go.Scatter(x=all_ms3_rt, y=all_ms3_mz, mode='markers', customdata=all_ms3_scan, marker=dict(color='green', size=5, symbol="x"), name="MS3s")
+            fig.add_trace(scatter_ms3_fig)
 
     return fig
 
@@ -799,8 +822,6 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
 @app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
               [Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
 def draw_file(usi, map_selection, show_ms2_markers):
-    print("XXXXXXXXXXXX", show_ms2_markers)
-
     remote_link, local_filename = resolve_usi(usi)
 
     if show_ms2_markers == 1:
