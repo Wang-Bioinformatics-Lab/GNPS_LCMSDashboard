@@ -25,7 +25,7 @@ We are also trying to support a heroku deployment. This is why we have a Procfil
 ### Instrument Vendors for Metabolomics
 
 1. Thermo - [mzspec:MSV000084951:AH22:scan:62886](http://dorresteintesthub.ucsd.edu:6548/?usi=mzspec%3AMSV000084951%3AAH22%3Ascan%3A62886&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
-1. Thermo MS3 - [mzspec:MSV000084765:Leptocheline_MS2_DDA_CID_HCD:scan:1](http://dorresteintesthub.ucsd.edu:6548/?usi=mzspec:MSV000084765:Leptocheline_MS2_DDA_CID_HCD:scan:1)
+1. Thermo MS3 - [mzspec:MSV000084765:Leptocheline_MS3_DDA_IT_5:scan:1](http://dorresteintesthub.ucsd.edu:6548/?usi=mzspec:MSV000084765:Leptocheline_MS3_DDA_IT_5:scan:1)
 1. Sciex - [mzspec:MSV000085042:QC1_pos-QC1:scan:1](http://dorresteintesthub.ucsd.edu:6548/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
 1. Bruker - [mzspec:MSV000086015:StdMix_02__GA2_01_55623:scan:1](http://dorresteintesthub.ucsd.edu:6548/?usi=mzspec%3AMSV000086015%3AStdMix_02__GA2_01_55623%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
 1. Waters - [mzspec:MSV000084977:OEPKS7_B_1_neg:scan:1](http://dorresteintesthub.ucsd.edu:6548/?usi=mzspec%3AMSV000084977%3AOEPKS7_B_1_neg%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
