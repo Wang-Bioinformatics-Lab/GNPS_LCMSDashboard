@@ -429,7 +429,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
     updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
 
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
-        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
+        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
         # Lets also make a MASST link here
@@ -451,7 +451,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         return ["MS2", [html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
 
     if "MS1" in ms2_identifier:
-        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}".format(updated_usi)
+        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
         try:
