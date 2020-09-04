@@ -326,11 +326,20 @@ def resolve_usi(usi):
         # Format into FTP link
         remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
     elif "GNPS" in usi_splits[1]:
-        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
-        filename = "-".join(usi_splits[2].split("-")[2:])
-        task = usi_splits[2].split("-")[1]
+        if "TASK-" in usi_splits[2]:
 
-        remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+            # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
+            filename = "-".join(usi_splits[2].split("-")[2:])
+            task = usi_splits[2].split("-")[1]
+
+            remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+        elif "QUICKSTART-" in usi_splits[2]:
+            filename = "-".join(usi_splits[2].split("-")[2:])
+            task = usi_splits[2].split("-")[1]
+
+            remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
+            print(remote_link)
+
     elif "MTBLS" in usi_splits[1]:
         dataset_accession = usi_splits[1]
         filename = usi_splits[2]
