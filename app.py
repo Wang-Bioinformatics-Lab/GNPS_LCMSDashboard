@@ -712,7 +712,7 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'children')],
               [Input('usi', 'value')])
-@cache.memoize()
+@cache.memoize(timeout=0)
 def draw_tic(usi):
     remote_link, local_filename = resolve_usi(usi)
 
@@ -738,7 +738,7 @@ def draw_tic(usi):
 # Creating XIC plot
 @app.callback([Output('xic-plot', 'figure')],
               [Input('usi', 'value'), Input('xic_mz', 'value'), Input('xic_tolerance', 'value'), Input('xic_norm', 'value')])
-@cache.memoize()
+@cache.memoize(timeout=0)
 def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
     all_xic_values = []
 
@@ -839,7 +839,7 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
 
 @app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
               [Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
-@cache.memoize()
+@cache.memoize(timeout=0)
 def draw_file(usi, map_selection, show_ms2_markers):
     remote_link, local_filename = resolve_usi(usi)
 
