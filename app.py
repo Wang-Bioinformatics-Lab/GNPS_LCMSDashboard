@@ -582,23 +582,41 @@ def determine_xic_target(search, clickData, existing_xic):
     return ""
 
 
-def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
-    min_rt = 0
-    max_rt = 1000000
-    min_mz = 0
-    max_mz = 2000
+# Binary Search
+def _find_lcms_rt(filename, rt_query):
+    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
 
-    if map_selection is not None:
-        if "xaxis.range[0]" in map_selection:
-            min_rt = float(map_selection["xaxis.range[0]"])
-        if "xaxis.range[1]" in map_selection:
-            max_rt = float(map_selection["xaxis.range[1]"])
+    s = 0
+    e = run.get_spectrum_count()
 
-        if "yaxis.range[0]" in map_selection:
-            min_mz = float(map_selection["yaxis.range[0]"])
-        if "yaxis.range[1]" in map_selection:
-            max_mz = float(map_selection["yaxis.range[1]"])
+    while True:
+        jump_point = int((e + s) / 2)
 
+        # Jump out early
+        if jump_point == 0:
+            break
+        
+        if jump_point == run.get_spectrum_count():
+            break
+
+        if s == e:
+            break
+
+        if e - s == 1:
+            break
+
+        spec = run[ jump_point ]
+
+        if spec.scan_time_in_minutes() < rt_query:
+            s = jump_point
+        elif spec.scan_time_in_minutes() > rt_query:
+            e = jump_point
+        else:
+            break
+
+    return e
+
+def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz):
     all_mz = []
     all_rt = []
     all_i = []
@@ -615,9 +633,14 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     all_ms3_rt = []
     all_ms3_scan = []
 
+    # Performing Binary Search for bounds of RT
+    min_rt_index = _find_lcms_rt(filename, min_rt) # These are inclusive on left
+    max_rt_index = _find_lcms_rt(filename, max_rt) + 1 # Exclusive on the right
+
     # Understand parameters
     run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
-    for spec in tqdm(run):
+    for spec_index in tqdm(range(min_rt_index, max_rt_index)):
+        spec = run[spec_index]
         try:
             # Still waiting for the window
             if spec.scan_time_in_minutes() < min_rt:
@@ -672,8 +695,66 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
                 all_ms3_scan.append(spec.ID)
             except:
                 pass
-            
-            
+
+    ms1_results = {}
+    ms1_results["mz"] = all_mz
+    ms1_results["rt"] = all_rt
+    ms1_results["i"] = all_i
+    ms1_results["scan"] = all_scan
+    ms1_results["index"] = all_index
+    ms1_results["number_spectra"] = number_spectra
+
+    ms2_results = {}
+    ms2_results["all_ms2_mz"] = all_ms2_mz
+    ms2_results["all_ms2_rt"] = all_ms2_rt
+    ms2_results["all_ms2_scan"] = all_ms2_scan
+
+    ms3_results = {}
+    ms3_results["all_ms3_mz"] = all_ms3_mz
+    ms3_results["all_ms3_rt"] = all_ms3_rt
+    ms3_results["all_ms3_scan"] = all_ms3_scan
+
+    return ms1_results, ms2_results, ms3_results
+
+def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
+    min_rt = 0
+    max_rt = 1000000
+    min_mz = 0
+    max_mz = 2000
+
+    if map_selection is not None:
+        if "xaxis.range[0]" in map_selection:
+            min_rt = float(map_selection["xaxis.range[0]"])
+        if "xaxis.range[1]" in map_selection:
+            max_rt = float(map_selection["xaxis.range[1]"])
+
+        if "yaxis.range[0]" in map_selection:
+            min_mz = float(map_selection["yaxis.range[0]"])
+        if "yaxis.range[1]" in map_selection:
+            max_mz = float(map_selection["yaxis.range[1]"])
+
+    import time
+    start_time = time.time()
+    ms1_results, ms2_results, ms3_results = _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz)
+    end_time = time.time()
+    print("READ FILE", end_time - start_time)
+
+    start_time = time.time()
+
+    all_mz = ms1_results["mz"]
+    all_rt = ms1_results["rt"]
+    all_i = ms1_results["i"]
+    all_scan = ms1_results["scan"]
+    all_index = ms1_results["index"]
+    number_spectra = ms1_results["number_spectra"]
+
+    all_ms2_mz = ms2_results["all_ms2_mz"]
+    all_ms2_rt = ms2_results["all_ms2_rt"]
+    all_ms2_scan = ms2_results["all_ms2_scan"]
+
+    all_ms3_mz = ms3_results["all_ms3_mz"]
+    all_ms3_rt = ms3_results["all_ms3_rt"]
+    all_ms3_scan = ms3_results["all_ms3_scan"]
             
     df = pd.DataFrame()
     df["mz"] = all_mz
@@ -688,6 +769,10 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
 
     cvs = ds.Canvas(plot_width=width, plot_height=height)
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
+
+    end_time = time.time()
+    print("Datashader Agg", end_time - start_time)
+
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
     fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", height=600, template="plotly_white")
@@ -708,6 +793,8 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
         if len(all_ms3_scan) > 0:
             scatter_ms3_fig = go.Scatter(x=all_ms3_rt, y=all_ms3_mz, mode='markers', customdata=all_ms3_scan, marker=dict(color='green', size=5, symbol="x"), name="MS3s")
             fig.add_trace(scatter_ms3_fig)
+
+    
 
     return fig
 
