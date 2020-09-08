@@ -254,7 +254,7 @@ CONTRIBUTORS_CARD = [
                 html.Br(),
                 "Daniel Petras PhD - UC San Diego",
                 html.Br(),
-                "Vanessa Phelan PhD - CU Denver",
+                "Vanessa Phelan PhD - CU Anschutz",
                 html.Br(),
                 "Tristan de Rond PhD - UC San Diego",
                 html.Br(),
