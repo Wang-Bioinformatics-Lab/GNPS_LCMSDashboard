@@ -239,6 +239,32 @@ DEBUG_CARD = [
     )
 ]
 
+CONTRIBUTORS_CARD = [
+    dbc.CardHeader(html.H5("Contributors")),
+    dbc.CardBody(
+        [
+            html.Div([
+                "Mingxun Wang PhD - UC San Diego",
+                html.Br(),
+                "Wout Bittremieux PhD - UC San Diego",
+                html.Br(),
+                "Benjamin Pullman - UC San Diego",
+                html.Br(),
+                "Scott Jarmusch - Uppsala University",
+                html.Br(),
+                "Daniel Petras - UC San Diego",
+                html.Br(),
+                "Vanessa Phelan PhD - CU Denver",
+                html.Br(),
+                "Tristan de Rond PhD - UC San Diego",
+                html.Br(),
+                "Alan Jarmusch PhD - UC San Diego",
+                ]
+            )
+        ]
+    )
+]
+
 TOP_DASHBOARD = [
     html.Div(
         [
@@ -251,6 +277,7 @@ LEFT_DASHBOARD = [
     html.Div(
         [
             html.Div(DATASLICE_CARD),
+            html.Div(CONTRIBUTORS_CARD),
             html.Div(DEBUG_CARD),
         ]
     )
