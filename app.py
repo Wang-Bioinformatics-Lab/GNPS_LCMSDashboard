@@ -250,8 +250,6 @@ CONTRIBUTORS_CARD = [
                 html.Br(),
                 "Benjamin Pullman - UC San Diego",
                 html.Br(),
-                "Scott Jarmusch PhD - Uppsala University",
-                html.Br(),
                 "Daniel Petras PhD - UC San Diego",
                 html.Br(),
                 "Vanessa Phelan PhD - CU Anschutz",
