@@ -84,7 +84,7 @@ DATASELECTION_CARD = [
                 dbc.InputGroup(
                     [
                         dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
-                        dbc.Input(id='usi', placeholder="Enter GNPS File USI"),
+                        dbc.Textarea(id='usi', placeholder="Enter GNPS File USI"),
                     ],
                     className="mb-3",
                 ),
@@ -134,7 +134,6 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         ),
                     ),
-                    
                     dbc.Col(
                         dbc.FormGroup(
                             [
@@ -142,6 +141,25 @@ DATASELECTION_CARD = [
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='xic_norm',
+                                        value=False,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("XIC File Grouping", html_for="xic_file_grouping", width=4.8, style={"width":"150px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='xic_file_grouping',
                                         value=False,
                                         size=50,
                                         style={
@@ -249,8 +267,6 @@ CONTRIBUTORS_CARD = [
                 "Wout Bittremieux PhD - UC San Diego",
                 html.Br(),
                 "Benjamin Pullman - UC San Diego",
-                html.Br(),
-                "Scott Jarmusch PhD - Uppsala University",
                 html.Br(),
                 "Daniel Petras PhD - UC San Diego",
                 html.Br(),
@@ -503,13 +519,17 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         
         return ["MS1", html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
 
-@app.callback([Output("xic_tolerance", "value"), Output("xic_norm", "value"), Output("show_ms2_markers", "value")],
+@app.callback([Output("xic_tolerance", "value"), 
+                Output("xic_norm", "value"), 
+                Output("xic_file_grouping", "value"),
+                Output("show_ms2_markers", "value"),],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     
     xic_tolerance = "0.5"
     xic_norm = False
     show_ms2_markers = True
+    xic_file_grouping = False
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -534,7 +554,18 @@ def determine_url_only_parameters(search):
     except:
         pass
 
-    return [xic_tolerance, xic_norm, show_ms2_markers]
+    try:
+        xic_file_grouping = str(urllib.parse.parse_qs(search[1:])["xic_file_grouping"][0])
+        if xic_file_grouping == "False":
+            xic_file_grouping = False
+        else:
+            xic_file_grouping = True
+    except:
+        pass
+
+    
+
+    return [xic_tolerance, xic_norm, xic_file_grouping, show_ms2_markers]
 
 # Handling file upload
 @app.callback([Output('usi', 'value'), Output('debug-output-2', 'children')],
@@ -851,24 +882,163 @@ def draw_tic(usi):
 
     return [dcc.Graph(figure=fig)]
 
+@cache.memoize()
+def perform_xic(usi, all_xic_values, xic_tolerance):
+    # This is the business end of XIC extraction
+
+    remote_link, local_filename = resolve_usi(usi)
+
+    # Saving out MS2 locations
+    all_ms2_ms1_int = []
+    all_ms2_rt = []
+    all_ms2_scan = []
+
+    # Performing XIC Plot
+    tic_trace = defaultdict(list)
+    rt_trace = []
+    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
+    sum_i = 0 # Used by MS2 height
+    for n, spec in enumerate(run):
+        if spec.ms_level == 1:
+            try:
+                for target_mz in all_xic_values:
+                    lower_tolerance = target_mz[1] - xic_tolerance
+                    upper_tolerance = target_mz[1] + xic_tolerance
+
+                    # Filtering peaks by mz
+                    peaks_full = spec.peaks("raw")
+                    peaks = peaks_full[
+                        np.where(np.logical_and(peaks_full[:, 0] >= lower_tolerance, peaks_full[:, 0] <= upper_tolerance))
+                    ]
+
+                    # summing intensity
+                    sum_i = sum([peak[1] for peak in peaks])
+                    tic_trace[target_mz[0]].append(sum_i)
+            except:
+                pass
+
+            rt_trace.append(spec.scan_time_in_minutes())
+
+        # Saving out the MS2 scans for the XIC
+        elif spec.ms_level == 2:
+            if len(all_xic_values) == 1:
+                try:
+                    lower_tolerance = target_mz[1] - xic_tolerance
+                    upper_tolerance = target_mz[1] + xic_tolerance
+
+                    ms2_mz = spec.selected_precursors[0]["mz"]
+                    if ms2_mz < lower_tolerance or ms2_mz > upper_tolerance:
+                        continue
+                    all_ms2_ms1_int.append(sum_i)
+                    all_ms2_rt.append(spec.scan_time_in_minutes())
+                    all_ms2_scan.append(spec.ID)
+                except:
+                    pass
+
+    # Formatting Data Frame
+    xic_df = pd.DataFrame()
+    for target_xic in tic_trace:
+        target_name = "XIC {}".format(target_xic)
+        print(target_name)
+        xic_df[target_name] = tic_trace[target_xic]
+    xic_df["rt"] = rt_trace
+
+    ms2_data = {}
+    ms2_data["all_ms2_ms1_int"] = all_ms2_ms1_int
+    ms2_data["all_ms2_rt"] = all_ms2_rt
+    ms2_data["all_ms2_scan"] = all_ms2_scan
+
+    return xic_df, ms2_data
+
+
 # Creating XIC plot
 @app.callback([Output('xic-plot', 'figure')],
-              [Input('usi', 'value'), Input('xic_mz', 'value'), Input('xic_tolerance', 'value'), Input('xic_norm', 'value')])
+              [Input('usi', 'value'), 
+              Input('xic_mz', 'value'), 
+              Input('xic_tolerance', 'value'), 
+              Input('xic_norm', 'value'),
+              Input('xic_file_grouping', 'value')])
 @cache.memoize()
-def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
+def draw_xic(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
+    usi_list = usi.split("\n")
+
     all_xic_values = []
 
     if xic_mz is None:
         return ["Please enter XIC"]
     else:
         for xic_value in xic_mz.split(";"):
-            print(xic_value)
             all_xic_values.append((str(xic_value), float(xic_value)))
 
     if xic_tolerance is None:
         return ["Please enter XIC Tolerance"]
     else:
         xic_tolerance = float(xic_tolerance)
+
+    # Performing XIC for all USI in the list
+    df_long_list = []
+    for usi_element in usi_list:
+        xic_df, ms2_data = perform_xic(usi_element, all_xic_values, xic_tolerance)
+
+        # Performing Normalization only if we have multiple XICs available
+        if xic_norm is True:
+            try:
+                for key in xic_df.columns:
+                    if key == "rt":
+                        continue
+                    xic_df[key] = xic_df[key] / max(xic_df[key])
+            except:
+                pass
+
+        # Formatting for Plotting
+        target_names = list(xic_df.columns)
+        target_names.remove("rt")
+        df_long = pd.melt(xic_df, id_vars="rt", value_vars=target_names)
+        df_long["USI"] = usi_element
+
+        df_long_list.append(df_long)
+
+    merged_df_long = pd.concat(df_long_list)
+    
+    if len(usi_list) == 1:
+        if xic_file_grouping is True:
+            height = 400
+            fig = px.line(merged_df_long, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height)
+        else:
+            height = 400 * len(all_xic_values)
+            fig = px.line(merged_df_long, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height)
+    else:
+        if xic_file_grouping is True:
+            height = 400 * len(usi_list)
+            fig = px.line(merged_df_long, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height)
+        else:
+            height = 400 * len(all_xic_values)
+            fig = px.line(merged_df_long, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height)
+
+    # Plotting the MS2 on the XIC
+    if len(usi_list) == 1:
+        all_ms2_ms1_int = ms2_data["all_ms2_ms1_int"]
+        all_ms2_rt = ms2_data["all_ms2_rt"]
+        all_ms2_scan = ms2_data["all_ms2_scan"]
+
+        if len(all_ms2_scan) > 0:
+            scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
+            fig.add_trace(scatter_fig)
+
+    return [fig]
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     remote_link, local_filename = resolve_usi(usi)
 
@@ -957,7 +1127,9 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm):
               [Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
 @cache.memoize()
 def draw_file(usi, map_selection, show_ms2_markers):
-    remote_link, local_filename = resolve_usi(usi)
+    usi_list = usi.split("\n")
+
+    remote_link, local_filename = resolve_usi(usi_list[0])
 
     if show_ms2_markers == 1:
         show_ms2_markers = True
@@ -975,14 +1147,16 @@ def draw_file(usi, map_selection, show_ms2_markers):
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'), 
               Input("xic_norm", "value"),
+              Input('xic_file_grouping', 'value'),
               Input("show_ms2_markers", "value"),
-              Input("ms2_identifier", "value")])
-def create_link(usi, xic_mz, xic_tolerance, xic_norm, show_ms2_markers, ms2_identifier):
+              Input("ms2_identifier", "value"),])
+def create_link(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier):
     url_params = {}
     url_params["usi"] = usi
     url_params["xicmz"] = xic_mz
     url_params["xic_tolerance"] = xic_tolerance
     url_params["xic_norm"] = xic_norm
+    url_params["xic_file_grouping"] = xic_file_grouping
     url_params["show_ms2_markers"] = show_ms2_markers
     url_params["ms2_identifier"] = ms2_identifier
 
