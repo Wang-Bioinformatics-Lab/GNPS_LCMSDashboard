@@ -1034,7 +1034,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
             fig = px.line(merged_df_long, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height)
         elif xic_file_grouping == "GROUP":
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height)
+            fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height)
 
     # Plotting the MS2 on the XIC
     if len(usi_list) == 1:
