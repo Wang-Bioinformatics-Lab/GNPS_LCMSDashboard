@@ -91,7 +91,7 @@ DATASELECTION_CARD = [
                 dbc.InputGroup(
                     [
                         dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
-                        dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI"),
+                        dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
                     ],
                     className="mb-3",
                 ),
@@ -361,6 +361,8 @@ app.layout = html.Div(children=[NAVBAR, BODY])
 
 # Returns remote_link and local filepath
 def resolve_usi(usi):
+    print(usi)
+
     usi_splits = usi.split(":")
 
     if "LOCAL" in usi_splits[1]:
@@ -459,7 +461,6 @@ def click_plot(url_search, usi, mapclickData, xicclickData):
         rt_target = clicked_target["x"]
 
         remote_link, local_filename = resolve_usi(usi)
-        print(local_filename)
 
         # Understand parameters
         min_rt_delta = 1000
@@ -958,13 +959,21 @@ def perform_xic(usi, all_xic_values, xic_tolerance):
 # Creating XIC plot
 @app.callback([Output('xic-plot', 'figure')],
               [Input('usi', 'value'), 
+              Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'), 
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value')])
-@cache.memoize()
-def draw_xic(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
-    usi_list = usi.split("\n")[:10]
+#@cache.memoize()
+def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
+    usi1_list = usi.split("\n")
+    usi2_list = usi2.split("\n")
+
+    usi1_list = [usi for usi in usi1_list if len(usi) > 8] # Filtering out empty USIs
+    usi2_list = [usi for usi in usi2_list if len(usi) > 8] # Filtering out empty USIs
+
+    usi_list = usi1_list + usi2_list
+    usi_list = usi_list[:10]
 
     all_xic_values = []
 
@@ -1000,6 +1009,11 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
         df_long = pd.melt(xic_df, id_vars="rt", value_vars=target_names)
         df_long["USI"] = usi_element
 
+        if usi_element in usi1_list:
+            df_long["GROUP"] = "TOP"
+        else:
+            df_long["GROUP"] = "BOTTOM"
+
         df_long_list.append(df_long)
 
     merged_df_long = pd.concat(df_long_list)
@@ -1015,9 +1029,12 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
         if xic_file_grouping == "FILE":
             height = 400 * len(usi_list)
             fig = px.line(merged_df_long, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height)
-        else:
+        elif xic_file_grouping == "MZ":
             height = 400 * len(all_xic_values)
             fig = px.line(merged_df_long, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height)
+        elif xic_file_grouping == "GROUP":
+            height = 400 * len(all_xic_values)
+            fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height)
 
     # Plotting the MS2 on the XIC
     if len(usi_list) == 1:
@@ -1028,96 +1045,6 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
         if len(all_ms2_scan) > 0:
             scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
             fig.add_trace(scatter_fig)
-
-    return [fig]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    remote_link, local_filename = resolve_usi(usi)
-
-    # Saving out MS2 locations
-    all_ms2_ms1_int = []
-    all_ms2_rt = []
-    all_ms2_scan = []
-
-    # Performing XIC Plot
-    tic_trace = defaultdict(list)
-    rt_trace = []
-    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-    sum_i = 0 # Used by MS2 height
-    for n, spec in enumerate(run):
-        if spec.ms_level == 1:
-            try:
-                for target_mz in all_xic_values:
-                    lower_tolerance = target_mz[1] - xic_tolerance
-                    upper_tolerance = target_mz[1] + xic_tolerance
-
-                    # Filtering peaks by mz
-                    peaks_full = spec.peaks("raw")
-                    peaks = peaks_full[
-                        np.where(np.logical_and(peaks_full[:, 0] >= lower_tolerance, peaks_full[:, 0] <= upper_tolerance))
-                    ]
-
-                    # summing intensity
-                    sum_i = sum([peak[1] for peak in peaks])
-                    tic_trace[target_mz[0]].append(sum_i)
-            except:
-                pass
-
-            rt_trace.append(spec.scan_time_in_minutes())
-
-        # Saving out the MS2 scans for the XIC
-        elif spec.ms_level == 2:
-            if len(all_xic_values) == 1:
-                try:
-                    lower_tolerance = target_mz[1] - xic_tolerance
-                    upper_tolerance = target_mz[1] + xic_tolerance
-
-                    ms2_mz = spec.selected_precursors[0]["mz"]
-                    if ms2_mz < lower_tolerance or ms2_mz > upper_tolerance:
-                        continue
-                    all_ms2_ms1_int.append(sum_i)
-                    all_ms2_rt.append(spec.scan_time_in_minutes())
-                    all_ms2_scan.append(spec.ID)
-                except:
-                    pass
-    
-    # Formatting Data Frame
-    tic_df = pd.DataFrame()
-    all_line_names = []
-    for target_xic in tic_trace:
-        target_name = "XIC {}".format(target_xic)
-        tic_df[target_name] = tic_trace[target_xic]
-
-        all_line_names.append(target_name)
-    tic_df["rt"] = rt_trace
-
-    # Performing Normalization only if we have multiple XICs available
-    if xic_norm is True and len(all_line_names) > 1:
-        for key in tic_df.columns:
-            if key == "rt":
-                continue
-            tic_df[key] = tic_df[key] / max(tic_df[key])
-
-    # Formatting for Plotting
-    df_long = pd.melt(tic_df, id_vars="rt", value_vars=all_line_names)
-    fig = px.line(df_long, x="rt", y="value", color="variable", title='XIC Plot - {}'.format(":".join(all_line_names)))
-
-    # Plotting the MS2 on the XIC
-    if len(all_ms2_rt) > 0:
-        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
-        fig.add_trace(scatter_fig)
 
     return [fig]
 
