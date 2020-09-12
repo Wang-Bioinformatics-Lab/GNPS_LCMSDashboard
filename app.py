@@ -88,6 +88,13 @@ DATASELECTION_CARD = [
                     ],
                     className="mb-3",
                 ),
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
+                        dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI"),
+                    ],
+                    className="mb-3",
+                ),
                 dcc.Upload(
                     id='upload-data',
                     children=html.Div([
@@ -156,22 +163,25 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("XIC File Grouping", html_for="xic_file_grouping", width=4.8, style={"width":"150px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='xic_file_grouping',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
+                                dbc.Label("XIC File Grouping", width=4.8, style={"width":"150px"}),
+                                dcc.Dropdown(
+                                    id='xic_file_grouping',
+                                    options=[
+                                        {'label': 'By File', 'value': 'FILE'},
+                                        {'label': 'By m/z', 'value': 'MZ'},
+                                        {'label': 'By Group', 'value': 'GROUP'}
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="FILE",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
                             ],
                             row=True,
                             className="mb-3",
-                        )),
+                    )),
                 ]),
                 html.H5(children='MS2 Options'),
                 dbc.Row([
@@ -529,7 +539,7 @@ def determine_url_only_parameters(search):
     xic_tolerance = "0.5"
     xic_norm = False
     show_ms2_markers = True
-    xic_file_grouping = False
+    xic_file_grouping = "FILE"
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -556,14 +566,8 @@ def determine_url_only_parameters(search):
 
     try:
         xic_file_grouping = str(urllib.parse.parse_qs(search[1:])["xic_file_grouping"][0])
-        if xic_file_grouping == "False":
-            xic_file_grouping = False
-        else:
-            xic_file_grouping = True
     except:
         pass
-
-    
 
     return [xic_tolerance, xic_norm, xic_file_grouping, show_ms2_markers]
 
@@ -1001,14 +1005,14 @@ def draw_xic(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
     merged_df_long = pd.concat(df_long_list)
     
     if len(usi_list) == 1:
-        if xic_file_grouping is True:
+        if xic_file_grouping == "FILE":
             height = 400
             fig = px.line(merged_df_long, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height)
         else:
             height = 400 * len(all_xic_values)
             fig = px.line(merged_df_long, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height)
     else:
-        if xic_file_grouping is True:
+        if xic_file_grouping == "FILE":
             height = 400 * len(usi_list)
             fig = px.line(merged_df_long, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height)
         else:
