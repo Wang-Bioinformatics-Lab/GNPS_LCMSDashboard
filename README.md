@@ -13,7 +13,6 @@ We typitcally will deploy this locally. To bring everything up
 
 We are also trying to support a heroku deployment. This is why we have a Procfile. 
 
-
 ### Example Sources of Data
 
 1. GNPS Analysis Tasks - [mzspec:GNPS:TASK-d93bdbb5cdda40e48975e6e18a45c3ce-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AGNPS%3ATASK-d93bdbb5cdda40e48975e6e18a45c3ce-f.mwang87%2Fdata%2FYao_Streptomyces%2Froseosporus%2F0518_s_BuOH.mzXML%3Ascan%3A171&xicmz=841.3170166%3B842.3170166&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier=MS2%3A1176)
@@ -49,3 +48,10 @@ What we can easily do is paste in the QC molecules and pull them out in one fell
 
 You can try it out at this [URL](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000085852%3AQC_0%3Ascan%3A62886&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier=) 
 
+**Quickly Compare Multiple files**
+
+mzspec:MSV000085852:QC_0:scan:62886
+mzspec:MSV000085852:QC_1:scan:62886
+mzspec:MSV000085852:QC_2:scan:62886
+
+271.0315;278.1902;279.0909;285.0205;311.0805;314.1381

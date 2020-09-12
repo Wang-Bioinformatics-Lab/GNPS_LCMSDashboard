@@ -960,7 +960,7 @@ def perform_xic(usi, all_xic_values, xic_tolerance):
               Input('xic_file_grouping', 'value')])
 @cache.memoize()
 def draw_xic(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
-    usi_list = usi.split("\n")
+    usi_list = usi.split("\n")[:10]
 
     all_xic_values = []
 
