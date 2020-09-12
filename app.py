@@ -361,8 +361,6 @@ app.layout = html.Div(children=[NAVBAR, BODY])
 
 # Returns remote_link and local filepath
 def resolve_usi(usi):
-    print(usi)
-
     usi_splits = usi.split(":")
 
     if "LOCAL" in usi_splits[1]:
@@ -573,12 +571,13 @@ def determine_url_only_parameters(search):
     return [xic_tolerance, xic_norm, xic_file_grouping, show_ms2_markers]
 
 # Handling file upload
-@app.callback([Output('usi', 'value'), Output('debug-output-2', 'children')],
+@app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
               [Input('url', 'search'), Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified')])
 def update_output(search, filecontent, filename, filedate):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
+    usi2 = ""
 
     if filecontent is not None:
         extension = os.path.splitext(filename)[1]
@@ -593,12 +592,19 @@ def update_output(search, filecontent, filename, filedate):
 
             return [output_usi, "FILE Uploaded {}".format(filename)]
 
+    # Resolving USI
     try:
         usi = str(urllib.parse.parse_qs(search[1:])["usi"][0])
     except:
         pass
 
-    return [usi, "Using URL USI"]
+    # Resolving USI
+    try:
+        usi2 = str(urllib.parse.parse_qs(search[1:])["usi2"][0])
+    except:
+        pass
+
+    return [usi, usi2, "Using URL USI"]
     
 
 # Calculating which xic value to use
@@ -965,7 +971,7 @@ def perform_xic(usi, all_xic_values, xic_tolerance):
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value')])
 #@cache.memoize()
-def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
+def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):    
     usi1_list = usi.split("\n")
     usi2_list = usi2.split("\n")
 
@@ -1017,24 +1023,26 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
         df_long_list.append(df_long)
 
     merged_df_long = pd.concat(df_long_list)
+
+    TEMPLATE = "simple_white"
     
     if len(usi_list) == 1:
         if xic_file_grouping == "FILE":
             height = 400
-            fig = px.line(merged_df_long, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height)
+            fig = px.line(merged_df_long, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=TEMPLATE)
         else:
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height)
+            fig = px.line(merged_df_long, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=TEMPLATE)
     else:
         if xic_file_grouping == "FILE":
             height = 400 * len(usi_list)
-            fig = px.line(merged_df_long, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height)
+            fig = px.line(merged_df_long, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=TEMPLATE)
         elif xic_file_grouping == "MZ":
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height)
+            fig = px.line(merged_df_long, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=TEMPLATE)
         elif xic_file_grouping == "GROUP":
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height)
+            fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=TEMPLATE)
 
     # Plotting the MS2 on the XIC
     if len(usi_list) == 1:
@@ -1075,15 +1083,17 @@ def draw_file(usi, map_selection, show_ms2_markers):
 
 @app.callback(Output('link-button', 'children'),
               [Input('usi', 'value'), 
+              Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'), 
               Input("xic_norm", "value"),
               Input('xic_file_grouping', 'value'),
               Input("show_ms2_markers", "value"),
               Input("ms2_identifier", "value"),])
-def create_link(usi, xic_mz, xic_tolerance, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier):
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier):
     url_params = {}
     url_params["usi"] = usi
+    url_params["usi2"] = usi2
     url_params["xicmz"] = xic_mz
     url_params["xic_tolerance"] = xic_tolerance
     url_params["xic_norm"] = xic_norm
