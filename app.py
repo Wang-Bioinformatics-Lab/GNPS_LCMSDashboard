@@ -1001,7 +1001,7 @@ def _integrate_files(long_data_df):
               Input('xic_tolerance', 'value'), 
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value')])
-@cache.memoize()
+#@cache.memoize()
 def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):    
     usi1_list = usi.split("\n")
     usi2_list = usi2.split("\n")
@@ -1106,7 +1106,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
 
 
         # Creating a box plot
-        box_height = 250 * len(all_xic_values)
+        box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
         box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay")
         box_graph = dcc.Graph(figure=box_fig)
     except:
