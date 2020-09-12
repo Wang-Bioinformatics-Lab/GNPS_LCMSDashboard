@@ -267,6 +267,27 @@ DEBUG_CARD = [
     )
 ]
 
+INTEGRATION_CARD = [
+    dbc.CardHeader(html.H5("XIC Integration")),
+    dbc.CardBody(
+        [
+            dcc.Loading(
+                id="integration-table",
+                children=[html.Div([html.Div(id="loading-output-100")])],
+                type="default",
+            ),
+            html.Br(),
+            html.Br(),
+            html.Br(),
+            dcc.Loading(
+                id="integration-boxplot",
+                children=[html.Div([html.Div(id="loading-output-101")])],
+                type="default",
+            ),
+        ]
+    )
+]
+
 CONTRIBUTORS_CARD = [
     dbc.CardHeader(html.H5("Contributors")),
     dbc.CardBody(
@@ -303,6 +324,7 @@ LEFT_DASHBOARD = [
     html.Div(
         [
             html.Div(DATASLICE_CARD),
+            html.Div(INTEGRATION_CARD),
             html.Div(CONTRIBUTORS_CARD),
             html.Div(DEBUG_CARD),
         ]
@@ -785,6 +807,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz):
 
     return ms1_results, ms2_results, ms3_results
 
+@cache.memoize()
 def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     min_rt = 0
     max_rt = 1000000
@@ -962,15 +985,23 @@ def perform_xic(usi, all_xic_values, xic_tolerance):
     return xic_df, ms2_data
 
 
+def _integrate_files(long_data_df):
+    # Integrating Data
+    # TODO: This is not the super best way to do this, but it gets you most of the way there
+    grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).sum().reset_index()
+    grouped_df = grouped_df.drop("rt", axis=1)
+    
+    return grouped_df
+
 # Creating XIC plot
-@app.callback([Output('xic-plot', 'figure')],
+@app.callback([Output('xic-plot', 'figure'), Output("integration-table", "children"), Output("integration-boxplot", "children")],
               [Input('usi', 'value'), 
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'), 
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value')])
-#@cache.memoize()
+@cache.memoize()
 def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):    
     usi1_list = usi.split("\n")
     usi2_list = usi2.split("\n")
@@ -1054,9 +1085,34 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
             scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
             fig.add_trace(scatter_fig)
 
-    return [fig]
+    table_graph = dash.no_update
+    box_graph = dash.no_update
+
+    try:
+        # Doing actual integration
+        integral_df = _integrate_files(merged_df_long)
+
+        # Creating a table
+        table_graph = dash_table.DataTable(
+            id='table',
+            columns=[{"name": i, "id": i} for i in integral_df.columns],
+            data=integral_df.to_dict('records'),
+            sort_action="native",
+            page_action="native",
+            page_size= 10,
+            filter_action="native",
+            export_format="csv"
+        )
 
 
+        # Creating a box plot
+        box_height = 250 * len(all_xic_values)
+        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay")
+        box_graph = dcc.Graph(figure=box_fig)
+    except:
+        pass
+
+    return [fig, table_graph, box_graph]
 
 # Inspiration for structure from
 # https://github.com/plotly/dash-datashader
@@ -1064,7 +1120,6 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
 
 @app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
               [Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
-@cache.memoize()
 def draw_file(usi, map_selection, show_ms2_markers):
     usi_list = usi.split("\n")
 
@@ -1079,7 +1134,6 @@ def draw_file(usi, map_selection, show_ms2_markers):
     map_fig = create_map_fig(local_filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers)
 
     return [map_fig, remote_link]
-        
 
 @app.callback(Output('link-button', 'children'),
               [Input('usi', 'value'), 
