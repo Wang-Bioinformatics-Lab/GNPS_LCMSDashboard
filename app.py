@@ -34,10 +34,11 @@ from flask_caching import Cache
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 cache = Cache(app.server, config={
-    'CACHE_TYPE': 'filesystem',
+    'CACHE_TYPE': "null",
+    #'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
-    'CACHE_THRESHOLD': 10000
+    'CACHE_THRESHOLD': 1000000
 })
 server = app.server
 
@@ -673,7 +674,7 @@ def determine_xic_target(search, clickData, existing_xic):
     return ""
 
 
-# Binary Search
+# Binary Search, returns target
 def _find_lcms_rt(filename, rt_query):
     run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
 
@@ -707,6 +708,21 @@ def _find_lcms_rt(filename, rt_query):
 
     return e
 
+def _spectrum_generator(filename, min_rt, max_rt):
+    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
+    try:
+        min_rt_index = _find_lcms_rt(filename, min_rt) # These are inclusive on left
+        max_rt_index = _find_lcms_rt(filename, max_rt) + 1 # Exclusive on the right
+
+        for spec_index in tqdm(range(min_rt_index, max_rt_index)):
+            spec = run[spec_index]
+            yield spec
+        print("USED INDEX")
+    except:
+        for spec in run:
+            yield spec
+        print("USED BRUTEFORCE")
+
 def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz):
     all_mz = []
     all_rt = []
@@ -724,14 +740,9 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz):
     all_ms3_rt = []
     all_ms3_scan = []
 
-    # Performing Binary Search for bounds of RT
-    min_rt_index = _find_lcms_rt(filename, min_rt) # These are inclusive on left
-    max_rt_index = _find_lcms_rt(filename, max_rt) + 1 # Exclusive on the right
-
-    # Understand parameters
-    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
-    for spec_index in tqdm(range(min_rt_index, max_rt_index)):
-        spec = run[spec_index]
+    # Iterating through all data with a custom scan iterator
+    # It handles custom bounds on RT
+    for spec in _spectrum_generator(filename, min_rt, max_rt):
         try:
             # Still waiting for the window
             if spec.scan_time_in_minutes() < min_rt:
