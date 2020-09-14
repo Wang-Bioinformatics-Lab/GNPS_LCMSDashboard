@@ -184,6 +184,17 @@ DATASELECTION_CARD = [
                             className="mb-3",
                     )),
                 ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("XIC Retention Time Window", addon_type="prepend"),
+                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2)", value=""),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                ]),
                 html.H5(children='MS2 Options'),
                 dbc.Row([
                     dbc.Col(
@@ -552,6 +563,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         return ["MS1", html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
 
 @app.callback([Output("xic_tolerance", "value"), 
+                Output("xic_rt_window", "value"), 
                 Output("xic_norm", "value"), 
                 Output("xic_file_grouping", "value"),
                 Output("show_ms2_markers", "value"),],
@@ -562,6 +574,7 @@ def determine_url_only_parameters(search):
     xic_norm = False
     show_ms2_markers = True
     xic_file_grouping = "FILE"
+    xic_rt_window = ""
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -591,7 +604,14 @@ def determine_url_only_parameters(search):
     except:
         pass
 
-    return [xic_tolerance, xic_norm, xic_file_grouping, show_ms2_markers]
+    try:
+        xic_rt_window = str(urllib.parse.parse_qs(search[1:])["xic_rt_window"][0])
+    except:
+        pass
+
+    
+
+    return [xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers]
 
 # Handling file upload
 @app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
@@ -928,9 +948,8 @@ def draw_tic(usi):
     return [dcc.Graph(figure=fig)]
 
 @cache.memoize()
-def perform_xic(usi, all_xic_values, xic_tolerance):
+def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
     # This is the business end of XIC extraction
-
     remote_link, local_filename = resolve_usi(usi)
 
     # Saving out MS2 locations
@@ -939,11 +958,13 @@ def perform_xic(usi, all_xic_values, xic_tolerance):
     all_ms2_scan = []
 
     # Performing XIC Plot
-    tic_trace = defaultdict(list)
+    xic_trace = defaultdict(list)
     rt_trace = []
-    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
+    
+    #run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
+
     sum_i = 0 # Used by MS2 height
-    for n, spec in enumerate(run):
+    for spec in _spectrum_generator(local_filename, rt_min, rt_max):
         if spec.ms_level == 1:
             try:
                 for target_mz in all_xic_values:
@@ -958,7 +979,7 @@ def perform_xic(usi, all_xic_values, xic_tolerance):
 
                     # summing intensity
                     sum_i = sum([peak[1] for peak in peaks])
-                    tic_trace[target_mz[0]].append(sum_i)
+                    xic_trace[target_mz[0]].append(sum_i)
             except:
                 pass
 
@@ -982,10 +1003,10 @@ def perform_xic(usi, all_xic_values, xic_tolerance):
 
     # Formatting Data Frame
     xic_df = pd.DataFrame()
-    for target_xic in tic_trace:
+    for target_xic in xic_trace:
         target_name = "XIC {}".format(target_xic)
         print(target_name)
-        xic_df[target_name] = tic_trace[target_xic]
+        xic_df[target_name] = xic_trace[target_xic]
     xic_df["rt"] = rt_trace
 
     ms2_data = {}
@@ -1010,10 +1031,11 @@ def _integrate_files(long_data_df):
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'), 
+              Input('xic_rt_window', 'value'),
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value')])
 #@cache.memoize()
-def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):    
+def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping):    
     usi1_list = usi.split("\n")
     usi2_list = usi2.split("\n")
 
@@ -1036,10 +1058,18 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping):
     else:
         xic_tolerance = float(xic_tolerance)
 
+    rt_min = 0
+    rt_max = 10000000
+    try:
+        rt_min = float(xic_rt_window.split("-")[0])
+        rt_max = float(xic_rt_window.split("-")[1])
+    except:
+        pass
+
     # Performing XIC for all USI in the list
     df_long_list = []
     for usi_element in usi_list:
-        xic_df, ms2_data = perform_xic(usi_element, all_xic_values, xic_tolerance)
+        xic_df, ms2_data = perform_xic(usi_element, all_xic_values, xic_tolerance, rt_min, rt_max)
 
         # Performing Normalization only if we have multiple XICs available
         if xic_norm is True:
@@ -1151,16 +1181,18 @@ def draw_file(usi, map_selection, show_ms2_markers):
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'), 
+              Input('xic_rt_window', 'value'),
               Input("xic_norm", "value"),
               Input('xic_file_grouping', 'value'),
               Input("show_ms2_markers", "value"),
               Input("ms2_identifier", "value"),])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier):
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier):
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
     url_params["xicmz"] = xic_mz
     url_params["xic_tolerance"] = xic_tolerance
+    url_params["xic_rt_window"] = xic_rt_window
     url_params["xic_norm"] = xic_norm
     url_params["xic_file_grouping"] = xic_file_grouping
     url_params["show_ms2_markers"] = show_ms2_markers
