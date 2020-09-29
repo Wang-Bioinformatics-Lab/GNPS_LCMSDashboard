@@ -356,12 +356,12 @@ MIDDLE_DASHBOARD = [
                 }
             ),
             html.Br(),
-            dcc.Loading(
-                id="tic-plot",
-                children=[html.Div([html.Div(id="loading-output-4")])],
-                type="default",
-                style={"width": "100%"}
-            ),
+            dcc.Graph(
+                id='tic-plot',
+                config={
+                    'doubleClick': 'reset'
+                }
+            )
         ]
     )
 ]
@@ -465,16 +465,20 @@ def resolve_usi(usi):
 
 # This helps to update the ms2/ms1 plot
 @app.callback([Output("ms2_identifier", "value")],
-              [Input('url', 'search'), Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData')])
-def click_plot(url_search, usi, mapclickData, xicclickData):
+              [Input('url', 'search'), Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData'), Input('tic-plot', 'clickData')])
+def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
 
-    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0] 
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    print(triggered_id, ticclickData)
 
     clicked_target = None
     if "map-plot" in triggered_id:
         clicked_target = mapclickData["points"][0]
     elif "xic-plot" in triggered_id:
         clicked_target = xicclickData["points"][0]
+    elif "tic-plot" in triggered_id:
+        clicked_target = ticclickData["points"][0]
 
     # nothing was clicked, so read from URL
     if clicked_target is None:
@@ -922,7 +926,7 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     return fig
 
 # Creating TIC plot
-@app.callback([Output('tic-plot', 'children')],
+@app.callback([Output('tic-plot', 'figure')],
               [Input('usi', 'value')])
 @cache.memoize()
 def draw_tic(usi):
@@ -945,7 +949,7 @@ def draw_tic(usi):
     tic_df["rt"] = rt_trace
     fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
 
-    return [dcc.Graph(figure=fig)]
+    return [fig]
 
 @cache.memoize()
 def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
