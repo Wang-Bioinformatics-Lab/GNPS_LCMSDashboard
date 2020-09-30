@@ -538,6 +538,32 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         peaks = spectrum_json["peaks"]
         precursor_mz = spectrum_json["precursor_mz"]
 
+        mzs = [peak[0] for peak in peaks]
+        ints = [peak[1] for peak in peaks]
+        neg_ints = [intensity * -1 for intensity in ints]
+
+        interactive_fig = go.Figure(
+            data=go.Scatter(x=mzs, y=ints, 
+                mode='markers',
+                marker=dict(size=1),
+                error_y=dict(
+                    symmetric=False,
+                    arrayminus=[0]*len(neg_ints),
+                    array=neg_ints,
+                    width=0
+                ),
+                hoverinfo="x",
+                text=mzs
+            )
+        )
+        interactive_fig.update_layout(title='{}'.format(ms2_identifier))
+        interactive_fig.update_layout(template='plotly_white')
+        interactive_fig.update_xaxes(title_text='m/z')
+        interactive_fig.update_yaxes(title_text='intensity')
+        interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
+        interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
+        interactive_fig.update_yaxes(range=[0, max(ints)])
+
         masst_dict = {}
         masst_dict["workflow"] = "SEARCH_SINGLE_SPECTRUM"
         masst_dict["precursor_mz"] = str(precursor_mz)
@@ -546,7 +572,9 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
         masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
 
-        return ["MS2", [html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
+        USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+
+        return ["MS2", [dcc.Graph(figure=interactive_fig), USI_button, html.Br(), masst_button]]
 
     if "MS1" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
@@ -563,8 +591,40 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
             usi_url += "&mz_min={}&mz_max={}".format(min_mz, max_mz)
         except:
             pass
-        
-        return ["MS1", html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
+
+        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
+        r = requests.get(usi_json_url)
+        spectra_obj = r.json()
+        peaks = spectra_obj["peaks"]
+        mzs = [peak[0] for peak in peaks]
+        ints = [peak[1] for peak in peaks]
+        neg_ints = [intensity * -1 for intensity in ints]
+
+        interactive_fig = go.Figure(
+            data=go.Scatter(x=mzs, y=ints, 
+                mode='markers',
+                marker=dict(size=1),
+                error_y=dict(
+                    symmetric=False,
+                    arrayminus=[0]*len(neg_ints),
+                    array=neg_ints,
+                    width=0
+                ),
+                hoverinfo="x",
+                text=mzs
+            )
+        )
+
+        interactive_fig.update_layout(title='{}'.format(ms2_identifier))
+        interactive_fig.update_layout(template='plotly_white')
+        interactive_fig.update_xaxes(title_text='m/z')
+        interactive_fig.update_yaxes(title_text='intensity')
+        interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
+        interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
+        interactive_fig.update_yaxes(range=[0, max(ints)])
+
+        USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        return ["MS1", [dcc.Graph(figure=interactive_fig), USI_button]]
 
 @app.callback([Output("xic_tolerance", "value"), 
                 Output("xic_rt_window", "value"), 
