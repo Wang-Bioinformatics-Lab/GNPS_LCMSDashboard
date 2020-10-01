@@ -574,7 +574,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
 
-        return ["MS2", [dcc.Graph(figure=interactive_fig), USI_button, html.Br(), masst_button]]
+        return ["MS2", [dcc.Graph(figure=interactive_fig, config={"toImageButtonOptions":{"format": "svg"}}), USI_button, html.Br(), masst_button]]
 
     if "MS1" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
@@ -624,7 +624,7 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         interactive_fig.update_yaxes(range=[0, max(ints)])
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
-        return ["MS1", [dcc.Graph(figure=interactive_fig), USI_button]]
+        return ["MS1", [dcc.Graph(figure=interactive_fig, config={"toImageButtonOptions":{"format": "svg"}}), USI_button]]
 
 @app.callback([Output("xic_tolerance", "value"), 
                 Output("xic_rt_window", "value"), 
