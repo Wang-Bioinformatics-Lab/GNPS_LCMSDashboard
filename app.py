@@ -1135,6 +1135,15 @@ def _integrate_files(long_data_df):
               Input('image_export_format', 'value'), ])
 #@cache.memoize()
 def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, export_format):
+    # For Drawing and Exporting
+    graph_config = {
+        "toImageButtonOptions":{
+            "format": export_format,
+            'height': None, 
+            'width': None,
+        }
+    }
+
     usi1_list = usi.split("\n")
     usi2_list = usi2.split("\n")
 
@@ -1248,18 +1257,11 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
         # Creating a box plot
         box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
         box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay")
-        box_graph = dcc.Graph(figure=box_fig)
+        box_graph = dcc.Graph(figure=box_fig, config=graph_config)
     except:
         pass
 
-    # For Drawing and Exporting
-    graph_config = {
-        "toImageButtonOptions":{
-            "format": export_format,
-            'height': None, 
-            'width': None,
-        }
-    }
+    
 
     return [fig, graph_config, table_graph, box_graph]
 
