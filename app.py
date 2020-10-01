@@ -33,6 +33,7 @@ from flask_caching import Cache
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
+app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
     #'CACHE_TYPE': "null",
     'CACHE_TYPE': 'filesystem',
