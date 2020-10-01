@@ -226,6 +226,24 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         )),
                 ]),
+                html.H5(children='Rendering Options'),
+                dbc.Row([
+                    dbc.Col(
+                        dcc.Dropdown(
+                            id='image_export_format',
+                            options=[
+                                {'label': 'SVG', 'value': 'svg'},
+                                {'label': 'PNG', 'value': 'png'},
+                            ],
+                            searchable=False,
+                            clearable=False,
+                            value="svg",
+                            style={
+                                "width":"150px"
+                            }
+                        )  
+                    )
+                ]),
             ], className="col-sm")
         ])
     )
@@ -519,12 +537,21 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
 
 # This helps to update the ms2/ms1 plot
 @app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
-              [Input('usi', 'value'), Input('ms2_identifier', 'value')], [State('xic_mz', 'value')])
-def draw_spectrum(usi, ms2_identifier, xic_mz):
+              [Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value')], [State('xic_mz', 'value')])
+def draw_spectrum(usi, ms2_identifier, export_format, xic_mz):
     usi_splits = usi.split(":")
     dataset = usi_splits[1]
     filename = usi_splits[2]
     updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
+
+    # For Drawing and Exporting
+    graph_config = {
+        "toImageButtonOptions":{
+            "format": export_format,
+            'height': None, 
+            'width': None,
+        }
+    }
 
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
@@ -538,6 +565,32 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         peaks = spectrum_json["peaks"]
         precursor_mz = spectrum_json["precursor_mz"]
 
+        mzs = [peak[0] for peak in peaks]
+        ints = [peak[1] for peak in peaks]
+        neg_ints = [intensity * -1 for intensity in ints]
+
+        interactive_fig = go.Figure(
+            data=go.Scatter(x=mzs, y=ints, 
+                mode='markers',
+                marker=dict(size=1),
+                error_y=dict(
+                    symmetric=False,
+                    arrayminus=[0]*len(neg_ints),
+                    array=neg_ints,
+                    width=0
+                ),
+                hoverinfo="x",
+                text=mzs
+            )
+        )
+        interactive_fig.update_layout(title='{}'.format(ms2_identifier))
+        interactive_fig.update_layout(template='plotly_white')
+        interactive_fig.update_xaxes(title_text='m/z')
+        interactive_fig.update_yaxes(title_text='intensity')
+        interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
+        interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
+        interactive_fig.update_yaxes(range=[0, max(ints)])
+
         masst_dict = {}
         masst_dict["workflow"] = "SEARCH_SINGLE_SPECTRUM"
         masst_dict["precursor_mz"] = str(precursor_mz)
@@ -546,7 +599,9 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
         masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
 
-        return ["MS2", [html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank"), masst_button]]
+        USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+
+        return ["MS2", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button, html.Br(), masst_button]]
 
     if "MS1" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
@@ -563,8 +618,40 @@ def draw_spectrum(usi, ms2_identifier, xic_mz):
             usi_url += "&mz_min={}&mz_max={}".format(min_mz, max_mz)
         except:
             pass
-        
-        return ["MS1", html.A(html.Img(src=usi_image_url, style={"width":"100%"}), href=usi_url, target="_blank")]
+
+        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
+        r = requests.get(usi_json_url)
+        spectra_obj = r.json()
+        peaks = spectra_obj["peaks"]
+        mzs = [peak[0] for peak in peaks]
+        ints = [peak[1] for peak in peaks]
+        neg_ints = [intensity * -1 for intensity in ints]
+
+        interactive_fig = go.Figure(
+            data=go.Scatter(x=mzs, y=ints, 
+                mode='markers',
+                marker=dict(size=1),
+                error_y=dict(
+                    symmetric=False,
+                    arrayminus=[0]*len(neg_ints),
+                    array=neg_ints,
+                    width=0
+                ),
+                hoverinfo="x",
+                text=mzs
+            )
+        )
+
+        interactive_fig.update_layout(title='{}'.format(ms2_identifier))
+        interactive_fig.update_layout(template='plotly_white')
+        interactive_fig.update_xaxes(title_text='m/z')
+        interactive_fig.update_yaxes(title_text='intensity')
+        interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
+        interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
+        interactive_fig.update_yaxes(range=[0, max(ints)])
+
+        USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
 
 @app.callback([Output("xic_tolerance", "value"), 
                 Output("xic_rt_window", "value"), 
@@ -926,16 +1013,14 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
     return fig
 
 # Creating TIC plot
-@app.callback([Output('tic-plot', 'figure')],
-              [Input('usi', 'value')])
-@cache.memoize()
-def draw_tic(usi):
+@app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
+              [Input('usi', 'value'), Input('image_export_format', 'value')])
+def draw_tic(usi, export_format):
     remote_link, local_filename = resolve_usi(usi)
 
     # Performing TIC Plot
     tic_trace = []
     rt_trace = []
-
     
     run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
     
@@ -949,7 +1034,16 @@ def draw_tic(usi):
     tic_df["rt"] = rt_trace
     fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
 
-    return [fig]
+    # For Drawing and Exporting
+    graph_config = {
+        "toImageButtonOptions":{
+            "format": export_format,
+            'height': None, 
+            'width': None,
+        }
+    }
+
+    return [fig, graph_config]
 
 @cache.memoize()
 def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
@@ -1030,16 +1124,17 @@ def _integrate_files(long_data_df):
     return grouped_df
 
 # Creating XIC plot
-@app.callback([Output('xic-plot', 'figure'), Output("integration-table", "children"), Output("integration-boxplot", "children")],
+@app.callback([Output('xic-plot', 'figure'), Output('xic-plot', 'config'), Output("integration-table", "children"), Output("integration-boxplot", "children")],
               [Input('usi', 'value'), 
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'), 
               Input('xic_rt_window', 'value'),
               Input('xic_norm', 'value'),
-              Input('xic_file_grouping', 'value')])
+              Input('xic_file_grouping', 'value'),              
+              Input('image_export_format', 'value'), ])
 #@cache.memoize()
-def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping):    
+def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, export_format):
     usi1_list = usi.split("\n")
     usi2_list = usi2.split("\n")
 
@@ -1157,7 +1252,16 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
     except:
         pass
 
-    return [fig, table_graph, box_graph]
+    # For Drawing and Exporting
+    graph_config = {
+        "toImageButtonOptions":{
+            "format": export_format,
+            'height': None, 
+            'width': None,
+        }
+    }
+
+    return [fig, graph_config, table_graph, box_graph]
 
 # Inspiration for structure from
 # https://github.com/plotly/dash-datashader
