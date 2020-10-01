@@ -243,7 +243,33 @@ DATASELECTION_CARD = [
                                 "width":"150px"
                             }
                         )  
-                    )
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("Style", width=2, style={"width":"150px"}),
+                                dcc.Dropdown(
+                                    id='plot_theme',
+                                    options=[
+                                        {'label': 'plotly_white', 'value': 'plotly_white'},
+                                        {'label': 'ggplot2', 'value': 'ggplot2'},
+                                        {'label': 'simple_white', 'value': 'simple_white'},
+                                        {'label': 'seaborn', 'value': 'seaborn'},
+                                        {'label': 'plotly', 'value': 'plotly'},
+                                        {'label': 'plotly_dark', 'value': 'plotly_dark'},
+                                        {'label': 'presentation', 'value': 'presentation'},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="simple_white",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
                 ]),
             ], className="col-sm")
         ])
@@ -538,8 +564,8 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
 
 # This helps to update the ms2/ms1 plot
 @app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
-              [Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value')], [State('xic_mz', 'value')])
-def draw_spectrum(usi, ms2_identifier, export_format, xic_mz):
+              [Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")], [State('xic_mz', 'value')])
+def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     usi_splits = usi.split(":")
     dataset = usi_splits[1]
     filename = usi_splits[2]
@@ -584,8 +610,9 @@ def draw_spectrum(usi, ms2_identifier, export_format, xic_mz):
                 text=mzs
             )
         )
+
         interactive_fig.update_layout(title='{}'.format(ms2_identifier))
-        interactive_fig.update_layout(template='plotly_white')
+        interactive_fig.update_layout(template=plot_theme)
         interactive_fig.update_xaxes(title_text='m/z')
         interactive_fig.update_yaxes(title_text='intensity')
         interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
@@ -644,7 +671,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, xic_mz):
         )
 
         interactive_fig.update_layout(title='{}'.format(ms2_identifier))
-        interactive_fig.update_layout(template='plotly_white')
+        interactive_fig.update_layout(template=plot_theme)
         interactive_fig.update_xaxes(title_text='m/z')
         interactive_fig.update_yaxes(title_text='intensity')
         interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
@@ -1015,10 +1042,10 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
 
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
-              [Input('usi', 'value'), Input('image_export_format', 'value')])
-def draw_tic(usi, export_format):
+              [Input('usi', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")])
+def draw_tic(usi, export_format, plot_theme):
     tic_df = perform_tic(usi)
-    fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
+    fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
 
     # For Drawing and Exporting
     graph_config = {
@@ -1141,9 +1168,10 @@ def _integrate_files(long_data_df):
               Input('xic_rt_window', 'value'),
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value'),              
-              Input('image_export_format', 'value'), ])
+              Input('image_export_format', 'value'), 
+              Input("plot_theme", "value")])
 #@cache.memoize()
-def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, export_format):
+def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, export_format, plot_theme):
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
@@ -1212,26 +1240,24 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
         df_long_list.append(df_long)
 
     merged_df_long = pd.concat(df_long_list)
-
-    TEMPLATE = "simple_white"
     
     if len(usi_list) == 1:
         if xic_file_grouping == "FILE":
             height = 400
-            fig = px.line(merged_df_long, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=TEMPLATE)
+            fig = px.line(merged_df_long, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
         else:
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=TEMPLATE)
+            fig = px.line(merged_df_long, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
     else:
         if xic_file_grouping == "FILE":
             height = 400 * len(usi_list)
-            fig = px.line(merged_df_long, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=TEMPLATE)
+            fig = px.line(merged_df_long, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=plot_theme)
         elif xic_file_grouping == "MZ":
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=TEMPLATE)
+            fig = px.line(merged_df_long, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=plot_theme)
         elif xic_file_grouping == "GROUP":
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=TEMPLATE)
+            fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme)
 
     # Plotting the MS2 on the XIC
     if len(usi_list) == 1:
@@ -1265,7 +1291,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
 
         # Creating a box plot
         box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
-        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay")
+        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay", template=plot_theme)
         box_graph = dcc.Graph(figure=box_fig, config=graph_config)
     except:
         pass
