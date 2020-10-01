@@ -1209,7 +1209,12 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
         rt_min = float(xic_rt_window.split("-")[0])
         rt_max = float(xic_rt_window.split("-")[1])
     except:
-        pass
+        try:
+            rt_value = float(xic_rt_window)
+            rt_min = rt_value - 0.5
+            rt_max = rt_value + 0.5
+        except:
+            pass
 
     # Performing XIC for all USI in the list
     df_long_list = []
