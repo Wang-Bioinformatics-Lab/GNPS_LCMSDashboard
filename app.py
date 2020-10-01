@@ -1017,6 +1017,23 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
               [Input('usi', 'value'), Input('image_export_format', 'value')])
 def draw_tic(usi, export_format):
+    tic_df = perform_tic(usi)
+    fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
+
+    # For Drawing and Exporting
+    graph_config = {
+        "toImageButtonOptions":{
+            "format": export_format,
+            'height': None, 
+            'width': None,
+        }
+    }
+
+    return [fig, graph_config]
+
+
+@cache.memoize()
+def perform_tic(usi):
     remote_link, local_filename = resolve_usi(usi)
 
     # Performing TIC Plot
@@ -1033,18 +1050,9 @@ def draw_tic(usi, export_format):
     tic_df = pd.DataFrame()
     tic_df["tic"] = tic_trace
     tic_df["rt"] = rt_trace
-    fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot')
 
-    # For Drawing and Exporting
-    graph_config = {
-        "toImageButtonOptions":{
-            "format": export_format,
-            'height': None, 
-            'width': None,
-        }
-    }
+    return tic_df
 
-    return [fig, graph_config]
 
 @cache.memoize()
 def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
