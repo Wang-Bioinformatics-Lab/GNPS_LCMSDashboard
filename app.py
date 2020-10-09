@@ -772,6 +772,20 @@ def determine_url_only_parameters(search, interval_clicks, session_id, xic_toler
 
     return [xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers]
 
+# Only determining the session, doing this separately
+# @app.callback([Output("session-id", "value")],
+#               [Input('url', 'search')])
+# def determine_session(search):
+#     session_id = ""
+
+#     try:
+#         session_id = str(urllib.parse.parse_qs(search[1:])["session-id"][0])
+#     except:
+#         pass
+
+#     return session_id
+
+
 # Handling file upload
 @app.callback([Output('usi', 'value'), 
               Output('usi2', 'value'), 
@@ -785,6 +799,8 @@ def determine_url_only_parameters(search, interval_clicks, session_id, xic_toler
                State('usi', 'value'),
                State('usi2', 'value')])
 def update_output(search, interval_clicks, session_id, filecontent, filename, filedate, usi_current, usi2_current):
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
     usi = "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
     usi2 = ""
 
@@ -816,9 +832,13 @@ def update_output(search, interval_clicks, session_id, filecontent, filename, fi
     settings_state = util._get_current_session_state(session_id)
 
     print("LOADING USI STATE", interval_clicks, settings_state)
-
-    usi = util._determine_new_param_value(settings_state, "usi", usi_current, usi)
-    usi2 = util._determine_new_param_value(settings_state, "usi2", usi2_current, usi2)
+    
+    if "url.search" in triggered_id:
+        usi = util._determine_new_param_value(settings_state, "usi", usi_current, usi)
+        usi2 = util._determine_new_param_value(settings_state, "usi2", usi2_current, usi2)
+    else:
+        usi = util._determine_new_param_value(settings_state, "usi", usi_current, usi_current)
+        usi2 = util._determine_new_param_value(settings_state, "usi2", usi2_current, usi2_current)
 
     print([usi, usi2, "Using URL USI"])
 
@@ -835,6 +855,16 @@ def update_output(search, interval_clicks, session_id, filecontent, filename, fi
 def determine_xic_target(search, clickData, interval_click, session_id, existing_xic):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     print("XIC TRIGGERING", triggered_id)
+
+    if "url.search" in triggered_id:
+        xic_mz = ""
+        # Reading from the URL
+        try:
+            xic_mz = str(urllib.parse.parse_qs(search[1:])["xicmz"][0])
+        except:
+            pass
+
+        return xic_mz
 
     try:
         if existing_xic is None:
@@ -870,14 +900,11 @@ def determine_xic_target(search, clickData, interval_click, session_id, existing
         except:
             pass
 
-    # Reading from the URL    
-    try:
-        xic_mz = str(urllib.parse.parse_qs(search[1:])["xicmz"][0])
-    except:
-        pass
+        return xic_mz
     
-    settings_state = util._get_current_session_state(session_id)
-    xic_mz = util._determine_new_param_value(settings_state, "xicmz", existing_xic, xic_mz)
+    if "interval.n_intervals" in triggered_id:
+        settings_state = util._get_current_session_state(session_id)
+        xic_mz = util._determine_new_param_value(settings_state, "xicmz", existing_xic, xic_mz)
 
     return xic_mz
 
@@ -1261,6 +1288,8 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
 
     all_xic_values = []
 
+    print("XIC VALUES", xic_mz)
+
     if xic_mz is None:
         return ["Please enter XIC"]
     else:
@@ -1370,7 +1399,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
     except:
         pass
 
-    
+    print("XXXXXXX")
 
     return [fig, graph_config, table_graph, box_graph]
 
@@ -1407,6 +1436,9 @@ def draw_file(usi, map_selection, show_ms2_markers):
               Input("ms2_identifier", "value")],
               [State("session-id", "value")])
 def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier, session_id):
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    print("CREATE LINK TRIGGERING", triggered_id)
+
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
