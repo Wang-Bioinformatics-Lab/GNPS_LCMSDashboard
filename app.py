@@ -416,6 +416,7 @@ MIDDLE_DASHBOARD = [
     dbc.CardBody(
         [
             html.Br(),
+            html.Div(id='map-plot-zoom', style={'display': 'none'}),
             dcc.Graph(
                 id='map-plot',
                 figure=placeholder_ms2_plot,
@@ -798,6 +799,13 @@ def determine_url_only_parameters(search):
 
     return [xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, show_lcms_2nd_map]
 
+def _get_param_from_url(search, param_key, default):
+    try:
+        return str(urllib.parse.parse_qs(search[1:])[param_key][0])
+    except:
+        return default
+    return default
+
 # Handling file upload
 @app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
               [Input('url', 'search'), Input('upload-data', 'contents')],
@@ -821,10 +829,7 @@ def update_output(search, filecontent, filename, filedate):
             return [output_usi, "FILE Uploaded {}".format(filename)]
 
     # Resolving USI
-    try:
-        usi = str(urllib.parse.parse_qs(search[1:])["usi"][0])
-    except:
-        pass
+    usi = _get_param_from_url(search, "usi", usi)
 
     # Resolving USI
     try:
@@ -1101,8 +1106,6 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
         if len(all_ms3_scan) > 0:
             scatter_ms3_fig = go.Scatter(x=all_ms3_rt, y=all_ms3_mz, mode='markers', customdata=all_ms3_scan, marker=dict(color='green', size=5, symbol="x"), name="MS3s")
             fig.add_trace(scatter_ms3_fig)
-
-    
 
     return fig
 
@@ -1392,9 +1395,11 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
 # https://github.com/plotly/dash-datashader
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
-@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children')],
-              [Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
-def draw_file(usi, map_selection, show_ms2_markers):
+@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children'), Output('map-plot-zoom', 'children')],
+              [Input('url', 'search'), Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
+def draw_file(url_search, usi, map_selection, show_ms2_markers):
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
     usi_list = usi.split("\n")
 
     remote_link, local_filename = resolve_usi(usi_list[0])
@@ -1404,10 +1409,24 @@ def draw_file(usi, map_selection, show_ms2_markers):
     else:
         show_ms2_markers = False
 
-    # Doing LCMS Map
-    map_fig = create_map_fig(local_filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers)
+    current_map_selection = None
 
-    return [map_fig, remote_link]
+    if "map-plot" in triggered_id:
+        current_map_selection = map_selection
+    
+    # If this USI triggered and the value matches the URL, then we will be using URL bounds
+    url_usi = _get_param_from_url(url_search, "usi", "mzspec:MSV000084494:GNPS00002_A3_p:scan:1")
+    if "usi.value" in triggered_id:
+        if usi == url_usi:
+            current_map_selection = json.loads(_get_param_from_url(url_search, "map_plot_zoom", "{}"))
+
+    
+    print("MAP SELECTION", map_selection, current_map_selection, triggered_id, usi)
+
+    # Doing LCMS Map
+    map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers)
+
+    return [map_fig, remote_link, json.dumps(map_selection)]
 
 
 @app.callback([Output('map-plot2', 'figure')],
@@ -1445,8 +1464,10 @@ def draw_file2(usi, map_selection, show_ms2_markers, show_lcms_2nd_map):
               Input('xic_file_grouping', 'value'),
               Input("show_ms2_markers", "value"),
               Input("ms2_identifier", "value"),
+              Input("map-plot-zoom", "children"),
               Input("show_lcms_2nd_map", "value")])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier, show_lcms_2nd_map):
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier, map_plot_zoom, show_lcms_2nd_map):
+
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
@@ -1458,6 +1479,7 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_f
     url_params["show_ms2_markers"] = show_ms2_markers
     url_params["ms2_identifier"] = ms2_identifier
     url_params["show_lcms_2nd_map"] = show_lcms_2nd_map
+    url_params["map_plot_zoom"] = map_plot_zoom
 
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
