@@ -28,7 +28,7 @@ from collections import defaultdict
 import uuid
 import base64
 from flask_caching import Cache
-
+import util
 
 
 server = Flask(__name__)
@@ -85,14 +85,14 @@ DATASELECTION_CARD = [
                 html.H5(children='File Selection'),
                 dbc.InputGroup(
                     [
-                        dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
+                        dbc.InputGroupAddon("GNPS USI Top", addon_type="prepend"),
                         dbc.Textarea(id='usi', placeholder="Enter GNPS File USI"),
                     ],
                     className="mb-3",
                 ),
                 dbc.InputGroup(
                     [
-                        dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
+                        dbc.InputGroupAddon("GNPS USI Bot", addon_type="prepend"),
                         dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
                     ],
                     className="mb-3",
@@ -138,7 +138,7 @@ DATASELECTION_CARD = [
                         dbc.InputGroup(
                             [
                                 dbc.InputGroupAddon("XIC Tolerance", addon_type="prepend"),
-                                dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
+                                dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance"),
                             ],
                             className="mb-3",
                         ),
@@ -190,7 +190,7 @@ DATASELECTION_CARD = [
                         dbc.InputGroup(
                             [
                                 dbc.InputGroupAddon("XIC Retention Time Window", addon_type="prepend"),
-                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2)", value=""),
+                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2)"),
                             ],
                             className="mb-3",
                         ),
@@ -411,9 +411,25 @@ MIDDLE_DASHBOARD = [
     )
 ]
 
+COLLAB_DASHBOARD = [
+    dbc.CardHeader(html.H5("Collaboration Dashboard")),
+    dbc.CardBody(
+        [
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupAddon("Session ID", addon_type="prepend"),
+                    dbc.Input(id='session-id', placeholder="Enter a Session Identifier"),
+                ],
+                className="mb-3",
+            ),
+        ]
+    )
+]
+
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
+        dcc.Interval(id='interval', interval=3000),
         dbc.Row([
             dbc.Col(
                 dbc.Card(TOP_DASHBOARD), 
@@ -430,6 +446,12 @@ BODY = dbc.Container(
                 className="w-50"
             ),
         ], style={"marginTop": 30}),
+        dbc.Row([
+            dbc.Col(
+                dbc.Card(COLLAB_DASHBOARD), 
+                className="w-100"
+            ),
+        ], style={"marginTop": 30}),
     ],
     fluid=True,
     className="",
@@ -439,7 +461,7 @@ app.layout = html.Div(children=[NAVBAR, BODY])
 
 
 # Returns remote_link and local filepath
-def resolve_usi(usi):
+def _resolve_usi(usi):
     usi_splits = usi.split(":")
 
     if "LOCAL" in usi_splits[1]:
@@ -510,7 +532,11 @@ def resolve_usi(usi):
 
 # This helps to update the ms2/ms1 plot
 @app.callback([Output("ms2_identifier", "value")],
-              [Input('url', 'search'), Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData'), Input('tic-plot', 'clickData')])
+              [Input('url', 'search'), 
+              Input('usi', 'value'), 
+              Input('map-plot', 'clickData'), 
+              Input('xic-plot', 'clickData'), 
+              Input('tic-plot', 'clickData')])
 def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -541,7 +567,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
     if clicked_target["curveNumber"] == 0:
         rt_target = clicked_target["x"]
 
-        remote_link, local_filename = resolve_usi(usi)
+        remote_link, local_filename = _resolve_usi(usi)
 
         # Understand parameters
         min_rt_delta = 1000
@@ -686,9 +712,14 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("xic_norm", "value"), 
                 Output("xic_file_grouping", "value"),
                 Output("show_ms2_markers", "value"),],
-              [Input('url', 'search')])
-def determine_url_only_parameters(search):
-    
+              [Input('url', 'search'), Input('interval', 'n_intervals'), Input("session-id", "value")],
+              [State('xic_tolerance', 'value'),
+              State('xic_rt_window', 'value'),
+              State('xic_norm', 'value'),
+              State('xic_file_grouping', 'value'),
+              State('show_ms2_markers', 'value')])
+def determine_url_only_parameters(search, interval_clicks, session_id, xic_tolerance_current, xic_rt_window_current, xic_norm_current, xic_file_grouping_current, show_ms2_markers_current):
+
     xic_tolerance = "0.5"
     xic_norm = False
     show_ms2_markers = True
@@ -728,16 +759,32 @@ def determine_url_only_parameters(search):
     except:
         pass
 
-    
+    # Loading the saved session, priority is top is session, then url, then default    
+    settings_state = util._get_current_session_state(session_id)
+
+    #print("LOADING STATE", interval_clicks, session_id, settings_state)
+
+    xic_tolerance = util._determine_new_param_value(settings_state, "xic_tolerance", xic_tolerance_current, xic_tolerance)
+    xic_rt_window = util._determine_new_param_value(settings_state, "xic_rt_window", xic_rt_window_current, xic_rt_window)
+    xic_norm = util._determine_new_param_value(settings_state, "xic_norm", xic_norm_current, xic_norm)
+    xic_file_grouping = util._determine_new_param_value(settings_state, "xic_file_grouping", xic_file_grouping_current, xic_file_grouping)
+    show_ms2_markers = util._determine_new_param_value(settings_state, "show_ms2_markers", show_ms2_markers_current, show_ms2_markers)
 
     return [xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers]
 
 # Handling file upload
-@app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
-              [Input('url', 'search'), Input('upload-data', 'contents')],
+@app.callback([Output('usi', 'value'), 
+              Output('usi2', 'value'), 
+              Output('debug-output-2', 'children')],
+              [Input('url', 'search'),
+              Input('interval', 'n_intervals'), 
+              Input("session-id", "value"),
+              Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
-               State('upload-data', 'last_modified')])
-def update_output(search, filecontent, filename, filedate):
+               State('upload-data', 'last_modified'),
+               State('usi', 'value'),
+               State('usi2', 'value')])
+def update_output(search, interval_clicks, session_id, filecontent, filename, filedate, usi_current, usi2_current):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
     usi2 = ""
 
@@ -766,13 +813,29 @@ def update_output(search, filecontent, filename, filedate):
     except:
         pass
 
+    settings_state = util._get_current_session_state(session_id)
+
+    print("LOADING USI STATE", interval_clicks, settings_state)
+
+    usi = util._determine_new_param_value(settings_state, "usi", usi_current, usi)
+    usi2 = util._determine_new_param_value(settings_state, "usi2", usi2_current, usi2)
+
+    print([usi, usi2, "Using URL USI"])
+
     return [usi, usi2, "Using URL USI"]
     
 
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
-              [Input('url', 'search'), Input('map-plot', 'clickData')], [State('xic_mz', 'value')])
-def determine_xic_target(search, clickData, existing_xic):
+              [Input('url', 'search'), 
+              Input('map-plot', 'clickData'),
+              Input('interval', 'n_intervals'), 
+              Input("session-id", "value"),], 
+              [State('xic_mz', 'value')])
+def determine_xic_target(search, clickData, interval_click, session_id, existing_xic):
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    print("XIC TRIGGERING", triggered_id)
+
     try:
         if existing_xic is None:
             existing_xic = ""
@@ -781,36 +844,42 @@ def determine_xic_target(search, clickData, existing_xic):
     except:
         existing_xic = ""
 
+    xic_mz = existing_xic
+
     # Clicked points for MS1
-    try:
-        clicked_target = clickData["points"][0]
+    if "clickData" in triggered_id:
+        try:
+            clicked_target = clickData["points"][0]
 
-        # This is MS1
-        if clicked_target["curveNumber"] == 0:
-            mz_target = clicked_target["y"]
+            # This is MS1
+            if clicked_target["curveNumber"] == 0:
+                mz_target = clicked_target["y"]
 
-            if len(existing_xic) > 0:
-                return existing_xic + ";" + str(mz_target)
+                if len(existing_xic) > 0:
+                    xic_mz = existing_xic + ";" + str(mz_target)
+                else:
+                    xic_mz = str(mz_target)
+            # This is MS2
+            elif clicked_target["curveNumber"] == 1:
+                mz_target = clicked_target["y"]
 
-            return str(mz_target)
-        # This is MS2
-        elif clicked_target["curveNumber"] == 1:
-            mz_target = clicked_target["y"]
-
-            if len(existing_xic) > 0:
-                return existing_xic + ";" + str(mz_target)
-
-            return str(mz_target)
-    except:
-        pass
+                if len(existing_xic) > 0:
+                    xic_mz = existing_xic + ";" + str(mz_target)
+                else:
+                    xic_mz = str(mz_target)
+        except:
+            pass
 
     # Reading from the URL    
     try:
-        return str(urllib.parse.parse_qs(search[1:])["xicmz"][0])
+        xic_mz = str(urllib.parse.parse_qs(search[1:])["xicmz"][0])
     except:
         pass
     
-    return ""
+    settings_state = util._get_current_session_state(session_id)
+    xic_mz = util._determine_new_param_value(settings_state, "xicmz", existing_xic, xic_mz)
+
+    return xic_mz
 
 
 # Binary Search, returns target
@@ -1061,7 +1130,7 @@ def draw_tic(usi, export_format, plot_theme):
 
 @cache.memoize()
 def perform_tic(usi):
-    remote_link, local_filename = resolve_usi(usi)
+    remote_link, local_filename = _resolve_usi(usi)
 
     # Performing TIC Plot
     tic_trace = []
@@ -1084,7 +1153,7 @@ def perform_tic(usi):
 @cache.memoize()
 def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
     # This is the business end of XIC extraction
-    remote_link, local_filename = resolve_usi(usi)
+    remote_link, local_filename = _resolve_usi(usi)
 
     # Saving out MS2 locations
     all_ms2_ms1_int = []
@@ -1314,7 +1383,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
 def draw_file(usi, map_selection, show_ms2_markers):
     usi_list = usi.split("\n")
 
-    remote_link, local_filename = resolve_usi(usi_list[0])
+    remote_link, local_filename = _resolve_usi(usi_list[0])
 
     if show_ms2_markers == 1:
         show_ms2_markers = True
@@ -1335,8 +1404,9 @@ def draw_file(usi, map_selection, show_ms2_markers):
               Input("xic_norm", "value"),
               Input('xic_file_grouping', 'value'),
               Input("show_ms2_markers", "value"),
-              Input("ms2_identifier", "value"),])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier):
+              Input("ms2_identifier", "value")],
+              [State("session-id", "value")])
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier, session_id):
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
@@ -1351,7 +1421,27 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_f
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
 
-    return provenance_link_object
+    url_session = dbc.Button("Link to this session", block=True, color="primary", className="mr-1")
+    session_params = {}
+    session_params["session-id"] = session_id
+    session_link_object = dcc.Link(url_session, href="/?" + urllib.parse.urlencode(session_params) , target="_blank")
+
+    # Saving Input Here
+    try:
+        if len(session_id) > 2:
+            util._save_session_parameter(session_id, "usi", usi)
+            util._save_session_parameter(session_id, "usi2", usi2)
+            util._save_session_parameter(session_id, "xicmz", xic_mz)
+            util._save_session_parameter(session_id, "xic_tolerance", xic_tolerance)
+            util._save_session_parameter(session_id, "xic_rt_window", xic_rt_window)
+            util._save_session_parameter(session_id, "xic_norm", xic_norm)
+            util._save_session_parameter(session_id, "xic_file_grouping", xic_file_grouping)
+            util._save_session_parameter(session_id, "show_ms2_markers", show_ms2_markers)
+            util._save_session_parameter(session_id, "ms2_identifier", ms2_identifier)
+    except:
+        pass
+
+    return [provenance_link_object]
 
 if __name__ == "__main__":
     app.run_server(debug=True, port=5000, host="0.0.0.0")
