@@ -116,6 +116,48 @@ DATASELECTION_CARD = [
                     multiple=False
                 ),
                 html.Br(),
+                html.H5(children='LCMS Viewer Options'),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"150px", "margin-left": "25px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='show_ms2_markers',
+                                        value=False,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
+
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"200px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='show_lcms_2nd_map',
+                                        value=False,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
+                ]),
                 # Linkouts
                 dcc.Loading(
                     id="link-button",
@@ -207,25 +249,6 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         ),
                     ),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"150px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_ms2_markers',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
                 ]),
                 html.H5(children='Rendering Options'),
                 dbc.Row([
@@ -411,6 +434,30 @@ MIDDLE_DASHBOARD = [
     )
 ]
 
+SECOND_DATAEXPLORATION_DASHBOARD = [
+    dbc.CardHeader(html.H5("Data Exploration 2")),
+    dbc.CardBody(
+        [
+            html.Br(),
+            dcc.Graph(
+                id='map-plot2',
+                figure=placeholder_ms2_plot,
+                config={
+                    'doubleClick': 'reset'
+                }
+            ),
+            html.Br(),
+            dcc.Graph(
+                id='tic-plot2',
+                config={
+                    'doubleClick': 'reset'
+                }
+            )
+        ]
+    )
+]
+
+
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
@@ -425,8 +472,15 @@ BODY = dbc.Container(
                 dbc.Card(MIDDLE_DASHBOARD),
                 className="w-50"
             ),
-            dbc.Col(
+            dbc.Col([
+                dbc.Collapse(
+                    dbc.Card(SECOND_DATAEXPLORATION_DASHBOARD),
+                    id='second-data-exploration-dashboard-collapse',
+                    is_open=True,
+                    style={"height": "1200px"}
+                ),
                 dbc.Card(LEFT_DASHBOARD),
+            ],
                 className="w-50"
             ),
         ], style={"marginTop": 30}),
@@ -685,7 +739,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("xic_rt_window", "value"), 
                 Output("xic_norm", "value"), 
                 Output("xic_file_grouping", "value"),
-                Output("show_ms2_markers", "value"),],
+                Output("show_ms2_markers", "value"),
+                Output("show_lcms_2nd_map", "value")],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     
@@ -694,6 +749,7 @@ def determine_url_only_parameters(search):
     show_ms2_markers = True
     xic_file_grouping = "FILE"
     xic_rt_window = ""
+    show_lcms_2nd_map = False
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -728,9 +784,19 @@ def determine_url_only_parameters(search):
     except:
         pass
 
+    try:
+        show_lcms_2nd_map = str(urllib.parse.parse_qs(search[1:])["show_lcms_2nd_map"][0])
+        if show_lcms_2nd_map == "False":
+            show_lcms_2nd_map = False
+        else:
+            show_lcms_2nd_map = True
+    except:
+        pass
     
 
-    return [xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers]
+    
+
+    return [xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, show_lcms_2nd_map]
 
 # Handling file upload
 @app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
@@ -1058,6 +1124,23 @@ def draw_tic(usi, export_format, plot_theme):
 
     return [fig, graph_config]
 
+# Creating TIC plot
+@app.callback([Output('tic-plot2', 'figure'), Output('tic-plot2', 'config')],
+              [Input('usi2', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")])
+def draw_tic2(usi, export_format, plot_theme):
+    tic_df = perform_tic(usi)
+    fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
+
+    # For Drawing and Exporting
+    graph_config = {
+        "toImageButtonOptions":{
+            "format": export_format,
+            'height': None, 
+            'width': None,
+        }
+    }
+
+    return [fig, graph_config]
 
 @cache.memoize()
 def perform_tic(usi):
@@ -1326,6 +1409,32 @@ def draw_file(usi, map_selection, show_ms2_markers):
 
     return [map_fig, remote_link]
 
+
+@app.callback([Output('map-plot2', 'figure')],
+              [Input('usi2', 'value'), 
+              Input('map-plot', 'relayoutData'), 
+              Input('show_ms2_markers', 'value'),
+              Input("show_lcms_2nd_map", "value")])
+def draw_file2(usi, map_selection, show_ms2_markers, show_lcms_2nd_map):
+    if show_lcms_2nd_map is False:
+        return [dash.no_update]
+
+    print("XZZZZZZZZZZZZZZZZZZ", usi)
+
+    usi_list = usi.split("\n")
+
+    remote_link, local_filename = resolve_usi(usi_list[0])
+
+    if show_ms2_markers == 1:
+        show_ms2_markers = True
+    else:
+        show_ms2_markers = False
+
+    # Doing LCMS Map
+    map_fig = create_map_fig(local_filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers)
+
+    return [map_fig]
+
 @app.callback(Output('link-button', 'children'),
               [Input('usi', 'value'), 
               Input('usi2', 'value'), 
@@ -1335,8 +1444,9 @@ def draw_file(usi, map_selection, show_ms2_markers):
               Input("xic_norm", "value"),
               Input('xic_file_grouping', 'value'),
               Input("show_ms2_markers", "value"),
-              Input("ms2_identifier", "value"),])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier):
+              Input("ms2_identifier", "value"),
+              Input("show_lcms_2nd_map", "value")])
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier, show_lcms_2nd_map):
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
@@ -1347,11 +1457,21 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_f
     url_params["xic_file_grouping"] = xic_file_grouping
     url_params["show_ms2_markers"] = show_ms2_markers
     url_params["ms2_identifier"] = ms2_identifier
+    url_params["show_lcms_2nd_map"] = show_lcms_2nd_map
 
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
 
     return provenance_link_object
+
+# Show Hide Panels
+@app.callback(
+    Output("second-data-exploration-dashboard-collapse", "is_open"),
+    [Input("show_lcms_2nd_map", "value")],
+    [State("second-data-exploration-dashboard-collapse", "is_open")],
+)
+def toggle_collapse(show_lcms_2nd_map, is_open):
+    return show_lcms_2nd_map
 
 if __name__ == "__main__":
     app.run_server(debug=True, port=5000, host="0.0.0.0")
