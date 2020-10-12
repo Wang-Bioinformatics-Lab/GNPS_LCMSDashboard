@@ -68,7 +68,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.8", href="#")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.8", href="/")),
             ],
         navbar=True)
     ],
@@ -435,6 +435,33 @@ MIDDLE_DASHBOARD = [
     )
 ]
 
+EXAMPLE_DASHBOARD = [
+    dbc.CardHeader(html.H5("Example Exploration Dashboards")),
+    dbc.CardBody(
+        [
+            html.A("LCMS Multiple m/z XIC for QC Files", href="/?usi=mzspec%3AMSV000085852%3AQC_0%3Ascan%3A62886&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier="),
+            html.Br(),
+            html.A("LCMS Side By Side Visualization", href='/?usi=mzspec%3AMSV000085852%3AQC_0%3Ascan%3A62886&usi2=mzspec%3AMSV000085852%3AQC_1%3Ascan%3A62886&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381%3B833.062397505189&xic_tolerance=0.5&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&show_ms2_markers=True&ms2_identifier=MS2%3A2277&show_lcms_2nd_map=True&map_plot_zoom=%7B"xaxis.range%5B0%5D"%3A+3.2846848333333334%2C+"xaxis.range%5B1%5D"%3A+3.5981121270270275%2C+"yaxis.range%5B0%5D"%3A+815.4334319736646%2C+"yaxis.range%5B1%5D"%3A+853.5983309206755%7D'),
+            html.Br(),
+            html.A("Thermo LCMS", href="/?usi=mzspec%3AMSV000084951%3AAH22%3Ascan%3A62886&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.Br(),
+            html.A("Sciex LCMS", href="/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.Br(),
+            html.A("Bruker LCMS", href="/?usi=mzspec%3AMSV000086015%3AStdMix_02__GA2_01_55623%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.Br(),
+            html.A("Waters LCMS", href="/?usi=mzspec%3AMSV000084977%3AOEPKS7_B_1_neg%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.Br(),
+            html.A("Agilent LCMS", href="/?usi=mzspec:MSV000084060:KM0001:scan:1"),
+            html.Br(),
+            html.A("Thermo Proteomics LCMS", href="/?usi=mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01:scan:62886"),
+            html.Br(),
+            html.A("LCMS from Metabolights", href="/?usi=mzspec:MTBLS1124:QC07.mzML:scan:1"),
+            html.Br(),
+            
+        ]
+    )
+]
+
 SECOND_DATAEXPLORATION_DASHBOARD = [
     dbc.CardHeader(html.H5("Data Exploration 2")),
     dbc.CardBody(
@@ -469,8 +496,11 @@ BODY = dbc.Container(
             ),
         ], style={"marginTop": 30}),
         dbc.Row([
-            dbc.Col(
+            dbc.Col([
                 dbc.Card(MIDDLE_DASHBOARD),
+                html.Br(),
+                dbc.Card(EXAMPLE_DASHBOARD),
+            ],
                 className="w-50"
             ),
             dbc.Col([
@@ -1411,17 +1441,27 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers):
 
     current_map_selection = None
 
-    if "map-plot" in triggered_id:
-        current_map_selection = map_selection
+    # Lets start off with taking the url bounds
+    try:
+        current_map_selection = json.loads(_get_param_from_url(url_search, "map_plot_zoom", "{}"))
+    except:
+        pass
     
-    # If this USI triggered and the value matches the URL, then we will be using URL bounds
-    url_usi = _get_param_from_url(url_search, "usi", "mzspec:MSV000084494:GNPS00002_A3_p:scan:1")
-    if "usi.value" in triggered_id:
-        if usi == url_usi:
-            current_map_selection = json.loads(_get_param_from_url(url_search, "map_plot_zoom", "{}"))
+    # We have to do a bit of convoluted object, if {'autosize': True}, that means the original load
+    try:
+        if "xaxis.autorange" in map_selection:
+            current_map_selection = map_selection
+        if "xaxis.range[0]" in map_selection:
+            current_map_selection = map_selection
+        if "autosize" in map_selection:
+            pass
+    except:
+        pass
 
-    
-    print("MAP SELECTION", map_selection, current_map_selection, triggered_id, usi)
+    import sys
+    print(triggered_id, file=sys.stderr)
+    print(url_search, file=sys.stderr)
+    print("MAP SELECTION XXXXXXXXXX", map_selection, current_map_selection, triggered_id, usi, file=sys.stderr)
 
     # Doing LCMS Map
     map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers)
@@ -1430,15 +1470,16 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers):
 
 
 @app.callback([Output('map-plot2', 'figure')],
-              [Input('usi2', 'value'), 
+              [Input('url', 'search'), 
+              Input('usi2', 'value'), 
               Input('map-plot', 'relayoutData'), 
               Input('show_ms2_markers', 'value'),
               Input("show_lcms_2nd_map", "value")])
-def draw_file2(usi, map_selection, show_ms2_markers, show_lcms_2nd_map):
+def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_map):
     if show_lcms_2nd_map is False:
         return [dash.no_update]
 
-    print("XZZZZZZZZZZZZZZZZZZ", usi)
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
 
@@ -1449,8 +1490,32 @@ def draw_file2(usi, map_selection, show_ms2_markers, show_lcms_2nd_map):
     else:
         show_ms2_markers = False
 
+    current_map_selection = None
+
+    # Lets start off with taking the url bounds
+    try:
+        current_map_selection = json.loads(_get_param_from_url(url_search, "map_plot_zoom", "{}"))
+    except:
+        pass
+    
+    # We have to do a bit of convoluted object, if {'autosize': True}, that means the original load
+    try:
+        if "xaxis.autorange" in map_selection:
+            current_map_selection = map_selection
+        if "xaxis.range[0]" in map_selection:
+            current_map_selection = map_selection
+        if "autosize" in map_selection:
+            pass
+    except:
+        pass
+
+    import sys
+    print(triggered_id, file=sys.stderr)
+    print(url_search, file=sys.stderr)
+    print("MAP SELECTION", map_selection, current_map_selection, triggered_id, usi, file=sys.stderr)
+
     # Doing LCMS Map
-    map_fig = create_map_fig(local_filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers)
+    map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers)
 
     return [map_fig]
 
