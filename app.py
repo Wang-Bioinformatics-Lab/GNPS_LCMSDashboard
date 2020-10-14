@@ -602,7 +602,7 @@ app.layout = html.Div(children=[NAVBAR, BODY])
 
 
 # Returns remote_link and local filepath
-def resolve_usi(usi):
+def _resolve_usi(usi):
     usi_splits = usi.split(":")
 
     if "LOCAL" in usi_splits[1]:
@@ -642,7 +642,16 @@ def resolve_usi(usi):
 
             remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
             print(remote_link)
-
+        elif "GNPS-LIBRARY" in usi_splits[2]:
+            print("Library Entry")
+            # Lets find the provenance file
+            accession = usi_splits[4]
+            url = "https://gnps.ucsd.edu/ProteoSAFe/SpectrumCommentServlet?SpectrumID={}".format(accession)
+            r = requests.get(url)
+            spectrum_dict = r.json()
+            task = spectrum_dict["spectruminfo"]["task"]
+            source_file = os.path.basename(spectrum_dict["spectruminfo"]["source_file"])
+            remote_link = "ftp://ccms-ftp.ucsd.edu/GNPS_Library_Provenance/{}/{}".format(task, source_file)
     elif "MTBLS" in usi_splits[1]:
         dataset_accession = usi_splits[1]
         filename = usi_splits[2]
@@ -704,7 +713,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
     if clicked_target["curveNumber"] == 0:
         rt_target = clicked_target["x"]
 
-        remote_link, local_filename = resolve_usi(usi)
+        remote_link, local_filename = _resolve_usi(usi)
 
         # Understand parameters
         min_rt_delta = 1000
@@ -1284,7 +1293,7 @@ def draw_tic2(usi, export_format, plot_theme, tic_option):
 
 @cache.memoize()
 def _perform_tic(usi, tic_option="TIC"):
-    remote_link, local_filename = resolve_usi(usi)
+    remote_link, local_filename = _resolve_usi(usi)
 
     # Performing TIC Plot
     tic_trace = []
@@ -1316,7 +1325,7 @@ def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance
 @cache.memoize()
 def perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max):
     # This is the business end of XIC extraction
-    remote_link, local_filename = resolve_usi(usi)
+    remote_link, local_filename = _resolve_usi(usi)
 
     # Saving out MS2 locations
     all_ms2_ms1_int = []
@@ -1567,7 +1576,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers):
 
     usi_list = usi.split("\n")
 
-    remote_link, local_filename = resolve_usi(usi_list[0])
+    remote_link, local_filename = _resolve_usi(usi_list[0])
 
     if show_ms2_markers == 1:
         show_ms2_markers = True
@@ -1618,7 +1627,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
 
     usi_list = usi.split("\n")
 
-    remote_link, local_filename = resolve_usi(usi_list[0])
+    remote_link, local_filename = _resolve_usi(usi_list[0])
 
     if show_ms2_markers == 1:
         show_ms2_markers = True
