@@ -514,7 +514,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("LCMS from Metabolights", href="/?usi=mzspec:MTBLS1124:QC07.mzML:scan:1"),
             html.Br(),
-            
+            html.A("Thermo GCMS", href="/?usi=mzspec:MSV000086150:BA1.mzML:scan:1"),
+            html.Br(),
         ]
     )
 ]
