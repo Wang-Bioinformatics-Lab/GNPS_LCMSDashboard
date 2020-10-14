@@ -138,7 +138,27 @@ DATASELECTION_CARD = [
                             row=True,
                             className="mb-3",
                         )),
-
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("TIC option", width=4.8, style={"width":"150px"}),
+                                dcc.Dropdown(
+                                    id='tic_option',
+                                    options=[
+                                        {'label': 'TIC', 'value': 'TIC'},
+                                        {'label': 'BPI', 'value': 'BPI'}
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="TIC",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
                     dbc.Col(
                         dbc.FormGroup(
                             [
@@ -221,8 +241,8 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.InputGroup(
                             [
-                                dbc.InputGroupAddon("XIC Retention Time Window", addon_type="prepend"),
-                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2)", value=""),
+                                dbc.InputGroupAddon("XIC Retention Time View/Integration Limits", addon_type="prepend"),
+                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2 or 1.5)", value=""),
                             ],
                             className="mb-3",
                         ),
@@ -832,7 +852,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("xic_file_grouping", "value"),
                 Output("xic_integration_type", "value"),
                 Output("show_ms2_markers", "value"),
-                Output("show_lcms_2nd_map", "value")],
+                Output("show_lcms_2nd_map", "value"),
+                Output("tic_option", "value"),],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     
@@ -845,6 +866,7 @@ def determine_url_only_parameters(search):
     xic_file_grouping = "FILE"
     xic_rt_window = ""
     show_lcms_2nd_map = False
+    tic_option = "TIC"
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -902,11 +924,17 @@ def determine_url_only_parameters(search):
             show_lcms_2nd_map = True
     except:
         pass
+
+    try:
+        tic_option = str(urllib.parse.parse_qs(search[1:])["tic_option"][0])
+    except:
+        pass
+    
     
 
     
 
-    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map]
+    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option]
 
 def _get_param_from_url(search, param_key, default):
     try:
@@ -1220,9 +1248,9 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
 
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
-              [Input('usi', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")])
-def draw_tic(usi, export_format, plot_theme):
-    tic_df = perform_tic(usi)
+              [Input('usi', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value"), Input("tic_option", "value")])
+def draw_tic(usi, export_format, plot_theme, tic_option):
+    tic_df = _perform_tic(usi, tic_option=tic_option)
     fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
 
     # For Drawing and Exporting
@@ -1238,9 +1266,9 @@ def draw_tic(usi, export_format, plot_theme):
 
 # Creating TIC plot
 @app.callback([Output('tic-plot2', 'figure'), Output('tic-plot2', 'config')],
-              [Input('usi2', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")])
-def draw_tic2(usi, export_format, plot_theme):
-    tic_df = perform_tic(usi)
+              [Input('usi2', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value"), Input("tic_option", "value")])
+def draw_tic2(usi, export_format, plot_theme, tic_option):
+    tic_df = _perform_tic(usi, tic_option=tic_option)
     fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
 
     # For Drawing and Exporting
@@ -1255,7 +1283,7 @@ def draw_tic2(usi, export_format, plot_theme):
     return [fig, graph_config]
 
 @cache.memoize()
-def perform_tic(usi):
+def _perform_tic(usi, tic_option="TIC"):
     remote_link, local_filename = resolve_usi(usi)
 
     # Performing TIC Plot
@@ -1267,7 +1295,10 @@ def perform_tic(usi):
     for n, spec in enumerate(run):
         if spec.ms_level == 1:
             rt_trace.append(spec.scan_time_in_minutes())
-            tic_trace.append(sum(spec.i))
+            if tic_option == "TIC":
+                tic_trace.append(sum(spec.i))
+            elif tic_option == "BPI":
+                tic_trace.append(max(spec.i))
 
     tic_df = pd.DataFrame()
     tic_df["tic"] = tic_trace
@@ -1637,8 +1668,9 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("show_ms2_markers", "value"),
               Input("ms2_identifier", "value"),
               Input("map-plot-zoom", "children"),
-              Input("show_lcms_2nd_map", "value")])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, show_lcms_2nd_map):
+              Input("show_lcms_2nd_map", "value"),
+              Input("tic_option", "value")])
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, show_lcms_2nd_map, tic_option):
 
     url_params = {}
     url_params["usi"] = usi
@@ -1655,6 +1687,7 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_toleran
     url_params["ms2_identifier"] = ms2_identifier
     url_params["show_lcms_2nd_map"] = show_lcms_2nd_map
     url_params["map_plot_zoom"] = map_plot_zoom
+    url_params["tic_option"] = tic_option
 
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
