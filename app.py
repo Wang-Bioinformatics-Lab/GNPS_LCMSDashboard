@@ -179,8 +179,49 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.InputGroup(
                             [
-                                dbc.InputGroupAddon("XIC Tolerance", addon_type="prepend"),
+                                dbc.InputGroupAddon("XIC Tolerance (Da)", addon_type="prepend"),
                                 dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("XIC Tolerance (ppm)", addon_type="prepend"),
+                                dbc.Input(id='xic_ppm_tolerance', placeholder="Enter Da Tolerance", value="10"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("XIC Tolerance Unit", width=4.8, style={"width":"150px"}),
+                                dcc.Dropdown(
+                                    id='xic_tolerance_unit',
+                                    options=[
+                                        {'label': 'Da', 'value': 'Da'},
+                                        {'label': 'ppm', 'value': 'ppm'}
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="Da",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                    )),
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("XIC Retention Time Window", addon_type="prepend"),
+                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2)", value=""),
                             ],
                             className="mb-3",
                         ),
@@ -203,6 +244,7 @@ DATASELECTION_CARD = [
                             ],
                             row=True,
                             className="mb-3",
+                            style={"margin-left": "4px"}
                         )),
                     dbc.Col(
                         dbc.FormGroup(
@@ -226,17 +268,6 @@ DATASELECTION_CARD = [
                             row=True,
                             className="mb-3",
                     )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Retention Time Window", addon_type="prepend"),
-                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2)", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
                 ]),
                 html.H5(children='MS2 Options'),
                 dbc.Row([
@@ -767,6 +798,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
 
 @app.callback([Output("xic_tolerance", "value"), 
+                Output("xic_ppm_tolerance", "value"), 
+                Output("xic_tolerance_unit", "value"), 
                 Output("xic_rt_window", "value"), 
                 Output("xic_norm", "value"), 
                 Output("xic_file_grouping", "value"),
@@ -776,6 +809,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 def determine_url_only_parameters(search):
     
     xic_tolerance = "0.5"
+    xic_ppm_tolerance = "10"
+    xic_tolerance_unit = "Da"
     xic_norm = False
     show_ms2_markers = True
     xic_file_grouping = "FILE"
@@ -784,6 +819,16 @@ def determine_url_only_parameters(search):
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
+    except:
+        pass
+
+    try:
+        xic_ppm_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_ppm_tolerance"][0])
+    except:
+        pass
+
+    try:
+        xic_tolerance_unit = str(urllib.parse.parse_qs(search[1:])["xic_tolerance_unit"][0])
     except:
         pass
 
@@ -827,7 +872,7 @@ def determine_url_only_parameters(search):
 
     
 
-    return [xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, show_lcms_2nd_map]
+    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, show_lcms_2nd_map]
 
 def _get_param_from_url(search, param_key, default):
     try:
@@ -1196,9 +1241,15 @@ def perform_tic(usi):
 
     return tic_df
 
+def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit):
+    if xic_tolerance_unit == "Da":
+        return target_mz - xic_tolerance, target_mz + xic_tolerance
+    else:
+        calculated_tolerance = target_mz / 1000000 * xic_ppm_tolerance
+        return target_mz - calculated_tolerance, target_mz + calculated_tolerance
 
 @cache.memoize()
-def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
+def perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max):
     # This is the business end of XIC extraction
     remote_link, local_filename = resolve_usi(usi)
 
@@ -1218,8 +1269,7 @@ def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
         if spec.ms_level == 1:
             try:
                 for target_mz in all_xic_values:
-                    lower_tolerance = target_mz[1] - xic_tolerance
-                    upper_tolerance = target_mz[1] + xic_tolerance
+                    lower_tolerance, upper_tolerance = _calculate_upper_lower_tolerance(target_mz[1], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
 
                     # Filtering peaks by mz
                     peaks_full = spec.peaks("raw")
@@ -1239,8 +1289,7 @@ def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
         elif spec.ms_level == 2:
             if len(all_xic_values) == 1:
                 try:
-                    lower_tolerance = target_mz[1] - xic_tolerance
-                    upper_tolerance = target_mz[1] + xic_tolerance
+                    lower_tolerance, upper_tolerance = _calculate_upper_lower_tolerance(target_mz[1], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
 
                     ms2_mz = spec.selected_precursors[0]["mz"]
                     if ms2_mz < lower_tolerance or ms2_mz > upper_tolerance:
@@ -1255,7 +1304,6 @@ def perform_xic(usi, all_xic_values, xic_tolerance, rt_min, rt_max):
     xic_df = pd.DataFrame()
     for target_xic in xic_trace:
         target_name = "XIC {}".format(target_xic)
-        print(target_name)
         xic_df[target_name] = xic_trace[target_xic]
     xic_df["rt"] = rt_trace
 
@@ -1280,14 +1328,16 @@ def _integrate_files(long_data_df):
               [Input('usi', 'value'), 
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
-              Input('xic_tolerance', 'value'), 
+              Input('xic_tolerance', 'value'),
+              Input('xic_ppm_tolerance', 'value'),
+              Input('xic_tolerance_unit', 'value'),
               Input('xic_rt_window', 'value'),
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value'),              
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
 #@cache.memoize()
-def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, export_format, plot_theme):
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
@@ -1309,15 +1359,25 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
     all_xic_values = []
 
     if xic_mz is None:
-        return ["Please enter XIC"]
+        return
     else:
         for xic_value in xic_mz.split(";"):
             all_xic_values.append((str(xic_value), float(xic_value)))
 
-    if xic_tolerance is None:
-        return ["Please enter XIC Tolerance"]
-    else:
-        xic_tolerance = float(xic_tolerance)
+    # Parsing Tolerances
+    parsed_xic_da_tolerance = 0.5
+    try:
+        parsed_xic_da_tolerance = float(xic_tolerance)
+    except:
+        pass
+
+    parsed_xic_ppm_tolerance = 50
+    try:
+        parsed_xic_ppm_tolerance = float(xic_ppm_tolerance)
+    except:
+        pass
+
+    
 
     rt_min = 0
     rt_max = 10000000
@@ -1335,7 +1395,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file
     # Performing XIC for all USI in the list
     df_long_list = []
     for usi_element in usi_list:
-        xic_df, ms2_data = perform_xic(usi_element, all_xic_values, xic_tolerance, rt_min, rt_max)
+        xic_df, ms2_data = perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max)
 
         # Performing Normalization only if we have multiple XICs available
         if xic_norm is True:
@@ -1523,7 +1583,9 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               [Input('usi', 'value'), 
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
-              Input('xic_tolerance', 'value'), 
+              Input('xic_tolerance', 'value'),
+              Input('xic_ppm_tolerance', 'value'),
+              Input('xic_tolerance_unit', 'value'),
               Input('xic_rt_window', 'value'),
               Input("xic_norm", "value"),
               Input('xic_file_grouping', 'value'),
@@ -1531,13 +1593,15 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("ms2_identifier", "value"),
               Input("map-plot-zoom", "children"),
               Input("show_lcms_2nd_map", "value")])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier, map_plot_zoom, show_lcms_2nd_map):
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier, map_plot_zoom, show_lcms_2nd_map):
 
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
     url_params["xicmz"] = xic_mz
     url_params["xic_tolerance"] = xic_tolerance
+    url_params["xic_ppm_tolerance"] = xic_ppm_tolerance
+    url_params["xic_tolerance_unit"] = xic_tolerance_unit
     url_params["xic_rt_window"] = xic_rt_window
     url_params["xic_norm"] = xic_norm
     url_params["xic_file_grouping"] = xic_file_grouping
