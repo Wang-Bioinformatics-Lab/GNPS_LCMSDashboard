@@ -11,6 +11,7 @@ import dash_daq as daq
 import os
 from zipfile import ZipFile
 import urllib.parse
+from scipy import integrate
 from flask import Flask, send_from_directory
 
 import pandas as pd
@@ -226,6 +227,31 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         ),
                     ),
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("XIC Integration Type", width=4.8, style={"width":"150px"}),
+                                dcc.Dropdown(
+                                    id='xic_integration_type',
+                                    options=[
+                                        {'label': 'MS1 Sum', 'value': 'MS1SUM'},
+                                        {'label': 'AUC', 'value': 'AUC'},
+                                        {'label': 'MAXPEAKHEIGHT', 'value': 'MAXPEAKHEIGHT'},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="AUC",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
                     dbc.Col(
                         dbc.FormGroup(
                             [
@@ -803,6 +829,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("xic_rt_window", "value"), 
                 Output("xic_norm", "value"), 
                 Output("xic_file_grouping", "value"),
+                Output("xic_integration_type", "value"),
                 Output("show_ms2_markers", "value"),
                 Output("show_lcms_2nd_map", "value")],
               [Input('url', 'search')])
@@ -812,6 +839,7 @@ def determine_url_only_parameters(search):
     xic_ppm_tolerance = "10"
     xic_tolerance_unit = "Da"
     xic_norm = False
+    xic_integration_type = "AUC"
     show_ms2_markers = True
     xic_file_grouping = "FILE"
     xic_rt_window = ""
@@ -829,6 +857,11 @@ def determine_url_only_parameters(search):
 
     try:
         xic_tolerance_unit = str(urllib.parse.parse_qs(search[1:])["xic_tolerance_unit"][0])
+    except:
+        pass
+
+    try:
+        xic_integration_type = str(urllib.parse.parse_qs(search[1:])["xic_integration_type"][0])
     except:
         pass
 
@@ -872,7 +905,7 @@ def determine_url_only_parameters(search):
 
     
 
-    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, show_lcms_2nd_map]
+    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map]
 
 def _get_param_from_url(search, param_key, default):
     try:
@@ -1315,12 +1348,20 @@ def perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_toler
     return xic_df, ms2_data
 
 
-def _integrate_files(long_data_df):
+def _integrate_files(long_data_df, xic_integration_type):
+    grouped_df = pd.DataFrame()
     # Integrating Data
-    # TODO: This is not the super best way to do this, but it gets you most of the way there
-    grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).sum().reset_index()
-    grouped_df = grouped_df.drop("rt", axis=1)
-    
+    if xic_integration_type == "MS1SUM":
+        grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).sum().reset_index()
+        grouped_df = grouped_df.drop("rt", axis=1)
+    elif xic_integration_type == "AUC":
+        intermediate_grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"])
+        grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).sum().reset_index()
+        grouped_df["value"] = [integrate.trapz(group_df["value"], x=group_df["rt"]) for name, group_df in intermediate_grouped_df]
+    elif xic_integration_type == "MAXPEAKHEIGHT":
+        grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).max().reset_index()
+        grouped_df = grouped_df.drop("rt", axis=1)
+
     return grouped_df
 
 # Creating XIC plot
@@ -1332,12 +1373,13 @@ def _integrate_files(long_data_df):
               Input('xic_ppm_tolerance', 'value'),
               Input('xic_tolerance_unit', 'value'),
               Input('xic_rt_window', 'value'),
+              Input('xic_integration_type', 'value'),
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value'),              
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
 #@cache.memoize()
-def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, export_format, plot_theme):
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
@@ -1455,7 +1497,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_
 
     try:
         # Doing actual integration
-        integral_df = _integrate_files(merged_df_long)
+        integral_df = _integrate_files(merged_df_long, xic_integration_type)
 
         # Creating a table
         table_graph = dash_table.DataTable(
@@ -1475,6 +1517,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_
         box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay", template=plot_theme)
         box_graph = dcc.Graph(figure=box_fig, config=graph_config)
     except:
+        raise
         pass
 
     
@@ -1589,11 +1632,12 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('xic_rt_window', 'value'),
               Input("xic_norm", "value"),
               Input('xic_file_grouping', 'value'),
+              Input('xic_integration_type', 'value'),
               Input("show_ms2_markers", "value"),
               Input("ms2_identifier", "value"),
               Input("map-plot-zoom", "children"),
               Input("show_lcms_2nd_map", "value")])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, show_ms2_markers, ms2_identifier, map_plot_zoom, show_lcms_2nd_map):
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, show_lcms_2nd_map):
 
     url_params = {}
     url_params["usi"] = usi
@@ -1605,6 +1649,7 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_toleran
     url_params["xic_rt_window"] = xic_rt_window
     url_params["xic_norm"] = xic_norm
     url_params["xic_file_grouping"] = xic_file_grouping
+    url_params["xic_integration_type"] = xic_integration_type
     url_params["show_ms2_markers"] = show_ms2_markers
     url_params["ms2_identifier"] = ms2_identifier
     url_params["show_lcms_2nd_map"] = show_lcms_2nd_map
