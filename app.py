@@ -162,6 +162,25 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
+                                dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"200px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='show_lcms_1st_map',
+                                        value=True,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
                                 dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"200px"}),
                                 dbc.Col(
                                     daq.ToggleSwitch(
@@ -574,12 +593,19 @@ BODY = dbc.Container(
             ),
         ], style={"marginTop": 30}),
         dbc.Row([
-            dbc.Col([
-                dbc.Card(MIDDLE_DASHBOARD),
-                html.Br(),
-                dbc.Card(EXAMPLE_DASHBOARD),
-            ],
-                className="w-50"
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(MIDDLE_DASHBOARD),
+                        html.Br(),
+                        dbc.Card(EXAMPLE_DASHBOARD),
+                    ],
+                        #className="w-50"
+                    ),
+                ],
+                id='first-data-exploration-dashboard-collapse',
+                is_open=True,
+                style={"height": "1200px", "width": "50%"}
             ),
             dbc.Col([
                 dbc.Collapse(
@@ -1709,8 +1735,19 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_toleran
     [Input("show_lcms_2nd_map", "value")],
     [State("second-data-exploration-dashboard-collapse", "is_open")],
 )
-def toggle_collapse(show_lcms_2nd_map, is_open):
+def toggle_collapse2(show_lcms_2nd_map, is_open):
     return show_lcms_2nd_map
+
+# Show Hide Panels
+@app.callback(
+    Output("first-data-exploration-dashboard-collapse", "is_open"),
+    [Input("show_lcms_1st_map", "value")],
+    [State("first-data-exploration-dashboard-collapse", "is_open")],
+)
+def toggle_collapse1(show_lcms_1st_map, is_open):
+    return show_lcms_1st_map
+
+
 
 if __name__ == "__main__":
     app.run_server(debug=True, port=5000, host="0.0.0.0")
