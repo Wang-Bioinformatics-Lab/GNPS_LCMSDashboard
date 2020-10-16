@@ -122,7 +122,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"150px", "margin-left": "25px"}),
+                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"200px", "margin-left": "25px"}),
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='show_ms2_markers',
@@ -159,10 +159,12 @@ DATASELECTION_CARD = [
                             row=True,
                             className="mb-3",
                         )),
+                ]),
+                dbc.Row([
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"200px"}),
+                                dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"200px", "margin-left": "25px"}),
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='show_lcms_1st_map',
