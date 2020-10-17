@@ -114,6 +114,12 @@ DATASELECTION_CARD = [
                     },
                     multiple=False
                 ),
+                # Linkouts
+                dcc.Loading(
+                    id="link-button",
+                    children=[html.Div([html.Div(id="loading-output-9")])],
+                    type="default",
+                ),
                 html.Br(),
                 html.H5(children='LCMS Viewer Options'),
                 dbc.Row([
@@ -202,34 +208,23 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
-                                dcc.Dropdown(
-                                    id='polarity-filtering',
-                                    options=[
-                                        {'label': 'None', 'value': 'None'},
-                                        {'label': 'Positive', 'value': 'Positive'},
-                                        {'label': 'Negative', 'value': 'Negative'}
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="None",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )
+                                dbc.Label("Show Filters", html_for="show_filters", width=5.8, style={"width":"160px", "margin-left": "25px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='show_filters',
+                                        value=False,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
                             ],
                             row=True,
                             className="mb-3",
                         )),
-                    dbc.Col(
-                        ),
                 ]),
-                # Linkouts
-                dcc.Loading(
-                    id="link-button",
-                    children=[html.Div([html.Div(id="loading-output-9")])],
-                    type="default",
-                )
             ], className="col-sm"),
             ## Right Panel
             dbc.Col([
@@ -444,7 +439,76 @@ DATASLICE_CARD = [
             ),
         ]
     )
-]   
+]
+
+USI1_FILTERING_PANEL = [
+    dbc.CardHeader(html.H5("USI Scan Filtering Options")),
+    dbc.CardBody(
+        [   
+            dbc.Row([
+                dbc.Col(
+                    dbc.FormGroup(
+                        [
+                            dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
+                            dcc.Dropdown(
+                                id='polarity-filtering',
+                                options=[
+                                    {'label': 'None', 'value': 'None'},
+                                    {'label': 'Positive', 'value': 'Positive'},
+                                    {'label': 'Negative', 'value': 'Negative'}
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="None",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
+                        ],
+                        row=True,
+                        className="mb-3",
+                    )),
+                dbc.Col(
+                    ),
+            ]),
+        ]
+    )
+]
+
+USI2_FILTERING_PANEL = [
+    dbc.CardHeader(html.H5("USI2 Scan Filtering Options")),
+    dbc.CardBody(
+        [   
+            dbc.Row([
+                dbc.Col(
+                    dbc.FormGroup(
+                        [
+                            dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
+                            dcc.Dropdown(
+                                id='polarity-filtering2',
+                                options=[
+                                    {'label': 'None', 'value': 'None'},
+                                    {'label': 'Positive', 'value': 'Positive'},
+                                    {'label': 'Negative', 'value': 'Negative'}
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="None",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
+                        ],
+                        row=True,
+                        className="mb-3",
+                    )),
+                dbc.Col(
+                    ),
+            ]),
+        ]
+    )
+]
+
 
 DEBUG_CARD = [
     dbc.CardHeader(html.H5("DEBUG Panel")),
@@ -632,6 +696,36 @@ BODY = dbc.Container(
                 className="w-100"
             ),
         ], style={"marginTop": 30}),
+
+        # This is the filtering Panel
+        dbc.Row([
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(USI1_FILTERING_PANEL),
+                    ],
+                        #className="w-50"
+                    ),
+                ],
+                id='usi1-filtering-collapse',
+                is_open=True,
+                style={"width": "50%"}
+            ),
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(USI2_FILTERING_PANEL),
+                    ],
+                        #className="w-50"
+                    ),
+                ],
+                id='usi2-filtering-collapse',
+                is_open=True,
+                style={"width": "50%"}
+            )
+        ], style={"marginTop": 30}),
+
+        # Show Data
         dbc.Row([
             dbc.Collapse(
                 [
@@ -853,7 +947,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("show_ms2_markers", "value"),
                 Output("show_lcms_2nd_map", "value"),
                 Output("tic_option", "value"),
-                Output("polarity-filtering", "value"),],
+                Output("polarity-filtering", "value"),
+                Output("polarity-filtering2", "value"),],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     
@@ -868,6 +963,7 @@ def determine_url_only_parameters(search):
     show_lcms_2nd_map = False
     tic_option = "TIC"
     polarity_filtering = "None"
+    polarity_filtering2 = "None"
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -935,10 +1031,14 @@ def determine_url_only_parameters(search):
         polarity_filtering = str(urllib.parse.parse_qs(search[1:])["polarity_filtering"][0])
     except:
         pass
+    
+    try:
+        polarity_filtering2 = str(urllib.parse.parse_qs(search[1:])["polarity_filtering2"][0])
+    except:
+        pass
 
     
-
-    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering]
+    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
 
 def _get_param_from_url(search, param_key, default):
     try:
@@ -1289,7 +1389,7 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter):
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value"), 
               Input("tic_option", "value"),
-              Input("polarity-filtering", "value")])
+              Input("polarity-filtering2", "value")])
 def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter):
     tic_df = _perform_tic(usi, tic_option=tic_option, polarity_filter=polarity_filter)
     fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
@@ -1659,7 +1759,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter)
               Input('map-plot', 'relayoutData'), 
               Input('show_ms2_markers', 'value'),
               Input("show_lcms_2nd_map", "value"),
-              Input('polarity-filtering', 'value')])
+              Input('polarity-filtering2', 'value')])
 def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_map, polarity_filter):
     if show_lcms_2nd_map is False:
         return [dash.no_update]
@@ -1719,9 +1819,10 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("ms2_identifier", "value"),
               Input("map-plot-zoom", "children"),
               Input('polarity-filtering', 'value'),
+              Input('polarity-filtering2', 'value'),
               Input("show_lcms_2nd_map", "value"),
               Input("tic_option", "value")])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, show_lcms_2nd_map, tic_option):
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option):
 
     url_params = {}
     url_params["usi"] = usi
@@ -1739,6 +1840,7 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_toleran
     url_params["show_lcms_2nd_map"] = show_lcms_2nd_map
     url_params["map_plot_zoom"] = map_plot_zoom
     url_params["polarity_filtering"] = polarity_filtering
+    url_params["polarity_filtering2"] = polarity_filtering2
     url_params["tic_option"] = tic_option
 
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
@@ -1784,6 +1886,12 @@ def toggle_collapse2(show_lcms_2nd_map, is_open):
 def toggle_collapse1(show_lcms_1st_map, is_open):
     return show_lcms_1st_map
 
+@app.callback(
+    [Output("usi1-filtering-collapse", "is_open"), Output("usi2-filtering-collapse", "is_open")],
+    [Input("show_filters", "value")],
+)
+def toggle_collapse_filters(show_filters):
+    return [show_filters, show_filters]
 
 
 if __name__ == "__main__":
