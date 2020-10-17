@@ -852,7 +852,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("xic_integration_type", "value"),
                 Output("show_ms2_markers", "value"),
                 Output("show_lcms_2nd_map", "value"),
-                Output("tic_option", "value"),],
+                Output("tic_option", "value"),
+                Output("polarity-filtering", "value"),],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     
@@ -866,6 +867,7 @@ def determine_url_only_parameters(search):
     xic_rt_window = ""
     show_lcms_2nd_map = False
     tic_option = "TIC"
+    polarity_filtering = "None"
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -928,12 +930,15 @@ def determine_url_only_parameters(search):
         tic_option = str(urllib.parse.parse_qs(search[1:])["tic_option"][0])
     except:
         pass
-    
-    
+
+    try:
+        polarity_filtering = str(urllib.parse.parse_qs(search[1:])["polarity_filtering"][0])
+    except:
+        pass
 
     
 
-    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option]
+    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering]
 
 def _get_param_from_url(search, param_key, default):
     try:
