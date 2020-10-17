@@ -32,6 +32,7 @@ from flask_caching import Cache
 
 from utils import _resolve_usi
 from utils import _calculate_file_stats
+from utils import _get_scan_polarity
 from utils import MS_precisions
 
 
@@ -66,7 +67,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.10", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.11", href="/")),
             ],
         navbar=True)
     ],
@@ -119,7 +120,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"200px", "margin-left": "25px"}),
+                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='show_ms2_markers',
@@ -138,7 +139,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("TIC option", width=4.8, style={"width":"150px"}),
+                                dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
                                 dcc.Dropdown(
                                     id='tic_option',
                                     options=[
@@ -161,7 +162,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"200px", "margin-left": "25px"}),
+                                dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"160px", "margin-left": "25px"}),
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='show_lcms_1st_map',
@@ -180,7 +181,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"200px"}),
+                                dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"160px"}),
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='show_lcms_2nd_map',
@@ -196,6 +197,32 @@ DATASELECTION_CARD = [
                             row=True,
                             className="mb-3",
                         )),
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
+                                dcc.Dropdown(
+                                    id='polarity-filtering',
+                                    options=[
+                                        {'label': 'None', 'value': 'None'},
+                                        {'label': 'Positive', 'value': 'Positive'},
+                                        {'label': 'Negative', 'value': 'Negative'}
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="None",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )
+                            ],
+                            row=True,
+                            className="mb-3",
+                        )),
+                    dbc.Col(
+                        ),
                 ]),
                 # Linkouts
                 dcc.Loading(
@@ -825,7 +852,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("xic_integration_type", "value"),
                 Output("show_ms2_markers", "value"),
                 Output("show_lcms_2nd_map", "value"),
-                Output("tic_option", "value"),],
+                Output("tic_option", "value"),
+                Output("polarity-filtering", "value"),],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     
@@ -839,6 +867,7 @@ def determine_url_only_parameters(search):
     xic_rt_window = ""
     show_lcms_2nd_map = False
     tic_option = "TIC"
+    polarity_filtering = "None"
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -901,12 +930,15 @@ def determine_url_only_parameters(search):
         tic_option = str(urllib.parse.parse_qs(search[1:])["tic_option"][0])
     except:
         pass
-    
-    
+
+    try:
+        polarity_filtering = str(urllib.parse.parse_qs(search[1:])["polarity_filtering"][0])
+    except:
+        pass
 
     
 
-    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option]
+    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering]
 
 def _get_param_from_url(search, param_key, default):
     try:
@@ -1042,7 +1074,7 @@ def _spectrum_generator(filename, min_rt, max_rt):
             yield spec
         print("USED BRUTEFORCE")
 
-def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz):
+def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
     all_mz = []
     all_rt = []
     all_i = []
@@ -1072,6 +1104,17 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz):
                 break
         except:
             pass
+
+        scan_polarity = _get_scan_polarity(spec)
+
+        if polarity_filter == "None":
+            pass
+        elif polarity_filter == "Positive":
+            if scan_polarity != "Positive":
+                continue
+        elif polarity_filter == "Negative":
+            if scan_polarity != "Negative":
+                continue
         
         if spec.ms_level == 1:
             spectrum_index += 1
@@ -1138,7 +1181,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz):
     return ms1_results, ms2_results, ms3_results
 
 @cache.memoize()
-def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
+def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None"):
     min_rt = 0
     max_rt = 1000000
     min_mz = 0
@@ -1157,7 +1200,7 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
 
     import time
     start_time = time.time()
-    ms1_results, ms2_results, ms3_results = _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz)
+    ms1_results, ms2_results, ms3_results = _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
     end_time = time.time()
     print("READ FILE", end_time - start_time)
 
@@ -1220,9 +1263,13 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True):
 
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
-              [Input('usi', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value"), Input("tic_option", "value")])
-def draw_tic(usi, export_format, plot_theme, tic_option):
-    tic_df = _perform_tic(usi, tic_option=tic_option)
+              [Input('usi', 'value'), 
+              Input('image_export_format', 'value'), 
+              Input("plot_theme", "value"), 
+              Input("tic_option", "value"),
+              Input("polarity-filtering", "value")])
+def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter):
+    tic_df = _perform_tic(usi, tic_option=tic_option, polarity_filter=polarity_filter)
     fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
 
     # For Drawing and Exporting
@@ -1238,9 +1285,13 @@ def draw_tic(usi, export_format, plot_theme, tic_option):
 
 # Creating TIC plot
 @app.callback([Output('tic-plot2', 'figure'), Output('tic-plot2', 'config')],
-              [Input('usi2', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value"), Input("tic_option", "value")])
-def draw_tic2(usi, export_format, plot_theme, tic_option):
-    tic_df = _perform_tic(usi, tic_option=tic_option)
+              [Input('usi2', 'value'), 
+              Input('image_export_format', 'value'), 
+              Input("plot_theme", "value"), 
+              Input("tic_option", "value"),
+              Input("polarity-filtering", "value")])
+def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter):
+    tic_df = _perform_tic(usi, tic_option=tic_option, polarity_filter=polarity_filter)
     fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
 
     # For Drawing and Exporting
@@ -1255,7 +1306,7 @@ def draw_tic2(usi, export_format, plot_theme, tic_option):
     return [fig, graph_config]
 
 @cache.memoize()
-def _perform_tic(usi, tic_option="TIC"):
+def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
     remote_link, local_filename = _resolve_usi(usi)
 
     # Performing TIC Plot
@@ -1266,6 +1317,17 @@ def _perform_tic(usi, tic_option="TIC"):
     
     for n, spec in enumerate(run):
         if spec.ms_level == 1:
+            scan_polarity = _get_scan_polarity(spec)
+
+            if polarity_filter == "None":
+                pass
+            elif polarity_filter == "Positive":
+                if scan_polarity != "Positive":
+                    continue
+            elif polarity_filter == "Negative":
+                if scan_polarity != "Negative":
+                    continue
+
             rt_trace.append(spec.scan_time_in_minutes())
             if tic_option == "TIC":
                 tic_trace.append(sum(spec.i))
@@ -1286,7 +1348,7 @@ def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance
         return target_mz - calculated_tolerance, target_mz + calculated_tolerance
 
 @cache.memoize()
-def perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max):
+def perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
 
@@ -1304,6 +1366,17 @@ def perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_toler
     sum_i = 0 # Used by MS2 height
     for spec in _spectrum_generator(local_filename, rt_min, rt_max):
         if spec.ms_level == 1:
+            scan_polarity = _get_scan_polarity(spec)
+
+            if polarity_filter == "None":
+                pass
+            elif polarity_filter == "Positive":
+                if scan_polarity != "Positive":
+                    continue
+            elif polarity_filter == "Negative":
+                if scan_polarity != "Negative":
+                    continue
+
             try:
                 for target_mz in all_xic_values:
                     lower_tolerance, upper_tolerance = _calculate_upper_lower_tolerance(target_mz[1], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
@@ -1379,11 +1452,11 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('xic_rt_window', 'value'),
               Input('xic_integration_type', 'value'),
               Input('xic_norm', 'value'),
-              Input('xic_file_grouping', 'value'),              
+              Input('xic_file_grouping', 'value'),
+              Input('polarity-filtering', 'value'),
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
-#@cache.memoize()
-def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
@@ -1441,7 +1514,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_
     # Performing XIC for all USI in the list
     df_long_list = []
     for usi_element in usi_list:
-        xic_df, ms2_data = perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max)
+        xic_df, ms2_data = perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
         # Performing Normalization only if we have multiple XICs available
         if xic_norm is True:
@@ -1533,8 +1606,12 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
 @app.callback([Output('map-plot', 'figure'), Output('download-link', 'children'), Output('map-plot-zoom', 'children')],
-              [Input('url', 'search'), Input('usi', 'value'), Input('map-plot', 'relayoutData'), Input('show_ms2_markers', 'value')])
-def draw_file(url_search, usi, map_selection, show_ms2_markers):
+              [Input('url', 'search'), 
+              Input('usi', 'value'), 
+              Input('map-plot', 'relayoutData'), 
+              Input('show_ms2_markers', 'value'),
+              Input('polarity-filtering', 'value')])
+def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -1571,7 +1648,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers):
     print("MAP SELECTION XXXXXXXXXX", map_selection, current_map_selection, triggered_id, usi, file=sys.stderr)
 
     # Doing LCMS Map
-    map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers)
+    map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter)
 
     return [map_fig, remote_link, json.dumps(map_selection)]
 
@@ -1581,8 +1658,9 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers):
               Input('usi2', 'value'), 
               Input('map-plot', 'relayoutData'), 
               Input('show_ms2_markers', 'value'),
-              Input("show_lcms_2nd_map", "value")])
-def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_map):
+              Input("show_lcms_2nd_map", "value"),
+              Input('polarity-filtering', 'value')])
+def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_map, polarity_filter):
     if show_lcms_2nd_map is False:
         return [dash.no_update]
 
@@ -1622,7 +1700,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
     print("MAP SELECTION", map_selection, current_map_selection, triggered_id, usi, file=sys.stderr)
 
     # Doing LCMS Map
-    map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers)
+    map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter)
 
     return [map_fig]
 
@@ -1640,9 +1718,10 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("show_ms2_markers", "value"),
               Input("ms2_identifier", "value"),
               Input("map-plot-zoom", "children"),
+              Input('polarity-filtering', 'value'),
               Input("show_lcms_2nd_map", "value"),
               Input("tic_option", "value")])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, show_lcms_2nd_map, tic_option):
+def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, show_lcms_2nd_map, tic_option):
 
     url_params = {}
     url_params["usi"] = usi
@@ -1659,6 +1738,7 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_toleran
     url_params["ms2_identifier"] = ms2_identifier
     url_params["show_lcms_2nd_map"] = show_lcms_2nd_map
     url_params["map_plot_zoom"] = map_plot_zoom
+    url_params["polarity_filtering"] = polarity_filtering
     url_params["tic_option"] = tic_option
 
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
