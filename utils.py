@@ -135,3 +135,17 @@ def _calculate_file_stats(usi):
 
     
     return response_dict
+
+# Gets Positive and Negative return values, or None
+def _get_scan_polarity(spec):
+    # Determining scan polarity
+    polarity = None
+    try:
+        if spec["negative scan"] is True:
+            polarity = "Negative"
+        if spec["positive scan"] is True:
+            polarity = "Positive"
+    except:    
+        pass
+     
+    return polarity
