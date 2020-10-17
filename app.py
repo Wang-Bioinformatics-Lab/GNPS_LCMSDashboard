@@ -1669,6 +1669,7 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_toleran
 # Creating TIC plot
 @app.callback([Output('summary-table', 'children')],
               [Input('usi', 'value'), Input('usi2', 'value')])
+@cache.memoize()
 def get_file_summary(usi, usi2):
     usi1_list = usi.split("\n")
     usi2_list = usi2.split("\n")
