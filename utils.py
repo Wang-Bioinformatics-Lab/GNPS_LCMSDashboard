@@ -122,6 +122,8 @@ def _calculate_file_stats(usi):
         for field in fields:
             if field in record:
                 response_dict[field] = record[field]
+            else:
+                response_dict[field] = "N/A"
     except:
         pass
         raise
