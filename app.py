@@ -67,7 +67,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.10", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.11", href="/")),
             ],
         navbar=True)
     ],
