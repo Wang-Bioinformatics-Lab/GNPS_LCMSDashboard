@@ -114,7 +114,7 @@ def _calculate_file_stats(usi):
         all_lines = [line for line in all_lines if len(line) > 10 ]
         updated_version = "\n".join(all_lines)
         data = io.StringIO(updated_version)
-        df = pd.read_csv(data, sep=None)
+        df = pd.read_csv(data, sep="\t")
         
         record = df.to_dict(orient='records')[0]
 
