@@ -30,6 +30,9 @@ import uuid
 import base64
 from flask_caching import Cache
 
+from utils import _resolve_usi
+from utils import _calculate_file_stats
+from utils import MS_precisions
 
 
 server = Flask(__name__)
@@ -43,12 +46,6 @@ cache = Cache(app.server, config={
     'CACHE_THRESHOLD': 1000000
 })
 server = app.server
-
-MS_precisions = {
-    1 : 5e-6,
-    2 : 20e-6,
-    3 : 20e-6
-}
 
 df = pd.DataFrame()
 df["rt"] = [1]
@@ -466,6 +463,19 @@ INTEGRATION_CARD = [
     )
 ]
 
+SUMMARY_CARD = [
+    dbc.CardHeader(html.H5("File Summaries")),
+    dbc.CardBody(
+        [
+            dcc.Loading(
+                id="summary-table",
+                children=[html.Div([html.Div(id="loading-output-105")])],
+                type="default",
+            ),
+        ]
+    )
+]
+
 CONTRIBUTORS_CARD = [
     dbc.CardHeader(html.H5("Contributors")),
     dbc.CardBody(
@@ -503,6 +513,7 @@ LEFT_DASHBOARD = [
         [
             html.Div(DATASLICE_CARD),
             html.Div(INTEGRATION_CARD),
+            html.Div(SUMMARY_CARD),
             html.Div(CONTRIBUTORS_CARD),
             html.Div(DEBUG_CARD),
         ]
@@ -629,83 +640,7 @@ BODY = dbc.Container(
 app.layout = html.Div(children=[NAVBAR, BODY])
 
 
-# Returns remote_link and local filepath
-def _resolve_usi(usi):
-    usi_splits = usi.split(":")
 
-    if "LOCAL" in usi_splits[1]:
-        return "", os.path.join("temp", os.path.basename(usi_splits[2]))
-
-    if "MSV" in usi_splits[1]:
-        # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
-        # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
-        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
-        lookup_request = requests.get(lookup_url)
-
-        resolution_json = lookup_request.json()
-
-        remote_path = None
-        
-        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
-        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
-
-        if len(mzML_resolutions) > 0:
-            remote_path = mzML_resolutions[0]["file_descriptor"]
-        elif len(mzXML_resolutions) > 0:
-            remote_path = mzXML_resolutions[0]["file_descriptor"]
-
-        # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
-    elif "GNPS" in usi_splits[1]:
-        if "TASK-" in usi_splits[2]:
-
-            # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
-            filename = "-".join(usi_splits[2].split("-")[2:])
-            task = usi_splits[2].split("-")[1]
-
-            remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
-        elif "QUICKSTART-" in usi_splits[2]:
-            filename = "-".join(usi_splits[2].split("-")[2:])
-            task = usi_splits[2].split("-")[1]
-
-            remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
-            print(remote_link)
-        elif "GNPS-LIBRARY" in usi_splits[2]:
-            print("Library Entry")
-            # Lets find the provenance file
-            accession = usi_splits[4]
-            url = "https://gnps.ucsd.edu/ProteoSAFe/SpectrumCommentServlet?SpectrumID={}".format(accession)
-            r = requests.get(url)
-            spectrum_dict = r.json()
-            task = spectrum_dict["spectruminfo"]["task"]
-            source_file = os.path.basename(spectrum_dict["spectruminfo"]["source_file"])
-            remote_link = "ftp://ccms-ftp.ucsd.edu/GNPS_Library_Provenance/{}/{}".format(task, source_file)
-    elif "MTBLS" in usi_splits[1]:
-        dataset_accession = usi_splits[1]
-        filename = usi_splits[2]
-        remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
-
-    # Getting Data Local, TODO: likely should serialize it
-    local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
-    filename, file_extension = os.path.splitext(local_filename)
-    converted_local_filename = filename + ".mzML"
-    
-    if not os.path.isfile(converted_local_filename):
-        temp_filename = os.path.join("temp", str(uuid.uuid4()) + file_extension)
-        wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
-        os.system(wget_cmd)
-        os.rename(temp_filename, local_filename)
-
-        temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
-        # Lets do a conversion
-        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(local_filename, temp_filename, os.path.dirname(temp_filename))
-        os.system(conversion_cmd)
-
-        os.rename(temp_filename, converted_local_filename)
-
-        local_filename = converted_local_filename
-
-    return remote_link, converted_local_filename
 
 
 # This helps to update the ms2/ms1 plot
@@ -1730,6 +1665,26 @@ def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_toleran
     provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
 
     return provenance_link_object
+
+# Creating TIC plot
+@app.callback([Output('summary-table', 'children')],
+              [Input('usi', 'value'), Input('usi2', 'value')])
+@cache.memoize()
+def get_file_summary(usi, usi2):
+    usi1_list = usi.split("\n")
+    usi2_list = usi2.split("\n")
+
+    usi1_list = [usi for usi in usi1_list if len(usi) > 8] # Filtering out empty USIs
+    usi2_list = [usi for usi in usi2_list if len(usi) > 8] # Filtering out empty USIs
+
+    usi_list = usi1_list + usi2_list
+    usi_list = usi_list[:10]
+
+    all_file_stats = [_calculate_file_stats(usi) for usi in usi_list]
+    stats_df = pd.DataFrame(all_file_stats)        
+    table = dbc.Table.from_dataframe(stats_df, striped=True, bordered=True, hover=True, size="sm")
+
+    return [table]
 
 # Show Hide Panels
 @app.callback(
