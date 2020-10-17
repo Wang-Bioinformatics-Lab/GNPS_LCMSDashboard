@@ -107,12 +107,17 @@ def _calculate_file_stats(usi):
     try:
         cmd = ["./bin/msaccess", local_filename, "-x",  'run_summary delimiter=tab']
 
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        my_env = os.environ.copy()
+        my_env["LC_ALL"] = "C"
+
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=my_env)
         out = proc.communicate()[0]
 
         all_lines = str(out).replace("\\t", "\t").split("\\n")
         all_lines = [line for line in all_lines if len(line) > 10 ]
         updated_version = "\n".join(all_lines)
+        import sys
+        print(updated_version, file=sys.stderr)
         data = io.StringIO(updated_version)
         df = pd.read_csv(data, sep="\t")
         
