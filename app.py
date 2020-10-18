@@ -1283,7 +1283,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 @cache.memoize()
 def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None"):
     min_rt = 0
-    max_rt = 1000000
+    max_rt = 900000
     min_mz = 0
     max_mz = 2000
 
@@ -1346,6 +1346,10 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity
 
     fig.update_xaxes(showline=True, linewidth=1, linecolor='black', showgrid=False)
     fig.update_yaxes(showline=True, linewidth=1, linecolor='black', gridwidth=3)
+
+    if max_rt < 100000:
+        fig.update_xaxes(range=[min_rt, max_rt])
+    fig.update_yaxes(range=[min_mz, max_mz])
 
     too_many_ms2 = False
     if len(all_ms2_scan) > 5000 or len(all_ms3_scan) > 5000:
