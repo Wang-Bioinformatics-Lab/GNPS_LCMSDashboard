@@ -1348,11 +1348,12 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity
     fig.update_yaxes(showline=True, linewidth=1, linecolor='black', gridwidth=3)
 
     too_many_ms2 = False
-    if len(all_ms2_scan) > 5000 or len(all_ms3_scan) > 5000:
+    MAX_MS2 = 1000000
+    if len(all_ms2_scan) > MAX_MS2 or len(all_ms3_scan) > MAX_MS2:
         too_many_ms2 = True
 
     if show_ms2_markers is True and too_many_ms2 is False:
-        scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"), name="MS2s")
+        scatter_fig = go.Scattergl(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"), name="MS2s")
         fig.add_trace(scatter_fig)
 
         if len(all_ms3_scan) > 0:
