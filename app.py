@@ -59,6 +59,8 @@ agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
 placeholder_ms2_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
 placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder')
 
+MAX_LCMS_FILES = 30
+
 NAVBAR = dbc.Navbar(
     children=[
         dbc.NavbarBrand(
@@ -1574,7 +1576,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_
     usi2_list = [usi for usi in usi2_list if len(usi) > 8] # Filtering out empty USIs
 
     usi_list = usi1_list + usi2_list
-    usi_list = usi_list[:10]
+    usi_list = usi_list[:MAX_LCMS_FILES]
 
     all_xic_values = []
 
@@ -1860,8 +1862,9 @@ def get_file_summary(usi, usi2):
     usi1_list = [usi for usi in usi1_list if len(usi) > 8] # Filtering out empty USIs
     usi2_list = [usi for usi in usi2_list if len(usi) > 8] # Filtering out empty USIs
 
+    
     usi_list = usi1_list + usi2_list
-    usi_list = usi_list[:10]
+    usi_list = usi_list[:MAX_LCMS_FILES]
 
     all_file_stats = [_calculate_file_stats(usi) for usi in usi_list]
     stats_df = pd.DataFrame(all_file_stats)        
