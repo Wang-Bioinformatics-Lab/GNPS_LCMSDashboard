@@ -34,14 +34,16 @@ from utils import _resolve_usi
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import MS_precisions
+from formula_utils import get_adduct_mass
+from molmass import Formula
 
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    'CACHE_TYPE': "null",
-    #'CACHE_TYPE': 'filesystem',
+    #'CACHE_TYPE': "null",
+    'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -69,7 +71,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.11", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.12", href="/")),
             ],
         navbar=True)
     ],
@@ -231,13 +233,26 @@ DATASELECTION_CARD = [
             ## Right Panel
             dbc.Col([
                 html.H5(children='XIC Options'),
-                dbc.InputGroup(
-                    [
-                        dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
-                        dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC"),
-                    ],
-                    className="mb-3",
-                ),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
+                                dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
+                                dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                ]),
                 dbc.Row([
                     dbc.Col(
                         dbc.InputGroup(
@@ -950,7 +965,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
         return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
 
-@app.callback([Output("xic_tolerance", "value"), 
+@app.callback([ Output("xic_formula", "value"),
+                Output("xic_tolerance", "value"), 
                 Output("xic_ppm_tolerance", "value"), 
                 Output("xic_tolerance_unit", "value"), 
                 Output("xic_rt_window", "value"), 
@@ -964,7 +980,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("polarity-filtering2", "value"),],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
-    
+    xic_formula = ""
     xic_tolerance = "0.5"
     xic_ppm_tolerance = "10"
     xic_tolerance_unit = "Da"
@@ -977,6 +993,13 @@ def determine_url_only_parameters(search):
     tic_option = "TIC"
     polarity_filtering = "None"
     polarity_filtering2 = "None"
+
+    
+
+    try:
+        xic_formula = str(urllib.parse.parse_qs(search[1:])["xic_formula"][0])
+    except:
+        pass
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -1051,7 +1074,7 @@ def determine_url_only_parameters(search):
         pass
 
     
-    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
+    return [xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
 
 def _get_param_from_url(search, param_key, default):
     try:
@@ -1462,7 +1485,7 @@ def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance
         return target_mz - calculated_tolerance, target_mz + calculated_tolerance
 
 @cache.memoize()
-def perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):
+def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
 
@@ -1558,6 +1581,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               [Input('usi', 'value'), 
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
+              Input('xic_formula', 'value'), 
               Input('xic_tolerance', 'value'),
               Input('xic_ppm_tolerance', 'value'),
               Input('xic_tolerance_unit', 'value'),
@@ -1568,7 +1592,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('polarity-filtering', 'value'),
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
-def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
@@ -1589,11 +1613,23 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_
 
     all_xic_values = []
 
-    if xic_mz is None:
-        return
-    else:
+    # Getting all XIC values from m/z entry
+    try:
         for xic_value in xic_mz.split(";"):
             all_xic_values.append((str(xic_value), float(xic_value)))
+    except:
+        pass
+
+    # Getting all XIC values from Formula
+    try:
+        adducts_to_report = ["M+H", "M+Na", "M+K"]
+        for adduct in adducts_to_report:
+            f = Formula(xic_formula)
+            exact_mass = f.isotope.mass
+            adduct_mz, charge = get_adduct_mass(exact_mass, adduct)
+            all_xic_values.append((str(adduct), float(adduct_mz)))
+    except:
+        pass
 
     # Parsing Tolerances
     parsed_xic_da_tolerance = 0.5
@@ -1626,7 +1662,7 @@ def draw_xic(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_
     # Performing XIC for all USI in the list
     df_long_list = []
     for usi_element in usi_list:
-        xic_df, ms2_data = perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+        xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
         # Performing Normalization only if we have multiple XICs available
         if xic_norm is True:
@@ -1816,6 +1852,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'),
+              Input('xic_formula', 'value'), 
               Input('xic_ppm_tolerance', 'value'),
               Input('xic_tolerance_unit', 'value'),
               Input('xic_rt_window', 'value'),
@@ -1829,12 +1866,13 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('polarity-filtering2', 'value'),
               Input("show_lcms_2nd_map", "value"),
               Input("tic_option", "value")])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option):
+def create_link(usi, usi2, xic_mz, xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option):
 
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
     url_params["xicmz"] = xic_mz
+    url_params["xic_formula"] = xic_formula
     url_params["xic_tolerance"] = xic_tolerance
     url_params["xic_ppm_tolerance"] = xic_ppm_tolerance
     url_params["xic_tolerance_unit"] = xic_tolerance_unit
