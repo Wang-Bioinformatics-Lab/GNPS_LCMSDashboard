@@ -43,3 +43,4 @@ Flask-Caching
 scipy
 pyteomics
 psims
+molmass
