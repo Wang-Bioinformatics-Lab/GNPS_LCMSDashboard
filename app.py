@@ -36,6 +36,7 @@ from utils import _get_scan_polarity
 from utils import MS_precisions
 from formula_utils import get_adduct_mass
 from molmass import Formula
+from pyteomics import mass
 
 
 server = Flask(__name__)
@@ -248,6 +249,15 @@ DATASELECTION_CARD = [
                             [
                                 dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
                                 dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
+                                dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC"),
                             ],
                             className="mb-3",
                         ),
@@ -1584,6 +1594,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_formula', 'value'), 
+              Input('xic_peptide', 'value'), 
               Input('xic_tolerance', 'value'),
               Input('xic_ppm_tolerance', 'value'),
               Input('xic_tolerance_unit', 'value'),
@@ -1594,7 +1605,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('polarity-filtering', 'value'),
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
-def draw_xic(usi, usi2, xic_mz, xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
@@ -1632,6 +1643,17 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_tolerance, xic_ppm_tolerance, x
             all_xic_values.append((str(adduct), float(adduct_mz)))
     except:
         pass
+
+    # Getting all XIC values from Peptide
+    try:
+        xic_mz = mass.calculate_mass(sequence=xic_peptide, charge=2)
+        all_xic_values.append(("Charge 2", float(xic_mz)))
+
+        xic_mz = mass.calculate_mass(sequence=xic_peptide, charge=3)
+        all_xic_values.append(("Charge 3", float(xic_mz)))
+    except:
+        pass
+
 
     # Parsing Tolerances
     parsed_xic_da_tolerance = 0.5
