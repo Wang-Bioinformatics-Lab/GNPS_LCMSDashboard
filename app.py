@@ -965,7 +965,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
         return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
 
-@app.callback([Output("xic_tolerance", "value"), 
+@app.callback([ Output("xic_formula", "value"),
+                Output("xic_tolerance", "value"), 
                 Output("xic_ppm_tolerance", "value"), 
                 Output("xic_tolerance_unit", "value"), 
                 Output("xic_rt_window", "value"), 
@@ -979,7 +980,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("polarity-filtering2", "value"),],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
-    
+    xic_formula = ""
     xic_tolerance = "0.5"
     xic_ppm_tolerance = "10"
     xic_tolerance_unit = "Da"
@@ -992,6 +993,13 @@ def determine_url_only_parameters(search):
     tic_option = "TIC"
     polarity_filtering = "None"
     polarity_filtering2 = "None"
+
+    
+
+    try:
+        xic_formula = str(urllib.parse.parse_qs(search[1:])["xic_formula"][0])
+    except:
+        pass
 
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
@@ -1066,7 +1074,7 @@ def determine_url_only_parameters(search):
         pass
 
     
-    return [xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
+    return [xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
 
 def _get_param_from_url(search, param_key, default):
     try:
@@ -1844,6 +1852,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_tolerance', 'value'),
+              Input('xic_formula', 'value'), 
               Input('xic_ppm_tolerance', 'value'),
               Input('xic_tolerance_unit', 'value'),
               Input('xic_rt_window', 'value'),
@@ -1857,12 +1866,13 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('polarity-filtering2', 'value'),
               Input("show_lcms_2nd_map", "value"),
               Input("tic_option", "value")])
-def create_link(usi, usi2, xic_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option):
+def create_link(usi, usi2, xic_mz, xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option):
 
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
     url_params["xicmz"] = xic_mz
+    url_params["xic_formula"] = xic_formula
     url_params["xic_tolerance"] = xic_tolerance
     url_params["xic_ppm_tolerance"] = xic_ppm_tolerance
     url_params["xic_tolerance_unit"] = xic_tolerance_unit
