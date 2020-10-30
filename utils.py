@@ -82,14 +82,98 @@ def _resolve_usi(usi):
 
         temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
         # Lets do a conversion
-        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(local_filename, temp_filename, os.path.dirname(temp_filename))
-        os.system(conversion_cmd)
+        _convert_mzML(local_filename, temp_filename)
 
         os.rename(temp_filename, converted_local_filename)
 
         local_filename = converted_local_filename
 
     return remote_link, converted_local_filename
+
+# First try msconvert, if the output fails, then we will do pyteomics to mzML and then msconvert
+def _convert_mzML(input_mzXML, output_mzML):
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+    conversion_ret_code = os.system(conversion_cmd)
+
+    reconvert = False
+    # Checking the conversion
+    try:
+        from lxml import etree
+        doc = etree.parse(output_mzML)
+    except:
+        reconvert = True
+        try:
+            os.remove(output_mzML)
+        except:
+            pass
+        print("XML PARSE FAILED, Presuming incomplete conversion")
+
+    if reconvert:
+        print("RECONVERTING")
+
+        from psims.mzml.writer import MzMLWriter
+        from pyteomics import mzxml, auxiliary
+
+        temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
+
+        previous_ms1_scan = 0
+        with MzMLWriter(open(temp_filename, 'wb')) as out:
+            out.controlled_vocabularies()
+            with out.run(id="my_analysis"):
+                with out.spectrum_list(count=1000):
+                    # Iterating through all scans in the reader
+                    try:
+                        with mzxml.read(input_mzXML) as reader:
+                            for spectrum in reader:
+                                ms_level = spectrum["msLevel"]
+
+                                if len(spectrum["intensity array"]) == 0:
+                                    continue
+
+                                if ms_level == 1:
+                                    out.write_spectrum(
+                                            spectrum["m/z array"], spectrum["intensity array"],
+                                            id=spectrum["id"], params=[
+                                                "MS1 Spectrum",
+                                                {"ms level": 1},
+                                                {"total ion current": sum(spectrum["intensity array"])}
+                                            ],
+                                            scan_start_time=spectrum["retentionTime"])
+
+                                    previous_ms1_scan = spectrum["id"]
+                                else:
+                                    out.write_spectrum(
+                                        spectrum["m/z array"], spectrum["intensity array"],
+                                        id=spectrum["id"], params=[
+                                            "MSn Spectrum",
+                                            {"ms level": 2},
+                                            {"total ion current": sum(spectrum["intensity array"])}
+                                        ],
+                                        scan_start_time=spectrum["retentionTime"],
+                                        # Include precursor information
+                                        precursor_information={
+                                            "mz": spectrum["precursorMz"][0]["precursorMz"],
+                                            "intensity": spectrum["precursorMz"][0]["precursorIntensity"],
+                                            "charge": 0,
+                                            "scan_id": previous_ms1_scan,
+                                            "activation": ["beam-type collisional dissociation", {"collision energy": spectrum["collisionEnergy"]}],
+                                        })
+                    except:
+                        print("Reading Failed, skipping to end")
+                        pass
+
+                            
+        # Round trip through MsConvert
+        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(temp_filename, output_mzML, os.path.dirname(output_mzML))
+        conversion_ret_code = os.system(conversion_cmd)
+
+        try:
+            os.remove(temp_filename)
+        except:
+            pass
+
+
+    
 
 import subprocess, io
 

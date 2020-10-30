@@ -41,3 +41,5 @@ Pillow
 matplotlib
 Flask-Caching
 scipy
+pyteomics
+psims

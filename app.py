@@ -40,8 +40,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    #'CACHE_TYPE': "null",
-    'CACHE_TYPE': 'filesystem',
+    'CACHE_TYPE': "null",
+    #'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -827,7 +827,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     usi_splits = usi.split(":")
     dataset = usi_splits[1]
     filename = usi_splits[2]
-    updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, str(ms2_identifier.split(":")[-1]))
+    scan_number = str(ms2_identifier.split(":")[-1])
+    updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
 
     # For Drawing and Exporting
     graph_config = {
@@ -845,10 +846,20 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         # Lets also make a MASST link here
         # We'll have to get the MS2 peaks from USI
         usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
-        r = requests.get(usi_json_url)
-        spectrum_json = r.json()
-        peaks = spectrum_json["peaks"]
-        precursor_mz = spectrum_json["precursor_mz"]
+        
+        try:
+            r = requests.get(usi_json_url)
+            spectrum_json = r.json()
+            peaks = spectrum_json["peaks"]
+            precursor_mz = spectrum_json["precursor_mz"]
+        except:
+            # Lets look at file on disk
+            print("JSON USI EXCEPTION")
+            remote_link, local_filename = _resolve_usi(usi)
+            run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
+            spectrum = run[scan_number]
+            peaks = spectrum.peaks("raw")
+            precursor_mz = spectrum.selected_precursors[0]["mz"]
 
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
@@ -1464,8 +1475,6 @@ def perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_toler
     xic_trace = defaultdict(list)
     rt_trace = []
     
-    #run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-
     sum_i = 0 # Used by MS2 height
     for spec in _spectrum_generator(local_filename, rt_min, rt_max):
         if spec.ms_level == 1:
@@ -1796,11 +1805,6 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
             pass
     except:
         pass
-
-    import sys
-    print(triggered_id, file=sys.stderr)
-    print(url_search, file=sys.stderr)
-    print("MAP SELECTION", map_selection, current_map_selection, triggered_id, usi, file=sys.stderr)
 
     # Doing LCMS Map
     map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter)
