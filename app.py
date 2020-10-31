@@ -36,6 +36,7 @@ from utils import _get_scan_polarity
 from utils import MS_precisions
 from formula_utils import get_adduct_mass
 from molmass import Formula
+from pyteomics import mass
 
 
 server = Flask(__name__)
@@ -248,6 +249,15 @@ DATASELECTION_CARD = [
                             [
                                 dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
                                 dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
+                                dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC"),
                             ],
                             className="mb-3",
                         ),
@@ -968,6 +978,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
 
 @app.callback([ Output("xic_formula", "value"),
+                Output("xic_peptide", "value"),
                 Output("xic_tolerance", "value"), 
                 Output("xic_ppm_tolerance", "value"), 
                 Output("xic_tolerance_unit", "value"), 
@@ -983,6 +994,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     xic_formula = ""
+    xic_peptide = ""
     xic_tolerance = "0.5"
     xic_ppm_tolerance = "10"
     xic_tolerance_unit = "Da"
@@ -1003,6 +1015,11 @@ def determine_url_only_parameters(search):
     except:
         pass
 
+    try:
+        xic_peptide = str(urllib.parse.parse_qs(search[1:])["xic_peptide"][0])
+    except:
+        pass
+        
     try:
         xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
     except:
@@ -1076,7 +1093,7 @@ def determine_url_only_parameters(search):
         pass
 
     
-    return [xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
+    return [xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
 
 def _get_param_from_url(search, param_key, default):
     try:
@@ -1584,6 +1601,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_formula', 'value'), 
+              Input('xic_peptide', 'value'), 
               Input('xic_tolerance', 'value'),
               Input('xic_ppm_tolerance', 'value'),
               Input('xic_tolerance_unit', 'value'),
@@ -1594,7 +1612,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('polarity-filtering', 'value'),
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
-def draw_xic(usi, usi2, xic_mz, xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
@@ -1632,6 +1650,15 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_tolerance, xic_ppm_tolerance, x
             all_xic_values.append((str(adduct), float(adduct_mz)))
     except:
         pass
+
+    # Getting all XIC values from Peptide
+    try:
+        for charge in range(2, 6):
+            xic_mz = mass.calculate_mass(sequence=xic_peptide, charge=charge)
+            all_xic_values.append(("Charge {} - {:.2f}".format(charge, xic_mz), float(xic_mz)))
+    except:
+        pass
+
 
     # Parsing Tolerances
     parsed_xic_da_tolerance = 0.5
@@ -1854,6 +1881,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
               Input('xic_formula', 'value'), 
+              Input('xic_peptide', 'value'), 
               Input('xic_tolerance', 'value'),
               Input('xic_ppm_tolerance', 'value'),
               Input('xic_tolerance_unit', 'value'),
@@ -1868,13 +1896,14 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('polarity-filtering2', 'value'),
               Input("show_lcms_2nd_map", "value"),
               Input("tic_option", "value")])
-def create_link(usi, usi2, xic_mz, xic_formula, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option):
+def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option):
 
     url_params = {}
     url_params["usi"] = usi
     url_params["usi2"] = usi2
     url_params["xicmz"] = xic_mz
     url_params["xic_formula"] = xic_formula
+    url_params["xic_peptide"] = xic_peptide
     url_params["xic_tolerance"] = xic_tolerance
     url_params["xic_ppm_tolerance"] = xic_ppm_tolerance
     url_params["xic_tolerance_unit"] = xic_tolerance_unit
