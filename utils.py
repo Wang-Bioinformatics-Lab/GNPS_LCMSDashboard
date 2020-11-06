@@ -6,6 +6,7 @@ from scipy import integrate
 import os
 import sys
 import pymzml
+from pathlib import Path
 
 MS_precisions = {
     1 : 5e-6,
@@ -16,6 +17,10 @@ MS_precisions = {
 # Returns remote_link and local filepath
 def _resolve_usi(usi):
     usi_splits = usi.split(":")
+
+    # Credentials if required
+    USERNAME = None
+    PASSWORD = None
 
     if "LOCAL" in usi_splits[1]:
         return "", os.path.join("temp", os.path.basename(usi_splits[2]))
@@ -39,7 +44,13 @@ def _resolve_usi(usi):
             remote_path = mzXML_resolutions[0]["file_descriptor"]
 
         # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
+        remote_path = remote_path[2:].replace(usi_splits[1], "")
+        remote_link = f"ftp://massive.ucsd.edu/{remote_path}"
+
+        # Setting universal credentials
+        USERNAME = usi_splits[1]
+        PASSWORD = "QTLmapping"
+
     elif "GNPS" in usi_splits[1]:
         if "TASK-" in usi_splits[2]:
 
@@ -76,8 +87,17 @@ def _resolve_usi(usi):
     
     if not os.path.isfile(converted_local_filename):
         temp_filename = os.path.join("temp", str(uuid.uuid4()) + file_extension)
-        wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
+        if USERNAME is None:
+            wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
+        else:
+            wget_cmd = "wget --user {} --password {} '{}' -O {}".format(USERNAME, PASSWORD, remote_link, temp_filename)
         os.system(wget_cmd)
+
+        
+        print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", os.path.exists(temp_filename), temp_filename, wget_cmd)
+        if not os.path.exists(temp_filename) or Path(temp_filename).stat().st_size < 10:
+            raise Exception("File Not Downloaded")
+
         os.rename(temp_filename, local_filename)
 
         temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")

@@ -1383,15 +1383,18 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity
     df["scan"] = all_scan
     df["index"] = all_index
 
-    min_size = min(number_spectra, int(max_mz - min_mz))
-    width = max(min(min_size*4, 500), 20)
-    height = max(min(int(min_size*1.75), 500), 20)
+    min_size = min(number_spectra, int(max_mz - min_mz) * 4)
+    width = max(min(min_size*4, 750), 120)
+    height = max(min(int(min_size*1.75), 500), 80)
+
+    import sys
+    print("SIZE", number_spectra, int(max_mz - min_mz), width, height, file=sys.stderr)
 
     cvs = ds.Canvas(plot_width=width, plot_height=height)
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 
     end_time = time.time()
-    print("Datashader Agg", end_time - start_time)
+    print("Datashader Agg", end_time - start_time, file=sys.stderr)
 
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
