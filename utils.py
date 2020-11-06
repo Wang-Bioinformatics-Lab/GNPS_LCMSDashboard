@@ -245,6 +245,7 @@ def _get_param_from_url(search, param_key, default):
 
 def _resolve_map_plot_selection(url_search, usi):
     current_map_selection = None
+    highlight_box = None
 
     # Lets start off with taking the url bounds
     try:
@@ -273,9 +274,15 @@ def _resolve_map_plot_selection(url_search, usi):
             current_map_selection["xaxis.range[1]"] = max_rt
             current_map_selection["yaxis.range[0]"] = min_mz
             current_map_selection["yaxis.range[1]"] = max_mz
+
+            highlight_box = {}
+            highlight_box["left"] = rt - 0.01
+            highlight_box["right"] = rt + 0.01
+            highlight_box["top"] = mz + 0.1
+            highlight_box["bottom"] = mz - 0.1
     except:
         pass
 
-    return current_map_selection
+    return current_map_selection, highlight_box
 
 
