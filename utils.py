@@ -252,7 +252,6 @@ def _resolve_map_plot_selection(url_search, usi):
     except:
         pass
 
-    # 
     try:
         if "scan" in current_map_selection:
             # Lets do the lookup on the scan
