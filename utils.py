@@ -6,6 +6,9 @@ from scipy import integrate
 import os
 import sys
 import pymzml
+import json
+import urllib.parse
+
 
 MS_precisions = {
     1 : 5e-6,
@@ -215,8 +218,6 @@ def _calculate_file_stats(usi):
                 response_dict[field] = "N/A"
     except:
         pass
-        raise
-
     
     return response_dict
 
@@ -233,3 +234,55 @@ def _get_scan_polarity(spec):
         pass
      
     return polarity
+
+# Given URL, will try to parse and get key
+def _get_param_from_url(search, param_key, default):
+    try:
+        return str(urllib.parse.parse_qs(search[1:])[param_key][0])
+    except:
+        return default
+    return default
+
+def _resolve_map_plot_selection(url_search, usi):
+    current_map_selection = None
+    highlight_box = None
+
+    # Lets start off with taking the url bounds
+    try:
+        current_map_selection = json.loads(_get_param_from_url(url_search, "map_plot_zoom", "{}"))
+    except:
+        pass
+
+    try:
+        if "scan" in current_map_selection:
+            # Lets do the lookup on the scan
+            scan_number = current_map_selection["scan"]
+            
+            remote_link, local_filename = _resolve_usi(usi)
+            run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
+            spec = run[scan_number]
+            rt = spec.scan_time_in_minutes()
+            mz = spec.selected_precursors[0]["mz"]
+
+            min_rt = max(rt - 0.5, 0)
+            max_rt = rt + 0.5
+
+            min_mz = mz - 2
+            max_mz = mz + 2
+            
+            current_map_selection["xaxis.range[0]"] = min_rt
+            current_map_selection["xaxis.range[1]"] = max_rt
+            current_map_selection["yaxis.range[0]"] = min_mz
+            current_map_selection["yaxis.range[1]"] = max_mz
+
+            highlight_box = {}
+            highlight_box["left"] = rt - 0.01
+            highlight_box["right"] = rt + 0.01
+            highlight_box["top"] = mz + 0.1
+            highlight_box["bottom"] = mz - 0.1
+    except:
+        pass
+
+    return current_map_selection, highlight_box
+
+

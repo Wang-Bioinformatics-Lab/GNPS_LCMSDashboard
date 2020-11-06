@@ -33,6 +33,7 @@ from flask_caching import Cache
 from utils import _resolve_usi
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
+from utils import _resolve_map_plot_selection, _get_param_from_url
 from utils import MS_precisions
 from formula_utils import get_adduct_mass
 from molmass import Formula
@@ -1095,12 +1096,7 @@ def determine_url_only_parameters(search):
     
     return [xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
 
-def _get_param_from_url(search, param_key, default):
-    try:
-        return str(urllib.parse.parse_qs(search[1:])[param_key][0])
-    except:
-        return default
-    return default
+
 
 # Handling file upload
 @app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
@@ -1336,7 +1332,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
     return ms1_results, ms2_results, ms3_results
 
 @cache.memoize()
-def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None"):
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
     min_rt = 0
     max_rt = 1000000
     min_mz = 0
@@ -1387,6 +1383,10 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity
     width = max(min(min_size*4, 500), 20)
     height = max(min(int(min_size*1.75), 500), 20)
 
+    min_size = min(number_spectra, int(max_mz - min_mz) * 4)
+    width = max(min(min_size*4, 750), 120)
+    height = max(min(int(min_size*1.75), 500), 80)
+
     cvs = ds.Canvas(plot_width=width, plot_height=height)
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 
@@ -1399,8 +1399,12 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity
     fig.update_traces(hoverongaps=False)
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'))
 
+    fig.update_yaxes(showline=True, linewidth=1, linecolor='black', gridwidth=3, range=[min_mz, max_mz])
     fig.update_xaxes(showline=True, linewidth=1, linecolor='black', showgrid=False)
-    fig.update_yaxes(showline=True, linewidth=1, linecolor='black', gridwidth=3)
+    if max_rt < 100000:
+        fig.update_xaxes(range=[min_rt, max_rt])
+        
+    
 
     too_many_ms2 = False
     MAX_MS2 = 1000000
@@ -1414,6 +1418,16 @@ def create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity
         if len(all_ms3_scan) > 0:
             scatter_ms3_fig = go.Scatter(x=all_ms3_rt, y=all_ms3_mz, mode='markers', customdata=all_ms3_scan, marker=dict(color='green', size=5, symbol="x"), name="MS3s")
             fig.add_trace(scatter_ms3_fig)
+
+    if highlight_box is not None:
+        print("ADDING HIGHLIGHT BOX")
+        fig.add_shape(type="rect",
+            x0=highlight_box["left"], y0=highlight_box["top"], x1=highlight_box["right"], y1=highlight_box["bottom"],
+            line=dict(
+                color="RoyalBlue",
+                width=2,
+            ),
+        )
 
     return fig
 
@@ -1800,15 +1814,14 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter)
     else:
         show_ms2_markers = False
 
-    current_map_selection = None
+    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi)
 
-    # Lets start off with taking the url bounds
-    try:
-        current_map_selection = json.loads(_get_param_from_url(url_search, "map_plot_zoom", "{}"))
-    except:
-        pass
-    
-    # We have to do a bit of convoluted object, if {'autosize': True}, that means the original load
+    import sys
+    print(triggered_id, file=sys.stderr)
+    print(url_search, file=sys.stderr)
+    print("MAP SELECTION XXXXXXXXXX", map_selection, current_map_selection, triggered_id, usi, file=sys.stderr)
+
+    # We have to do a bit of convoluted object, if {'autosize': True}, that means loading from the URL
     try:
         if "xaxis.autorange" in map_selection:
             current_map_selection = map_selection
@@ -1819,13 +1832,8 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter)
     except:
         pass
 
-    import sys
-    print(triggered_id, file=sys.stderr)
-    print(url_search, file=sys.stderr)
-    print("MAP SELECTION XXXXXXXXXX", map_selection, current_map_selection, triggered_id, usi, file=sys.stderr)
-
     # Doing LCMS Map
-    map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
 
     return [map_fig, remote_link, json.dumps(map_selection)]
 
@@ -1852,13 +1860,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
     else:
         show_ms2_markers = False
 
-    current_map_selection = None
-
-    # Lets start off with taking the url bounds
-    try:
-        current_map_selection = json.loads(_get_param_from_url(url_search, "map_plot_zoom", "{}"))
-    except:
-        pass
+    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi)
     
     # We have to do a bit of convoluted object, if {'autosize': True}, that means the original load
     try:
@@ -1872,7 +1874,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
         pass
 
     # Doing LCMS Map
-    map_fig = create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
 
     return [map_fig]
 
