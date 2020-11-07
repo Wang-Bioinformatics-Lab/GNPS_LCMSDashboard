@@ -286,6 +286,41 @@ def _resolve_map_plot_selection(url_search, usi):
     return current_map_selection, highlight_box
 
 
+# Binary Search, returns target
+def _find_lcms_rt(filename, rt_query):
+    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
+
+    s = 0
+    e = run.get_spectrum_count()
+
+    while True:
+        jump_point = int((e + s) / 2)
+
+        # Jump out early
+        if jump_point == 0:
+            break
+        
+        if jump_point == run.get_spectrum_count():
+            break
+
+        if s == e:
+            break
+
+        if e - s == 1:
+            break
+
+        spec = run[ jump_point ]
+
+        if spec.scan_time_in_minutes() < rt_query:
+            s = jump_point
+        elif spec.scan_time_in_minutes() > rt_query:
+            e = jump_point
+        else:
+            break
+
+    return e
+
+
 def _spectrum_generator(filename, min_rt, max_rt):
     run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
     try:
