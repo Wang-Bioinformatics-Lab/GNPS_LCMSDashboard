@@ -1179,42 +1179,6 @@ def determine_xic_target(search, clickData, existing_xic):
     return ""
 
 
-# Binary Search, returns target
-def _find_lcms_rt(filename, rt_query):
-    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
-
-    s = 0
-    e = run.get_spectrum_count()
-
-    while True:
-        jump_point = int((e + s) / 2)
-
-        # Jump out early
-        if jump_point == 0:
-            break
-        
-        if jump_point == run.get_spectrum_count():
-            break
-
-        if s == e:
-            break
-
-        if e - s == 1:
-            break
-
-        spec = run[ jump_point ]
-
-        if spec.scan_time_in_minutes() < rt_query:
-            s = jump_point
-        elif spec.scan_time_in_minutes() > rt_query:
-            e = jump_point
-        else:
-            break
-
-    return e
-
-
-
 def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
     all_mz = []
     all_rt = []
