@@ -33,19 +33,22 @@ from flask_caching import Cache
 from utils import _resolve_usi
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
-from utils import _resolve_map_plot_selection, _get_param_from_url
+from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
 from utils import MS_precisions
 from formula_utils import get_adduct_mass
 from molmass import Formula
 from pyteomics import mass
+
+from xic import _xic_file_slow, _xic_file_fast
+
 
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    #'CACHE_TYPE': "null",
-    'CACHE_TYPE': 'filesystem',
+    'CACHE_TYPE': "null",
+    #'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -1210,20 +1213,7 @@ def _find_lcms_rt(filename, rt_query):
 
     return e
 
-def _spectrum_generator(filename, min_rt, max_rt):
-    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
-    try:
-        min_rt_index = _find_lcms_rt(filename, min_rt) # These are inclusive on left
-        max_rt_index = _find_lcms_rt(filename, max_rt) + 1 # Exclusive on the right
 
-        for spec_index in tqdm(range(min_rt_index, max_rt_index)):
-            spec = run[spec_index]
-            yield spec
-        print("USED INDEX")
-    except:
-        for spec in run:
-            yield spec
-        print("USED BRUTEFORCE")
 
 def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
     all_mz = []
@@ -1479,118 +1469,25 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter):
 def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
     remote_link, local_filename = _resolve_usi(usi)
 
-    # Performing TIC Plot
-    tic_trace = []
-    rt_trace = []
+    from tic import _tic_file_slow
+
+    return _tic_file_slow(local_filename, tic_option=tic_option, polarity_filter=polarity_filter)
     
-    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-    
-    for n, spec in enumerate(run):
-        if spec.ms_level == 1:
-            scan_polarity = _get_scan_polarity(spec)
 
-            if polarity_filter == "None":
-                pass
-            elif polarity_filter == "Positive":
-                if scan_polarity != "Positive":
-                    continue
-            elif polarity_filter == "Negative":
-                if scan_polarity != "Negative":
-                    continue
-
-            rt_trace.append(spec.scan_time_in_minutes())
-            if tic_option == "TIC":
-                tic_trace.append(sum(spec.i))
-            elif tic_option == "BPI":
-                tic_trace.append(max(spec.i))
-
-    tic_df = pd.DataFrame()
-    tic_df["tic"] = tic_trace
-    tic_df["rt"] = rt_trace
-
-    return tic_df
-
-def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit):
-    if xic_tolerance_unit == "Da":
-        return target_mz - xic_tolerance, target_mz + xic_tolerance
-    else:
-        calculated_tolerance = target_mz / 1000000 * xic_ppm_tolerance
-        return target_mz - calculated_tolerance, target_mz + calculated_tolerance
 
 @cache.memoize()
-def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):
+def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
 
-    # Saving out MS2 locations
-    all_ms2_ms1_int = []
-    all_ms2_rt = []
-    all_ms2_scan = []
+    if get_ms2 is False:
+        try:
+            return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+        except:
+            pass
 
-    # Performing XIC Plot
-    xic_trace = defaultdict(list)
-    rt_trace = []
-    
-    sum_i = 0 # Used by MS2 height
-    for spec in _spectrum_generator(local_filename, rt_min, rt_max):
-        if spec.ms_level == 1:
-            scan_polarity = _get_scan_polarity(spec)
+    return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
-            if polarity_filter == "None":
-                pass
-            elif polarity_filter == "Positive":
-                if scan_polarity != "Positive":
-                    continue
-            elif polarity_filter == "Negative":
-                if scan_polarity != "Negative":
-                    continue
-
-            try:
-                for target_mz in all_xic_values:
-                    lower_tolerance, upper_tolerance = _calculate_upper_lower_tolerance(target_mz[1], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
-
-                    # Filtering peaks by mz
-                    peaks_full = spec.peaks("raw")
-                    peaks = peaks_full[
-                        np.where(np.logical_and(peaks_full[:, 0] >= lower_tolerance, peaks_full[:, 0] <= upper_tolerance))
-                    ]
-
-                    # summing intensity
-                    sum_i = sum([peak[1] for peak in peaks])
-                    xic_trace[target_mz[0]].append(sum_i)
-            except:
-                pass
-
-            rt_trace.append(spec.scan_time_in_minutes())
-
-        # Saving out the MS2 scans for the XIC
-        elif spec.ms_level == 2:
-            if len(all_xic_values) == 1:
-                try:
-                    lower_tolerance, upper_tolerance = _calculate_upper_lower_tolerance(target_mz[1], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
-
-                    ms2_mz = spec.selected_precursors[0]["mz"]
-                    if ms2_mz < lower_tolerance or ms2_mz > upper_tolerance:
-                        continue
-                    all_ms2_ms1_int.append(sum_i)
-                    all_ms2_rt.append(spec.scan_time_in_minutes())
-                    all_ms2_scan.append(spec.ID)
-                except:
-                    pass
-
-    # Formatting Data Frame
-    xic_df = pd.DataFrame()
-    for target_xic in xic_trace:
-        target_name = "XIC {}".format(target_xic)
-        xic_df[target_name] = xic_trace[target_xic]
-    xic_df["rt"] = rt_trace
-
-    ms2_data = {}
-    ms2_data["all_ms2_ms1_int"] = all_ms2_ms1_int
-    ms2_data["all_ms2_rt"] = all_ms2_rt
-    ms2_data["all_ms2_scan"] = all_ms2_scan
-
-    return xic_df, ms2_data
 
 
 def _integrate_files(long_data_df, xic_integration_type):
@@ -1705,7 +1602,10 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     # Performing XIC for all USI in the list
     df_long_list = []
     for usi_element in usi_list:
-        xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+        if len(usi_list) == 1 and len(all_xic_values) == 1:
+            xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=True)
+        else:
+            xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False)
 
         # Performing Normalization only if we have multiple XICs available
         if xic_norm is True:
@@ -1751,14 +1651,17 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme)
 
     # Plotting the MS2 on the XIC
-    if len(usi_list) == 1:
-        all_ms2_ms1_int = ms2_data["all_ms2_ms1_int"]
-        all_ms2_rt = ms2_data["all_ms2_rt"]
-        all_ms2_scan = ms2_data["all_ms2_scan"]
+    if len(usi_list) == 1 and len(all_xic_values) == 1:
+        try:
+            all_ms2_ms1_int = ms2_data["all_ms2_ms1_int"]
+            all_ms2_rt = ms2_data["all_ms2_rt"]
+            all_ms2_scan = ms2_data["all_ms2_scan"]
 
-        if len(all_ms2_scan) > 0:
-            scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
-            fig.add_trace(scatter_fig)
+            if len(all_ms2_scan) > 0:
+                scatter_fig = go.Scatter(x=all_ms2_rt, y=all_ms2_ms1_int, mode='markers', customdata=all_ms2_scan, marker=dict(color='red', size=8, symbol="x"), name="MS2 Acquisitions")
+                fig.add_trace(scatter_fig)
+        except:
+            pass
 
     table_graph = dash.no_update
     box_graph = dash.no_update
