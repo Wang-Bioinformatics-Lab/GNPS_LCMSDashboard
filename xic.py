@@ -63,6 +63,7 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
         elif spec.ms_level == 2:
             if len(all_xic_values) == 1:
                 try:
+                    target_mz = all_xic_values[0]
                     lower_tolerance, upper_tolerance = _calculate_upper_lower_tolerance(target_mz[1], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
 
                     ms2_mz = spec.selected_precursors[0]["mz"]
@@ -72,7 +73,6 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
                     all_ms2_rt.append(spec.scan_time_in_minutes())
                     all_ms2_scan.append(spec.ID)
                 except:
-                    raise
                     pass
 
     # Formatting Data Frame
