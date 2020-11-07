@@ -66,7 +66,8 @@ agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
 placeholder_ms2_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
 placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder')
 
-MAX_LCMS_FILES = 30
+MAX_XIC_PLOT_LCMS_FILES = 30
+MAX_LCMS_FILES = 500
 
 NAVBAR = dbc.Navbar(
     children=[
@@ -1596,24 +1597,29 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         df_long_list.append(df_long)
 
     merged_df_long = pd.concat(df_long_list)
+
+    # Limit the plotting USIs, but not the integrals below
+    plotting_df = merged_df_long
+    plot_usi_list = usi_list[:MAX_XIC_PLOT_LCMS_FILES]
+    plotting_df = plotting_df[plotting_df["USI"].isin(plot_usi_list)]
     
-    if len(usi_list) == 1:
+    if len(plot_usi_list) == 1:
         if xic_file_grouping == "FILE":
             height = 400
-            fig = px.line(merged_df_long, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
+            fig = px.line(plotting_df, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
         else:
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
+            fig = px.line(plotting_df, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
     else:
         if xic_file_grouping == "FILE":
-            height = 400 * len(usi_list)
-            fig = px.line(merged_df_long, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=plot_theme)
+            height = 400 * len(plot_usi_list)
+            fig = px.line(plotting_df, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=plot_theme)
         elif xic_file_grouping == "MZ":
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=plot_theme)
+            fig = px.line(plotting_df, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=plot_theme)
         elif xic_file_grouping == "GROUP":
             height = 400 * len(all_xic_values)
-            fig = px.line(merged_df_long, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme)
+            fig = px.line(plotting_df, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme)
 
     # Plotting the MS2 on the XIC
     if len(usi_list) == 1 and len(all_xic_values) == 1:
@@ -1646,7 +1652,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             filter_action="native",
             export_format="csv"
         )
-        
+
         # Creating a box plot
         box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
         box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay", template=plot_theme)
