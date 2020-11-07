@@ -286,3 +286,17 @@ def _resolve_map_plot_selection(url_search, usi):
     return current_map_selection, highlight_box
 
 
+def _spectrum_generator(filename, min_rt, max_rt):
+    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
+    try:
+        min_rt_index = _find_lcms_rt(filename, min_rt) # These are inclusive on left
+        max_rt_index = _find_lcms_rt(filename, max_rt) + 1 # Exclusive on the right
+
+        for spec_index in tqdm(range(min_rt_index, max_rt_index)):
+            spec = run[spec_index]
+            yield spec
+        print("USED INDEX")
+    except:
+        for spec in run:
+            yield spec
+        print("USED BRUTEFORCE")
