@@ -96,8 +96,9 @@ def _xic_file_fast(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
         lower_tolerance, upper_tolerance = _calculate_upper_lower_tolerance(target_mz[1], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
         temp_result_folder = os.path.join(temp_folder, str(uuid.uuid4()))
 
-        cmd = 'export LC_ALL=C && ./bin/msaccess {} -o {} -x "tic mz={},{} delimiter=tab" --filter "msLevel 1"'.format(input_filename, temp_result_folder, lower_tolerance, upper_tolerance)
+        cmd = 'export LC_ALL=C && ./bin/msaccess {} -o {} -x "tic mz={},{} delimiter=tab" --filter "msLevel 1" --filter "scanTime ["{},{}"]"'.format(input_filename, temp_result_folder, lower_tolerance, upper_tolerance, rt_min*60, rt_max*60)
         os.system(cmd)
+        print(cmd)
 
         # Reading output file
         result_filename = glob.glob(os.path.join(temp_result_folder, "*"))[0]

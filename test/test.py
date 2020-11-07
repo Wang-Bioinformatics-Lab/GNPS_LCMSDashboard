@@ -7,8 +7,8 @@ def test_slow():
     xic_tolerance = 0.5
     xic_ppm_tolerance = 10
     xic_tolerance_unit = "Da"
-    rt_min = 0
-    rt_max = 1000
+    rt_min = 5
+    rt_max = 6
     polarity_filter = "Positive"
 
     xic._xic_file_slow("QC_0.mzML", all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
@@ -18,8 +18,8 @@ def test_fast():
     xic_tolerance = 0.5
     xic_ppm_tolerance = 10
     xic_tolerance_unit = "Da"
-    rt_min = 0
-    rt_max = 1000
+    rt_min = 5
+    rt_max = 6
     polarity_filter = "Positive"
-    
+
     xic._xic_file_fast("QC_0.mzML", all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
