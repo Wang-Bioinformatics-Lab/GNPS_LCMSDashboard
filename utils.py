@@ -50,7 +50,7 @@ def _resolve_usi(usi):
             filename = "-".join(usi_splits[2].split("-")[2:])
             task = usi_splits[2].split("-")[1]
 
-            remote_link = "http://gnps.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+            remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
         elif "QUICKSTART-" in usi_splits[2]:
             filename = "-".join(usi_splits[2].split("-")[2:])
             task = usi_splits[2].split("-")[1]
