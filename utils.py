@@ -8,6 +8,7 @@ import sys
 import pymzml
 import json
 import urllib.parse
+from tqdm import tqdm
 
 
 MS_precisions = {
@@ -295,6 +296,7 @@ def _find_lcms_rt(filename, rt_query):
 
     while True:
         jump_point = int((e + s) / 2)
+        print("BINARY SEARCH", jump_point)
 
         # Jump out early
         if jump_point == 0:

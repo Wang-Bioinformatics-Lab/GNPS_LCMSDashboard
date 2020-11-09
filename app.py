@@ -47,8 +47,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    'CACHE_TYPE': "null",
-    #'CACHE_TYPE': 'filesystem',
+    #'CACHE_TYPE': "null",
+    'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -692,6 +692,8 @@ EXAMPLE_DASHBOARD = [
             html.A("LCMS from Metabolights", href="/?usi=mzspec:MTBLS1124:QC07.mzML:scan:1"),
             html.Br(),
             html.A("Thermo GCMS", href="/?usi=mzspec:MSV000086150:BA1.mzML:scan:1"),
+            html.Br(),
+            html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML:scan:1#%7B%7D"),
             html.Br(),
         ]
     )
