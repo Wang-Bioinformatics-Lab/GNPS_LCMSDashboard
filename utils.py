@@ -22,7 +22,18 @@ def _resolve_usi(usi):
     usi_splits = usi.split(":")
 
     if "LOCAL" in usi_splits[1]:
-        return "", os.path.join("temp", os.path.basename(usi_splits[2]))
+        local_filename = os.path.join("temp", os.path.basename(usi_splits[2]))
+        filename, file_extension = os.path.splitext(local_filename)
+        converted_local_filename = filename + ".mzML"
+
+        if not os.path.isfile(converted_local_filename):
+            temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
+            # Lets do a conversion
+            _convert_mzML(local_filename, temp_filename)
+
+            os.rename(temp_filename, converted_local_filename)
+
+        return "", converted_local_filename
 
     if "MSV" in usi_splits[1]:
         # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1

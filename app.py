@@ -35,6 +35,7 @@ from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
 from utils import MS_precisions
+from utils import _convert_mzML
 from formula_utils import get_adduct_mass
 from molmass import Formula
 from pyteomics import mass
@@ -1122,9 +1123,23 @@ def update_output(search, filecontent, filename, filedate):
             with open(temp_filename, "wb") as temp_file:
                 temp_file.write(base64.decodebytes(data))
 
-            output_usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
-            return [output_usi, "FILE Uploaded {}".format(filename)]
+            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+
+        if extension == ".mzXML" and len(filecontent) < 100000000:
+            mangled_name = str(uuid.uuid4())
+            temp_filename_mzXML = os.path.join("temp", "{}.mzXML".format(mangled_name))
+            temp_filename = os.path.join("temp", "{}.mzXML".format(mangled_name))
+            data = filecontent.encode("utf8").split(b";base64,")[1]
+
+            with open(temp_filename_mzXML, "wb") as temp_file:
+                temp_file.write(base64.decodebytes(data))
+
+            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+
 
     # Resolving USI
     usi = _get_param_from_url(search, "usi", usi)
