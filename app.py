@@ -1451,7 +1451,6 @@ def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tole
         try:
             return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
         except:
-            raise
             pass
 
     return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
