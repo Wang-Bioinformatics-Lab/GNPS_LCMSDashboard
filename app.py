@@ -1457,7 +1457,7 @@ def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
     
 
 
-#@cache.memoize()
+@cache.memoize()
 def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
@@ -1623,20 +1623,24 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     if len(plot_usi_list) == 1:
         if xic_file_grouping == "FILE":
             height = 400
-            fig = px.line(plotting_df, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
         else:
             height = 400 * len(all_xic_values)
-            fig = px.line(plotting_df, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
     else:
         if xic_file_grouping == "FILE":
             height = 400 * len(plot_usi_list)
-            fig = px.line(plotting_df, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=plot_theme)
         elif xic_file_grouping == "MZ":
             height = 400 * len(all_xic_values)
-            fig = px.line(plotting_df, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=plot_theme)
         elif xic_file_grouping == "GROUP":
             height = 400 * len(all_xic_values)
-            fig = px.line(plotting_df, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme)
+
+    # Making these scatter plots into lines
+    fig.update_traces(mode='lines')
+
 
     # Plotting the MS2 on the XIC
     if len(usi_list) == 1 and len(all_xic_values) == 1:
