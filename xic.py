@@ -40,6 +40,12 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
                 if scan_polarity != "Negative":
                     continue
 
+            if spec.scan_time_in_minutes() < rt_min:
+                continue
+
+            if spec.scan_time_in_minutes() > rt_max:
+                continue
+
             try:
                 for target_mz in all_xic_values:
                     lower_tolerance, upper_tolerance = _calculate_upper_lower_tolerance(target_mz[1], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
@@ -54,7 +60,6 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
                     sum_i = sum([peak[1] for peak in peaks])
                     xic_trace[target_mz[0]].append(sum_i)
             except:
-                raise
                 pass
 
             rt_trace.append(spec.scan_time_in_minutes())

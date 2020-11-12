@@ -1457,10 +1457,11 @@ def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
     
 
 
-@cache.memoize()
+#@cache.memoize()
 def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
+
 
     if get_ms2 is False:
         try:
