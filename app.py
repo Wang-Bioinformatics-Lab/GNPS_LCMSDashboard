@@ -1141,10 +1141,13 @@ def update_output(search, filecontent, filename, filedate):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
     usi2 = ""
 
+    acceptable_extensions = [".mzML", ".mzXML", ".CDF"]
+
     if filecontent is not None:
         extension = os.path.splitext(filename)[1]
-        if extension == ".mzML" and len(filecontent) < 100000000:
-            temp_filename = os.path.join("temp", "{}.mzML".format(str(uuid.uuid4())))
+        if extension in acceptable_extensions and len(filecontent) < 100000000:
+            mangled_name = str(uuid.uuid4())
+            temp_filename = os.path.join("temp", "{}{}".format(mangled_name, extension))
             data = filecontent.encode("utf8").split(b";base64,")[1]
 
             with open(temp_filename, "wb") as temp_file:
@@ -1153,20 +1156,6 @@ def update_output(search, filecontent, filename, filedate):
             usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
             return [usi, usi2, "FILE Uploaded {}".format(filename)]
-
-        if extension == ".mzXML" and len(filecontent) < 100000000:
-            mangled_name = str(uuid.uuid4())
-            temp_filename_mzXML = os.path.join("temp", "{}.mzXML".format(mangled_name))
-            temp_filename = os.path.join("temp", "{}.mzXML".format(mangled_name))
-            data = filecontent.encode("utf8").split(b";base64,")[1]
-
-            with open(temp_filename_mzXML, "wb") as temp_file:
-                temp_file.write(base64.decodebytes(data))
-
-            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-            return [usi, usi2, "FILE Uploaded {}".format(filename)]
-
 
     # Resolving USI
     usi = _get_param_from_url(search, "usi", usi)

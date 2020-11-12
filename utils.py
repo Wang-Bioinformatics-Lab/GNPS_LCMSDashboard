@@ -26,12 +26,17 @@ def _resolve_usi(usi):
         filename, file_extension = os.path.splitext(local_filename)
         converted_local_filename = filename + ".mzML"
 
-        if not os.path.isfile(converted_local_filename):
+        msconvert_extensions = [".mzML", ".mzXML"]
+
+        if not os.path.isfile(converted_local_filename) and file_extension in msconvert_extensions:
             temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
             # Lets do a conversion
             _convert_mzML(local_filename, temp_filename)
 
             os.rename(temp_filename, converted_local_filename)
+
+        if not os.path.isfile(converted_local_filename) and file_extension == ".CDF":
+            print("Converting CDF")
 
         return "", converted_local_filename
 
