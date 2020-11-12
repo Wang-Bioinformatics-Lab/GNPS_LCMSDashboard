@@ -28,6 +28,12 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
     
     sum_i = 0 # Used by MS2 height
     for spec in _spectrum_generator(input_filename, rt_min, rt_max):
+        if spec.scan_time_in_minutes() < rt_min:
+            continue
+
+        if spec.scan_time_in_minutes() > rt_max:
+            continue
+
         if spec.ms_level == 1:
             scan_polarity = _get_scan_polarity(spec)
 
@@ -39,12 +45,6 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
             elif polarity_filter == "Negative":
                 if scan_polarity != "Negative":
                     continue
-
-            if spec.scan_time_in_minutes() < rt_min:
-                continue
-
-            if spec.scan_time_in_minutes() > rt_max:
-                continue
 
             try:
                 for target_mz in all_xic_values:
