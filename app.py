@@ -1428,6 +1428,16 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
             ),
         )
 
+    # Adding final bounding box to where we zoomed to
+    if max_rt < 100000:
+        fig.add_shape(type="rect",
+            x0=min_rt, y0=min_mz, x1=max_rt, y1=max_mz,
+            line=dict(
+                color="RoyalBlue",
+                width=0.1,
+            ),
+        )
+
     return fig
 
 # Creating TIC plot
