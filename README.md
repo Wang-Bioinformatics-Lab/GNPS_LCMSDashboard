@@ -40,7 +40,7 @@ We are also trying to support a heroku deployment. This is why we have a Procfil
 
 Here is the USI for a QC run
 
-mzspec:MSV000085852:QC_0:scan:62886
+mzspec:MSV000085852:QC_0
 
 What we can easily do is paste in the QC molecules and pull them out in one fell swoop:
 
@@ -50,9 +50,9 @@ You can try it out at this [URL](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000
 
 **Quickly Compare Multiple files**
 
-mzspec:MSV000085852:QC_0:scan:62886
-mzspec:MSV000085852:QC_1:scan:62886
-mzspec:MSV000085852:QC_2:scan:62886
+mzspec:MSV000085852:QC_0
+mzspec:MSV000085852:QC_1
+mzspec:MSV000085852:QC_2
 
 271.0315;278.1902;279.0909;285.0205;311.0805;314.1381
 
