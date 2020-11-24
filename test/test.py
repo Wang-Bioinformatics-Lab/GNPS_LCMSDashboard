@@ -30,6 +30,14 @@ def test_fast():
 def test_2d_mapping():
     lcms_map._create_map_fig("QC_0.mzML")
 
+def test_scan_in_usi():
+    usi = "mzspec:MSV000085852:QC_0:scan:3548"
+    remote_link, local_filename = utils._resolve_usi(usi)
+    current_map_selection, highlight_box = utils._resolve_map_plot_selection(None, usi)
+
+    import sys
+    print(current_map_selection, highlight_box, file=sys.stderr)
+
 def test_resolve():
     df = pd.read_csv("usi_list.tsv", sep='\t')
     for record in df.to_dict(orient="records"):
