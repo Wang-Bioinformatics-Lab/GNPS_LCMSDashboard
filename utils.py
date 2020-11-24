@@ -71,9 +71,7 @@ def _resolve_usi(usi, temp_folder="temp"):
         elif "QUICKSTART-" in usi_splits[2]:
             filename = "-".join(usi_splits[2].split("-")[2:])
             task = usi_splits[2].split("-")[1]
-
             remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
-            print(remote_link)
         elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
             print("Library Entry")
             # Lets find the provenance file
@@ -88,6 +86,36 @@ def _resolve_usi(usi, temp_folder="temp"):
         dataset_accession = usi_splits[1]
         filename = usi_splits[2]
         remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
+    elif "ST" in usi_splits[1]:
+        # First looking 
+        dataset_accession = usi_splits[1]
+        filename = usi_splits[2]
+         
+        # Query Accession
+        url = "https://massive.ucsd.edu/ProteoSAFe/QueryDatasets?task=N%2FA&file=&pageSize=30&offset=0&query=%257B%2522full_search_input%2522%253A%2522%2522%252C%2522table_sort_history%2522%253A%2522createdMillis_dsc%2522%252C%2522query%2522%253A%257B%257D%252C%2522title_input%2522%253A%2522{}%2522%257D&target=&_=1606254845533".format(dataset_accession)
+        r = requests.get(url)
+        data_json = r.json()
+
+        msv_accession = data_json["row_data"][0]["dataset"]
+        msv_usi = "mzspec:{}:{}:scan:1".format(msv_accession, filename)
+
+        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
+        lookup_request = requests.get(lookup_url)
+
+        resolution_json = lookup_request.json()
+
+        remote_path = None
+        
+        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
+        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
+
+        if len(mzML_resolutions) > 0:
+            remote_path = mzML_resolutions[0]["file_descriptor"]
+        elif len(mzXML_resolutions) > 0:
+            remote_path = mzXML_resolutions[0]["file_descriptor"]
+
+        # Format into FTP link
+        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
 
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
