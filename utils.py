@@ -291,8 +291,8 @@ def _resolve_map_plot_selection(url_search, usi):
             min_rt = max(rt - 0.5, 0)
             max_rt = rt + 0.5
 
-            min_mz = mz - 2
-            max_mz = mz + 2
+            min_mz = mz - 3
+            max_mz = mz + 3
 
             # If this is already set in the URL, we don't overwrite
             if len(current_map_selection) == 0 or "autosize" in current_map_selection:
