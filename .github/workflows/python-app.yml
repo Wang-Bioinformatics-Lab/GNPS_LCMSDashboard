@@ -29,4 +29,4 @@ jobs:
     - name: Test with pytest
       run: |
         cd test
-        pytest *py -v
+        pytest test.py -v
