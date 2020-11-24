@@ -41,4 +41,7 @@ def test_scan_in_usi():
 def test_resolve():
     df = pd.read_csv("usi_list.tsv", sep='\t')
     for record in df.to_dict(orient="records"):
-        utils._resolve_usi(record["usi"])
+        print(record["usi"])
+        remote_link, local_filename = utils._resolve_usi(record["usi"])
+        lcms_map._create_map_fig(local_filename)
+
