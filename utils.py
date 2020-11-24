@@ -74,7 +74,7 @@ def _resolve_usi(usi, temp_folder="temp"):
 
             remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
             print(remote_link)
-        elif "GNPS-LIBRARY" in usi_splits[2]:
+        elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
             print("Library Entry")
             # Lets find the provenance file
             accession = usi_splits[4]
@@ -90,17 +90,17 @@ def _resolve_usi(usi, temp_folder="temp"):
         remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
 
     # Getting Data Local, TODO: likely should serialize it
-    local_filename = os.path.join("temp", werkzeug.utils.secure_filename(remote_link))
+    local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
     converted_local_filename = filename + ".mzML"
     
     if not os.path.isfile(converted_local_filename):
-        temp_filename = os.path.join("temp", str(uuid.uuid4()) + file_extension)
+        temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
         wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
         os.system(wget_cmd)
         os.rename(temp_filename, local_filename)
 
-        temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
+        temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
         # Lets do a conversion
         _convert_mzML(local_filename, temp_filename)
 
