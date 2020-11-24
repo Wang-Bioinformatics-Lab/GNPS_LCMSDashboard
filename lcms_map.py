@@ -220,7 +220,7 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         fig.add_shape(type="rect",
             x0=min_rt, y0=min_mz, x1=max_rt, y1=max_mz,
             line=dict(
-                color="RoyalBlue",
+                color="Green",
                 width=0.1,
             ),
         )

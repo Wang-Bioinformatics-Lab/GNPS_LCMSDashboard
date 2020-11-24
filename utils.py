@@ -261,7 +261,7 @@ def _get_param_from_url(search, param_key, default):
     return default
 
 def _resolve_map_plot_selection(url_search, usi):
-    current_map_selection = None
+    current_map_selection = {}
     highlight_box = None
 
     # Lets start off with taking the url bounds
@@ -271,9 +271,16 @@ def _resolve_map_plot_selection(url_search, usi):
         pass
 
     try:
-        if "scan" in current_map_selection:
-            # Lets do the lookup on the scan
-            scan_number = current_map_selection["scan"]
+        usi_splits = usi.split(":")
+        dataset = usi_splits[1]
+        filename = usi_splits[2]
+
+        if len(usi_splits) > 3 and usi_splits[3] == "scan":
+            scan_number = int(usi_splits[4])
+
+            if scan_number == 1:
+                # Lets get out of here and not set anything
+                raise Exception
             
             remote_link, local_filename = _resolve_usi(usi)
             run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
@@ -286,11 +293,13 @@ def _resolve_map_plot_selection(url_search, usi):
 
             min_mz = mz - 2
             max_mz = mz + 2
-            
-            current_map_selection["xaxis.range[0]"] = min_rt
-            current_map_selection["xaxis.range[1]"] = max_rt
-            current_map_selection["yaxis.range[0]"] = min_mz
-            current_map_selection["yaxis.range[1]"] = max_mz
+
+            # If this is already set in the URL, we don't overwrite
+            if len(current_map_selection) == 0 or "autosize" in current_map_selection:
+                current_map_selection["xaxis.range[0]"] = min_rt
+                current_map_selection["xaxis.range[1]"] = max_rt
+                current_map_selection["yaxis.range[0]"] = min_mz
+                current_map_selection["yaxis.range[1]"] = max_mz
 
             highlight_box = {}
             highlight_box["left"] = rt - 0.01

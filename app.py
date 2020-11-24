@@ -700,29 +700,29 @@ EXAMPLE_DASHBOARD = [
     dbc.CardHeader(html.H5("Example Exploration Dashboards")),
     dbc.CardBody(
         [
-            html.A("LCMS Multiple m/z XIC for QC Files", href="/?usi=mzspec%3AMSV000085852%3AQC_0%3Ascan%3A62886&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier="),
+            html.A("LCMS Multiple m/z XIC for QC Files", href="/?usi=mzspec%3AMSV000085852%3AQC_0&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier="),
             html.Br(),
-            html.A("LCMS Side By Side Visualization", href='/?usi=mzspec%3AMSV000085852%3AQC_0%3Ascan%3A62886&usi2=mzspec%3AMSV000085852%3AQC_1%3Ascan%3A62886&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381%3B833.062397505189&xic_tolerance=0.5&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&show_ms2_markers=True&ms2_identifier=MS2%3A2277&show_lcms_2nd_map=True&map_plot_zoom=%7B"xaxis.range%5B0%5D"%3A+3.2846848333333334%2C+"xaxis.range%5B1%5D"%3A+3.5981121270270275%2C+"yaxis.range%5B0%5D"%3A+815.4334319736646%2C+"yaxis.range%5B1%5D"%3A+853.5983309206755%7D'),
+            html.A("LCMS Side By Side Visualization", href='/?usi=mzspec%3AMSV000085852%3AQC_0&usi2=mzspec%3AMSV000085852%3AQC_1&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381%3B833.062397505189&xic_tolerance=0.5&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&show_ms2_markers=True&ms2_identifier=MS2%3A2277&show_lcms_2nd_map=True&map_plot_zoom=%7B"xaxis.range%5B0%5D"%3A+3.2846848333333334%2C+"xaxis.range%5B1%5D"%3A+3.5981121270270275%2C+"yaxis.range%5B0%5D"%3A+815.4334319736646%2C+"yaxis.range%5B1%5D"%3A+853.5983309206755%7D'),
             html.Br(),
-            html.A("LCMS XIC by Formula - QC Amitryptiline", href='/?usi=mzspec%3AMSV000085852%3AQC_0%3Ascan%3A62886&usi2=&xicmz=&xic_formula=C20H23N&xic_tolerance=0.01&xic_ppm_tolerance=20&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"autosize"%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC'),
+            html.A("LCMS XIC by Formula - QC Amitryptiline", href='/?usi=mzspec%3AMSV000085852%3AQC_0&usi2=&xicmz=&xic_formula=C20H23N&xic_tolerance=0.01&xic_ppm_tolerance=20&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"autosize"%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC'),
             html.Br(),
-            html.A("Thermo LCMS", href="/?usi=mzspec%3AMSV000084951%3AAH22%3Ascan%3A62886&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.A("Thermo LCMS", href="/?usi=mzspec%3AMSV000084951%3AAH22&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
-            html.A("Sciex LCMS", href="/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.A("Sciex LCMS", href="/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
-            html.A("Bruker LCMS", href="/?usi=mzspec%3AMSV000086015%3AStdMix_02__GA2_01_55623%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.A("Bruker LCMS", href="/?usi=mzspec%3AMSV000086015%3AStdMix_02__GA2_01_55623&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
-            html.A("Waters LCMS", href="/?usi=mzspec%3AMSV000084977%3AOEPKS7_B_1_neg%3Ascan%3A1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.A("Waters LCMS", href="/?usi=mzspec%3AMSV000084977%3AOEPKS7_B_1_neg&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
-            html.A("Agilent LCMS", href="/?usi=mzspec:MSV000084060:KM0001:scan:1"),
+            html.A("Agilent LCMS", href="/?usi=mzspec:MSV000084060:KM0001"),
             html.Br(),
-            html.A("Thermo Proteomics LCMS", href="/?usi=mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01:scan:62886"),
+            html.A("Thermo Proteomics LCMS", href="/?usi=mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01"),
             html.Br(),
-            html.A("LCMS from Metabolights", href="/?usi=mzspec:MTBLS1124:QC07.mzML:scan:1"),
+            html.A("LCMS from Metabolights", href="/?usi=mzspec:MTBLS1124:QC07.mzML"),
             html.Br(),
-            html.A("Thermo GCMS", href="/?usi=mzspec:MSV000086150:BA1.mzML:scan:1"),
+            html.A("Thermo GCMS", href="/?usi=mzspec:MSV000086150:BA1.mzML"),
             html.Br(),
-            html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML:scan:1#%7B%7D"),
+            html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML#%7B%7D"),
             html.Br(),
         ]
     )
@@ -1139,7 +1139,7 @@ def determine_url_only_parameters(search):
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified')])
 def update_output(search, filecontent, filename, filedate):
-    usi = "mzspec:MSV000084494:GNPS00002_A3_p:scan:1"
+    usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
     if filecontent is not None:
@@ -1540,6 +1540,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter)
 
     # We have to do a bit of convoluted object, if {'autosize': True}, that means loading from the URL
     try:
+        # Force an override if user input is detected in map_selection
         if "xaxis.autorange" in map_selection:
             current_map_selection = map_selection
         if "xaxis.range[0]" in map_selection:
