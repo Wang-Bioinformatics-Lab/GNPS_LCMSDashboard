@@ -18,16 +18,16 @@ MS_precisions = {
 }
 
 # Returns remote_link and local filepath
-def _resolve_usi(usi):
+def _resolve_usi(usi, temp_folder="temp"):
     usi_splits = usi.split(":")
 
     if "LOCAL" in usi_splits[1]:
-        local_filename = os.path.join("temp", os.path.basename(usi_splits[2]))
+        local_filename = os.path.join(temp_folder, os.path.basename(usi_splits[2]))
         filename, file_extension = os.path.splitext(local_filename)
         converted_local_filename = filename + ".mzML"
 
         if not os.path.isfile(converted_local_filename):
-            temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
+            temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
             # Lets do a conversion
             _convert_mzML(local_filename, temp_filename)
 
@@ -38,7 +38,12 @@ def _resolve_usi(usi):
     if "MSV" in usi_splits[1]:
         # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
         # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
-        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={usi}'
+        # Checking the splits
+        msv_usi = usi
+        if len(usi.split(":")) == 3:
+            msv_usi = "{}:scan:1".format(usi)
+        
+        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
         lookup_request = requests.get(lookup_url)
 
         resolution_json = lookup_request.json()
