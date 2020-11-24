@@ -96,7 +96,7 @@ def _resolve_usi(usi, temp_folder="temp"):
         r = requests.get(url)
         data_json = r.json()
 
-        msv_accession = dataset_json["row_data"][0]["dataset"]
+        msv_accession = data_json["row_data"][0]["dataset"]
         msv_usi = "mzspec:{}:{}:scan:1".format(msv_accession, filename)
 
         lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
