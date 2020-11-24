@@ -17,3 +17,6 @@ server-compose:
 
 attach:
 	docker exec -i -t gnpslcms-dash /bin/bash
+
+test:
+	act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04
