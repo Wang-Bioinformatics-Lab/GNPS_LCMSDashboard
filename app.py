@@ -106,7 +106,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.14", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.15", href="/")),
             ],
         navbar=True)
     ],
@@ -726,6 +726,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo GCMS", href="/?usi=mzspec:MSV000086150:BA1.mzML"),
             html.Br(),
+            html.A("GCMS in CDF Format", href="/?usi=mzspec:GNPS:TASK-ce31b7fdd01244dbb31478147889de1e-f.aaksenov/GC_data/Sterols_data/Samples/0104006.cdf"),
+            html.Br(),
             html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML#%7B%7D"),
             html.Br(),
         ]
@@ -1147,8 +1149,11 @@ def update_output(search, filecontent, filename, filedate):
     usi2 = ""
 
     if filecontent is not None:
+        if len(filecontent) > 100000000:
+            raise Exception
+
         extension = os.path.splitext(filename)[1]
-        if extension == ".mzML" and len(filecontent) < 100000000:
+        if extension == ".mzML":
             temp_filename = os.path.join("temp", "{}.mzML".format(str(uuid.uuid4())))
             data = filecontent.encode("utf8").split(b";base64,")[1]
 
@@ -1159,7 +1164,7 @@ def update_output(search, filecontent, filename, filedate):
 
             return [usi, usi2, "FILE Uploaded {}".format(filename)]
 
-        if extension == ".mzXML" and len(filecontent) < 100000000:
+        if extension == ".mzXML":
             mangled_name = str(uuid.uuid4())
             temp_filename_mzXML = os.path.join("temp", "{}.mzXML".format(mangled_name))
             temp_filename = os.path.join("temp", "{}.mzXML".format(mangled_name))
@@ -1171,6 +1176,19 @@ def update_output(search, filecontent, filename, filedate):
             usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
             return [usi, usi2, "FILE Uploaded {}".format(filename)]
+
+        if extension.lower() == ".cdf":
+            mangled_name = str(uuid.uuid4())
+            temp_filename = os.path.join("temp", "{}.cdf".format(mangled_name))
+            data = filecontent.encode("utf8").split(b";base64,")[1]
+
+            with open(temp_filename, "wb") as temp_file:
+                temp_file.write(base64.decodebytes(data))
+
+            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+
 
 
     # Resolving USI

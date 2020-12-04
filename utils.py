@@ -29,7 +29,10 @@ def _resolve_usi(usi, temp_folder="temp"):
         if not os.path.isfile(converted_local_filename):
             temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
             # Lets do a conversion
-            _convert_mzML(local_filename, temp_filename)
+            if file_extension == ".cdf":
+                _convert_cdf_to_mzML(local_filename, temp_filename)
+            else:
+                _convert_mzML(local_filename, temp_filename)
 
             os.rename(temp_filename, converted_local_filename)
 
@@ -120,8 +123,9 @@ def _resolve_usi(usi, temp_folder="temp"):
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
+
     converted_local_filename = filename + ".mzML"
-    
+
     if not os.path.isfile(converted_local_filename):
         temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
         wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
@@ -130,11 +134,13 @@ def _resolve_usi(usi, temp_folder="temp"):
 
         temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
         # Lets do a conversion
-        _convert_mzML(local_filename, temp_filename)
+        if file_extension == ".cdf":
+            _convert_cdf_to_mzML(local_filename, temp_filename)
+        else:
+            _convert_mzML(local_filename, temp_filename)
 
+        # Renaming the temp
         os.rename(temp_filename, converted_local_filename)
-
-        local_filename = converted_local_filename
 
     return remote_link, converted_local_filename
 
@@ -220,8 +226,72 @@ def _convert_mzML(input_mzXML, output_mzML):
         except:
             pass
 
+# in python doing a conversion from cdf to mzML
+def _convert_cdf_to_mzML(input_cdf, output_mzML):
+    from netCDF4 import Dataset
+    from psims.mzml.writer import MzMLWriter
+    import numpy as np
 
-    
+    temp_filename = os.path.join("temp", str(uuid.uuid4()) + ".mzML")
+
+    # lets put the cdf reader here
+    cdf_reader = Dataset(input_cdf, "r")
+    mass_values      = np.array(cdf_reader.variables["mass_values"][:])
+    intensity_values = np.array(cdf_reader.variables["intensity_values"][:])
+    time_values = np.array(cdf_reader.variables["scan_acquisition_time"][:])
+    scan_values = np.array(cdf_reader.variables["scan_index"][:])
+
+    #removing empty scans
+    dd = np.diff(scan_values) != 0
+    dd = np.append(dd, True)
+    ddi = np.arange(scan_values.shape[0], dtype = np.int64)[dd]
+    time_values = time_values[ddi]
+    scan_values = scan_values[ddi]
+
+    # getting scan boundaries
+    scan_end_values = np.append(scan_values[1:]-1, mass_values.shape[0]-1)
+    scan_indcs = zip(scan_values, scan_end_values)
+
+    # Writing everything out
+    with MzMLWriter(open(temp_filename, 'wb')) as out:
+        out.controlled_vocabularies()
+        with out.run(id="my_analysis"):
+            with out.spectrum_list(count=1000):
+                # Iterating through all scans in the reader
+                try:
+                    # reading through scans
+                    for i, scan_range in enumerate(scan_indcs):
+                        time_min_rt = time_values[i] / 60
+
+                        _mz_array = np.array(mass_values[scan_range[0]:scan_range[1]])
+                        _i_array = np.array(intensity_values[scan_range[0]:scan_range[1]])
+                        
+                        out.write_spectrum(
+                            _mz_array, _i_array,
+                            id=i, params=[
+                                "MS1 Spectrum",
+                                {"ms level": 1},
+                                {"total ion current": sum(_i_array)}
+                            ],
+                            scan_start_time=time_min_rt)
+                except:
+                    print("Reading Failed, skipping to end")
+                    pass
+
+    # # Round trip through MsConvert
+    # conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(temp_filename, output_mzML, os.path.dirname(output_mzML))
+    # conversion_ret_code = os.system(conversion_cmd)
+
+    # try:
+    #     os.remove(temp_filename)
+    # except:
+    #     pass
+
+    try:
+        os.rename(temp_filename, output_mzML)
+    except:
+        pass
+
 
 import subprocess, io
 

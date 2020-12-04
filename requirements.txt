@@ -44,3 +44,4 @@ scipy
 pyteomics
 psims
 molmass
+netcdf4
