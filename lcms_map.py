@@ -1,4 +1,5 @@
 
+import os
 import pymzml
 import numpy as np
 import datashader as ds
@@ -9,7 +10,6 @@ from utils import _spectrum_generator
 from utils import _get_scan_polarity
 import plotly.express as px
 import plotly.graph_objects as go 
-
 
 
 def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):

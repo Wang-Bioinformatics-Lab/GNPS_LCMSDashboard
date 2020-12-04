@@ -44,4 +44,3 @@ def test_resolve():
         print(record["usi"])
         remote_link, local_filename = utils._resolve_usi(record["usi"])
         lcms_map._create_map_fig(local_filename)
-
