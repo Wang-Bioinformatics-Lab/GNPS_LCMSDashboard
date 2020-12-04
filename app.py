@@ -181,27 +181,6 @@ DATASELECTION_CARD = [
                             row=True,
                             className="mb-3",
                         )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
-                                dcc.Dropdown(
-                                    id='tic_option',
-                                    options=[
-                                        {'label': 'TIC', 'value': 'TIC'},
-                                        {'label': 'BPI', 'value': 'BPI'}
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="TIC",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
                 ]),
                 dbc.Row([
                     dbc.Col(
@@ -425,6 +404,53 @@ DATASELECTION_CARD = [
                                 dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
                             ],
                             className="mb-3",
+                        ),
+                    ),
+                ]),
+                html.H5(children='TIC Options'),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
+                                dcc.Dropdown(
+                                    id='tic_option',
+                                    options=[
+                                        {'label': 'TIC', 'value': 'TIC'},
+                                        {'label': 'BPI', 'value': 'BPI'}
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="TIC",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                        )
+                    ),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("Show Multiple TICs", width=4.8, style={"width":"150px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='show_multiple_tic',
+                                        value=False,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
                         ),
                     ),
                 ]),
@@ -1273,10 +1299,24 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value"), 
               Input("tic_option", "value"),
-              Input("polarity-filtering", "value")])
-def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter):
-    tic_df = _perform_tic(usi, tic_option=tic_option, polarity_filter=polarity_filter)
-    fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
+              Input("polarity-filtering", "value"),
+              Input("show_multiple_tic", "value")])
+def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
+    # Calculating all TICs for all USIs
+    all_usi = usi.split("\n")
+
+    if len(all_usi) > 1 and show_multiple_tic is True:
+        all_usi_tic_df = []
+        for current_usi in all_usi:
+            tic_df = _perform_tic(current_usi, tic_option=tic_option, polarity_filter=polarity_filter)
+            tic_df["usi"] = current_usi
+            all_usi_tic_df.append(tic_df)
+
+        merged_tic_df = pd.concat(all_usi_tic_df)
+        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="usi")
+    else:
+        tic_df = _perform_tic(usi, tic_option=tic_option, polarity_filter=polarity_filter)
+        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
 
     # For Drawing and Exporting
     graph_config = {
