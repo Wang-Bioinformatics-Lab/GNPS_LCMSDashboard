@@ -243,6 +243,38 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         )),
                 ]),
+                html.H5(children='LCMS Overlay Options'),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Overlay USI", addon_type="prepend"),
+                                dbc.Input(id='overlay-usi', placeholder="Enter Overlay File USI"),
+                            ],
+                            className="mb-3",
+                        ),
+                    )
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Overlay m/z", addon_type="prepend"),
+                                dbc.Input(id='overlay-mz', placeholder="Enter Overlay mz column", value="row m/z"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Overlay rt", addon_type="prepend"),
+                                dbc.Input(id='overlay-rt', placeholder="Enter Overlay rt column", value="row retention time"),
+                            ],
+                            className="mb-3",
+                        ),
+                    )
+                ]),
             ], className="col-sm"),
             ## Right Panel
             dbc.Col([
@@ -1074,7 +1106,10 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("show_lcms_2nd_map", "value"),
                 Output("tic_option", "value"),
                 Output("polarity-filtering", "value"),
-                Output("polarity-filtering2", "value"),],
+                Output("polarity-filtering2", "value"),
+                Output("overlay-usi", "value"),
+                Output("overlay-mz", "value"),
+                Output("overlay-rt", "value")],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     xic_formula = ""
@@ -1091,6 +1126,9 @@ def determine_url_only_parameters(search):
     tic_option = "TIC"
     polarity_filtering = "None"
     polarity_filtering2 = "None"
+    overlay_usi = dash.no_update
+    overlay_mz = dash.no_update
+    overlay_rt = dash.no_update
 
     
 
@@ -1176,8 +1214,33 @@ def determine_url_only_parameters(search):
     except:
         pass
 
+    try:
+        overlay_usi = str(urllib.parse.parse_qs(search[1:])["overlay_usi"][0])
+    except:
+        pass
+
+    try:
+        overlay_mz = str(urllib.parse.parse_qs(search[1:])["overlay_mz"][0])
+    except:
+        pass
+
+    try:
+        overlay_rt = str(urllib.parse.parse_qs(search[1:])["overlay_rt"][0])
+    except:
+        pass
     
-    return [xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, show_lcms_2nd_map, tic_option, polarity_filtering, polarity_filtering2]
+    return [xic_formula, 
+            xic_peptide, 
+            xic_tolerance, 
+            xic_ppm_tolerance, 
+            xic_tolerance_unit, 
+            xic_rt_window, xic_norm, 
+            xic_file_grouping, xic_integration_type, 
+            show_ms2_markers, 
+            show_lcms_2nd_map, 
+            tic_option, polarity_filtering, 
+            polarity_filtering2, 
+            overlay_usi, overlay_mz, overlay_rt]
 
 
 
@@ -1230,8 +1293,6 @@ def update_output(search, filecontent, filename, filedate):
             usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
             return [usi, usi2, "FILE Uploaded {}".format(filename)]
-
-
 
     # Resolving USI
     usi = _get_param_from_url(search, "usi", usi)
@@ -1290,8 +1351,8 @@ def determine_xic_target(search, clickData, existing_xic):
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
-    return lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None):
+    return lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_data)
 
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
@@ -1596,8 +1657,11 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('usi', 'value'), 
               Input('map-plot', 'relayoutData'), 
               Input('show_ms2_markers', 'value'),
-              Input('polarity-filtering', 'value')])
-def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter):
+              Input('polarity-filtering', 'value'),
+              Input('overlay-usi', 'value'),
+              Input('overlay-mz', 'value'),
+              Input('overlay-rt', 'value')])
+def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, overlay_usi, overlay_mz, overlay_rt):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -1628,8 +1692,23 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter)
     except:
         pass
 
+    # Adding a overlay for the figure
+    overlay_df = None
+    try:
+        overlay_usi_splits = overlay_usi.split(":")
+        file_path = overlay_usi_splits[2].split("-")[-1]
+        task = overlay_usi_splits[2].split("-")[1]
+        url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
+        r = requests.get(url)
+        overlay_df = pd.read_csv(url, sep=None, nrows=20000)
+
+        overlay_df["mz"] = overlay_df[overlay_mz]
+        overlay_df["rt"] = overlay_df[overlay_rt]
+    except:
+        pass
+
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df)
 
     return [map_fig, remote_link, json.dumps(map_selection)]
 
@@ -1693,8 +1772,14 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('polarity-filtering', 'value'),
               Input('polarity-filtering2', 'value'),
               Input("show_lcms_2nd_map", "value"),
-              Input("tic_option", "value")])
-def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option):
+              Input("tic_option", "value"),
+              Input("overlay_usi", "value"),
+              Input("overlay_mz", "value"),
+              Input("overlay_rt", "value")])
+def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
+                xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
+                xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
+                overlay_usi, overlay_mz, overlay_rt):
 
     url_params = {}
     url_params["usi"] = usi
@@ -1716,6 +1801,9 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_
     url_params["polarity_filtering"] = polarity_filtering
     url_params["polarity_filtering2"] = polarity_filtering2
     url_params["tic_option"] = tic_option
+    url_params["overlay_usi"] = overlay_usi
+    url_params["overlay_mz"] = overlay_mz
+    url_params["overlay_rt"] = overlay_rt
 
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")

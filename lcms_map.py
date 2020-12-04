@@ -118,7 +118,9 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
     return ms1_results, ms2_results, ms3_results
 
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
+# Creates the figure for map plot
+# overlay_data is a dataframe that includes the overlay, rt and mz are the expected columns
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None):
     min_rt = 0
     max_rt = 1000000
     min_mz = 0
@@ -224,5 +226,17 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
                 width=0.1,
             ),
         )
+
+    # Adding in overlay data
+    # Adding a few extra things to the figure
+    try:
+        overlay_data = overlay_data[overlay_data["rt"] > min_rt]
+        overlay_data = overlay_data[overlay_data["rt"] < max_rt]
+        overlay_data = overlay_data[overlay_data["mz"] > min_mz]
+        overlay_data = overlay_data[overlay_data["mz"] < max_mz]
+        scatter_overlay_fig = go.Scatter(x=overlay_data["rt"], y=overlay_data["mz"], mode='markers', marker=dict(color='green', size=10, symbol="circle", opacity=0.7), name="Overlay")
+        fig.add_trace(scatter_overlay_fig)
+    except:
+        pass
 
     return fig
