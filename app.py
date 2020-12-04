@@ -908,6 +908,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         }
     }
 
+
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
         usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
         usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
@@ -929,6 +930,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
             spectrum = run[scan_number]
             peaks = spectrum.peaks("raw")
             precursor_mz = spectrum.selected_precursors[0]["mz"]
+
+            # Let's try it here
 
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
@@ -985,10 +988,23 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         except:
             pass
 
+
         usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
-        r = requests.get(usi_json_url)
-        spectra_obj = r.json()
-        peaks = spectra_obj["peaks"]
+
+        try:
+            r = requests.get(usi_json_url)
+            spectrum_json = r.json()
+            peaks = spectrum_json["peaks"]
+        except:
+            # Lets look at file on disk
+            print("JSON USI EXCEPTION")
+            remote_link, local_filename = _resolve_usi(usi)
+            run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
+            spectrum = run[scan_number]
+            peaks = spectrum.peaks("raw")
+
+        
+        
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
         neg_ints = [intensity * -1 for intensity in ints]
