@@ -4,6 +4,7 @@ import xic
 import lcms_map
 import pandas as pd
 import utils
+import tic
 
 def test_slow():
     all_xic_values = [["278.1902", 278.1902]]
@@ -44,3 +45,10 @@ def test_resolve():
         print(record["usi"])
         remote_link, local_filename = utils._resolve_usi(record["usi"])
         lcms_map._create_map_fig(local_filename)
+
+def test_tic():
+    df = pd.read_csv("usi_list.tsv", sep='\t')
+    for record in df.to_dict(orient="records"):
+        print(record["usi"])
+        remote_link, local_filename = utils._resolve_usi(record["usi"])
+        tic._tic_file_slow(local_filename)

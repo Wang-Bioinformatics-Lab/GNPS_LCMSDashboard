@@ -49,8 +49,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    #'CACHE_TYPE': "null",
-    'CACHE_TYPE': 'filesystem',
+    'CACHE_TYPE': "null",
+    #'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -788,6 +788,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML#%7B%7D"),
             html.Br(),
+            html.A("Multiple Files to show comparison", href="/?usi=mzspec%3AMSV000085618%3Accms_peak%2FBLANK_P2-F-1_01_13263.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FED103_P1-D-8_01_3762.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FED104_P1-D-9_01_3763.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FED105_P1-A-1_01_3781.mzML%3Ascan%3A1%0A&usi2=mzspec%3AMSV000085618%3Accms_peak%2FED24_P1-B-2_01_2171.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FED25_P1-B-3_01_2172.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FED26_P1-B-4_01_2173.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FED36_P1-C-3_01_2181.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FED37_P1-C-4_01_2182.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FED38_P1-C-5_01_2183.mzML%3Ascan%3A1%0Amzspec%3AMSV000085618%3Accms_peak%2FSJ-123_P1-A-6_01_13658.mzML%3Ascan%3A1&xicmz=799.437&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=ppm&xic_rt_window=2.5&xic_norm=False&xic_file_grouping=MZ&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B%22autosize%22%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC"),
+            html.Br(),
         ]
     )
 ]
@@ -1369,14 +1371,20 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
     if len(all_usi) > 1 and show_multiple_tic is True:
         all_usi_tic_df = []
         for current_usi in all_usi:
-            tic_df = _perform_tic(current_usi, tic_option=tic_option, polarity_filter=polarity_filter)
-            tic_df["usi"] = current_usi
-            all_usi_tic_df.append(tic_df)
+            if len(current_usi) < 2:
+                continue
+
+            try:
+                tic_df = _perform_tic(current_usi, tic_option=tic_option, polarity_filter=polarity_filter)
+                tic_df["usi"] = current_usi
+                all_usi_tic_df.append(tic_df)
+            except:
+                pass
 
         merged_tic_df = pd.concat(all_usi_tic_df)
         fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="usi")
     else:
-        tic_df = _perform_tic(usi, tic_option=tic_option, polarity_filter=polarity_filter)
+        tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
 
     # For Drawing and Exporting
@@ -1396,10 +1404,30 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value"), 
               Input("tic_option", "value"),
-              Input("polarity-filtering2", "value")])
-def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter):
-    tic_df = _perform_tic(usi, tic_option=tic_option, polarity_filter=polarity_filter)
-    fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
+              Input("polarity-filtering2", "value"),
+              Input("show_multiple_tic", "value")])
+def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
+    # Calculating all TICs for all USIs
+    all_usi = usi.split("\n")
+
+    if len(all_usi) > 1 and show_multiple_tic is True:
+        all_usi_tic_df = []
+        for current_usi in all_usi:
+            if len(current_usi) < 2:
+                continue
+
+            try:
+                tic_df = _perform_tic(current_usi, tic_option=tic_option, polarity_filter=polarity_filter)
+                tic_df["usi"] = current_usi
+                all_usi_tic_df.append(tic_df)
+            except:
+                pass
+
+        merged_tic_df = pd.concat(all_usi_tic_df)
+        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="usi")
+    else:
+        tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
+        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
 
     # For Drawing and Exporting
     graph_config = {
@@ -1773,9 +1801,9 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input('polarity-filtering2', 'value'),
               Input("show_lcms_2nd_map", "value"),
               Input("tic_option", "value"),
-              Input("overlay_usi", "value"),
-              Input("overlay_mz", "value"),
-              Input("overlay_rt", "value")])
+              Input("overlay-usi", "value"),
+              Input("overlay-mz", "value"),
+              Input("overlay-rt", "value")])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
