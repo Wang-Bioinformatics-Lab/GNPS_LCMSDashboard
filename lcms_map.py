@@ -234,7 +234,10 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         overlay_data = overlay_data[overlay_data["rt"] < max_rt]
         overlay_data = overlay_data[overlay_data["mz"] > min_mz]
         overlay_data = overlay_data[overlay_data["mz"] < max_mz]
-        scatter_overlay_fig = go.Scatter(x=overlay_data["rt"], y=overlay_data["mz"], mode='markers', marker=dict(color='green', size=10, symbol="circle", opacity=0.7), name="Overlay")
+        scatter_overlay_fig = go.Scatter(x=overlay_data["rt"], y=overlay_data["mz"], mode='markers', marker=dict(color='gray', size=10, symbol="square", opacity=0.7), name="Overlay")
+
+        #scatter_overlay_fig = px.scatter(x=overlay_data["rt"], y=overlay_data["mz"])
+
         fig.add_trace(scatter_overlay_fig)
     except:
         pass
