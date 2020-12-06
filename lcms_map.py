@@ -234,9 +234,37 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         overlay_data = overlay_data[overlay_data["rt"] < max_rt]
         overlay_data = overlay_data[overlay_data["mz"] > min_mz]
         overlay_data = overlay_data[overlay_data["mz"] < max_mz]
-        scatter_overlay_fig = go.Scattergl(x=overlay_data["rt"], y=overlay_data["mz"], mode='markers', marker=dict(color='gray', size=10, symbol="square", opacity=0.7), name="Overlay")
 
-        fig.add_trace(scatter_overlay_fig)
+        size_column = None
+        color_column = None
+        
+        if "size" in overlay_data:
+            size_column = "size"
+            overlay_data[size_column] = overlay_data[size_column].clip(lower=1)
+            #overlay_data[size_column] = np.log(overlay_data[size_column])
+            #overlay_data[size_column] = overlay_data[size_column] / max(overlay_data[size_column]) * 10
+        
+        if "color" in overlay_data:
+            color_column = "color"
+            overlay_data[color_column] = overlay_data[color_column] / max(overlay_data[color_column]) * 10
+
+
+        if size_column is None and color_column is None:
+            scatter_overlay_fig = go.Scattergl(x=overlay_data["rt"], y=overlay_data["mz"], mode='markers', marker=dict(color='gray', size=10, symbol="circle", opacity=0.7), name="Overlay")
+            fig.add_trace(scatter_overlay_fig)
+        elif size_column is not None and color_column is None:
+            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", size=size_column)
+            scatter_overlay_fig.update_traces(marker=dict(color="gray", symbol="circle", opacity=0.7))
+            fig.add_trace(scatter_overlay_fig.data[0])
+        elif size_column is None and color_column is not None:
+            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", color=color_column)
+            scatter_overlay_fig.update_traces(marker=dict(size=10, symbol="circle", opacity=0.7))
+            fig.add_trace(scatter_overlay_fig.data[0])
+        else:
+            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", color=color_column, size=size_column)
+            scatter_overlay_fig.update_traces(marker=dict(symbol="circle", opacity=0.7))
+            fig.add_trace(scatter_overlay_fig.data[0])
+            
     except:
         pass
 
