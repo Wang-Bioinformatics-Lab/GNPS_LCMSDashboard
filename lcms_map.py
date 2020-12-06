@@ -266,7 +266,6 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
             fig.add_trace(scatter_overlay_fig.data[0])
             
     except:
-        raise
         pass
 
     return fig
