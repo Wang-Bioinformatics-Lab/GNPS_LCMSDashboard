@@ -49,8 +49,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    #'CACHE_TYPE': "null",
-    'CACHE_TYPE': 'filesystem',
+    'CACHE_TYPE': "null",
+    #'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -270,6 +270,26 @@ DATASELECTION_CARD = [
                             [
                                 dbc.InputGroupAddon("Overlay rt", addon_type="prepend"),
                                 dbc.Input(id='overlay-rt', placeholder="Enter Overlay rt column", value="row retention time"),
+                            ],
+                            className="mb-3",
+                        ),
+                    )
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Overlay color", addon_type="prepend"),
+                                dbc.Input(id='overlay-color', placeholder="Enter Overlay color column", value=""),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Overlay size", addon_type="prepend"),
+                                dbc.Input(id='overlay-size', placeholder="Enter Overlay size column", value=""),
                             ],
                             className="mb-3",
                         ),
@@ -1113,7 +1133,9 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("polarity-filtering2", "value"),
                 Output("overlay-usi", "value"),
                 Output("overlay-mz", "value"),
-                Output("overlay-rt", "value")],
+                Output("overlay-rt", "value"),
+                Output("overlay-color", "value"),
+                Output("overlay-size", "value")],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     xic_formula = ""
@@ -1133,6 +1155,8 @@ def determine_url_only_parameters(search):
     overlay_usi = dash.no_update
     overlay_mz = dash.no_update
     overlay_rt = dash.no_update
+    overlay_color = dash.no_update
+    overlay_size = dash.no_update
 
     
 
@@ -1232,6 +1256,16 @@ def determine_url_only_parameters(search):
         overlay_rt = str(urllib.parse.parse_qs(search[1:])["overlay_rt"][0])
     except:
         pass
+
+    try:
+        overlay_color = str(urllib.parse.parse_qs(search[1:])["overlay_color"][0])
+    except:
+        pass
+
+    try:
+        overlay_size = str(urllib.parse.parse_qs(search[1:])["overlay_size"][0])
+    except:
+        pass
     
     return [xic_formula, 
             xic_peptide, 
@@ -1244,7 +1278,7 @@ def determine_url_only_parameters(search):
             show_lcms_2nd_map, 
             tic_option, polarity_filtering, 
             polarity_filtering2, 
-            overlay_usi, overlay_mz, overlay_rt]
+            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size]
 
 
 
@@ -1690,8 +1724,10 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('polarity-filtering', 'value'),
               Input('overlay-usi', 'value'),
               Input('overlay-mz', 'value'),
-              Input('overlay-rt', 'value')])
-def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, overlay_usi, overlay_mz, overlay_rt):
+              Input('overlay-rt', 'value'),
+              Input('overlay-size', 'value'),
+              Input('overlay-color', 'value')])
+def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -1734,6 +1770,12 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
 
         overlay_df["mz"] = overlay_df[overlay_mz]
         overlay_df["rt"] = overlay_df[overlay_rt]
+
+        if len(overlay_size) > 0 and overlay_size in overlay_df:
+            overlay_df["size"] = overlay_df[overlay_size]
+        
+        if len(overlay_color) > 0 and overlay_color in overlay_df:
+            overlay_df["color"] = overlay_df[overlay_color]
     except:
         pass
 
@@ -1805,11 +1847,13 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("tic_option", "value"),
               Input("overlay-usi", "value"),
               Input("overlay-mz", "value"),
-              Input("overlay-rt", "value")])
+              Input("overlay-rt", "value"),
+              Input("overlay-color", "value"),
+              Input("overlay-size", "value"),])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
-                overlay_usi, overlay_mz, overlay_rt):
+                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size):
 
     url_params = {}
     url_params["usi"] = usi
@@ -1834,6 +1878,8 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["overlay_usi"] = overlay_usi
     url_params["overlay_mz"] = overlay_mz
     url_params["overlay_rt"] = overlay_rt
+    url_params["overlay_color"] = overlay_color
+    url_params["overlay_size"] = overlay_size
 
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
