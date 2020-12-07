@@ -30,7 +30,7 @@ import uuid
 import base64
 from flask_caching import Cache
 
-from utils import _resolve_usi
+from utils import _resolve_usi, _get_usi_display_filename
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
@@ -1649,6 +1649,10 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     plotting_df = merged_df_long
     plot_usi_list = usi_list[:MAX_XIC_PLOT_LCMS_FILES]
     plotting_df = plotting_df[plotting_df["USI"].isin(plot_usi_list)]
+
+    # Cleaning up the USI to show
+    plotting_df["USI"] = plotting_df["USI"].apply(lambda x: _get_usi_display_filename(x))
+
     
     if len(plot_usi_list) == 1:
         if xic_file_grouping == "FILE":
