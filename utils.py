@@ -17,6 +17,11 @@ MS_precisions = {
     3 : 20e-6
 }
 
+def _get_usi_display_filename(usi):
+    usi_splits = usi.split(":")
+
+    return os.path.basename(usi_splits[2])
+
 # Returns remote_link and local filepath
 def _resolve_usi(usi, temp_folder="temp"):
     usi_splits = usi.split(":")
