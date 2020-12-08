@@ -1285,10 +1285,10 @@ def determine_url_only_parameters(search):
 
 # Handling file upload
 @app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
-              [Input('url', 'search'), Input('upload-data', 'contents')],
+              [Input('url', 'search'), Input('url', 'hash'), Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified')])
-def update_output(search, filecontent, filename, filedate):
+def update_output(search, url_hash, filecontent, filename, filedate):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
@@ -1334,13 +1334,10 @@ def update_output(search, filecontent, filename, filedate):
             return [usi, usi2, "FILE Uploaded {}".format(filename)]
 
     # Resolving USI
-    usi = _get_param_from_url(search, "usi", usi)
+    usi = _get_param_from_url(search, url_hash, "usi", usi)
+    usi2 = _get_param_from_url(search, url_hash, "usi2", usi2)
 
-    # Resolving USI
-    try:
-        usi2 = str(urllib.parse.parse_qs(search[1:])["usi2"][0])
-    except:
-        pass
+    print(usi)
 
     return [usi, usi2, "Using URL USI"]
     
@@ -1861,8 +1858,6 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size):
 
     url_params = {}
-    url_params["usi"] = usi
-    url_params["usi2"] = usi2
     url_params["xicmz"] = xic_mz
     url_params["xic_formula"] = xic_formula
     url_params["xic_peptide"] = xic_peptide
@@ -1886,8 +1881,13 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["overlay_color"] = overlay_color
     url_params["overlay_size"] = overlay_size
 
+    hash_params = {}
+    hash_params["usi"] = usi
+    hash_params["usi2"] = usi2
+
+    full_url = "/?{}#{}".format(urllib.parse.urlencode(url_params), json.dumps(hash_params))
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
-    provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
+    provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
 
     return provenance_link_object
 
