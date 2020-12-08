@@ -357,7 +357,6 @@ def _get_scan_polarity(spec):
 
 # Given URL, will try to parse and get key
 def _get_param_from_url(search, url_hash, param_key, default):
-    print("XXXXXXXXXXXXXXXXXXXXXXXXX")
 
     try:
         params_dict = urllib.parse.parse_qs(search[1:])
