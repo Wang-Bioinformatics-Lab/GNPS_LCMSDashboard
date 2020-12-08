@@ -356,11 +356,23 @@ def _get_scan_polarity(spec):
     return polarity
 
 # Given URL, will try to parse and get key
-def _get_param_from_url(search, param_key, default):
+def _get_param_from_url(search, url_hash, param_key, default):
+    print("XXXXXXXXXXXXXXXXXXXXXXXXX")
+
     try:
-        return str(urllib.parse.parse_qs(search[1:])[param_key][0])
+        params_dict = urllib.parse.parse_qs(search[1:])
+        if param_key in params_dict:
+            return str(params_dict[param_key][0])
     except:
-        return default
+        pass
+
+    try:
+        hash_dict = json.loads(urllib.parse.unquote(url_hash[1:]))
+        if param_key in hash_dict:
+            return str(hash_dict[param_key])
+    except:
+        pass
+
     return default
 
 def _resolve_map_plot_selection(url_search, usi):
