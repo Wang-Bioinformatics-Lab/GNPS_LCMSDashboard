@@ -49,8 +49,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    #'CACHE_TYPE': "null",
-    'CACHE_TYPE': 'filesystem',
+    'CACHE_TYPE': "null",
+    #'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -242,6 +242,29 @@ DATASELECTION_CARD = [
                             row=True,
                             className="mb-3",
                         )),
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("Feature Finding", width=4.8, style={"width":"150px"}),
+                                dcc.Dropdown(
+                                    id='feature_finding_type',
+                                    options=[
+                                        {'label': 'Off', 'value': 'Off'},
+                                        {'label': 'Test', 'value': 'Test'},
+                                        {'label': 'Trivial', 'value': 'Trivial'},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="Off",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
                 ]),
                 html.H5(children='LCMS Overlay Options'),
                 dbc.Row([
@@ -1393,8 +1416,8 @@ def determine_xic_target(search, clickData, existing_xic):
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None):
-    return lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_data)
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None, feature_finding=None):
+    return lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_data, feature_finding=feature_finding)
 
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
@@ -1734,8 +1757,9 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('overlay-mz', 'value'),
               Input('overlay-rt', 'value'),
               Input('overlay-size', 'value'),
-              Input('overlay-color', 'value')])
-def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color):
+              Input('overlay-color', 'value'),
+              Input('feature_finding_type', 'value')])
+def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, feature_finding_type):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -1787,8 +1811,16 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     except:
         pass
 
+    # Feature Finding parameters
+    if feature_finding_type == "Off":
+        feature_finding_params = None
+    else:
+        feature_finding_params = {}
+        feature_finding_params["type"] = feature_finding_type
+        feature_finding_params["params"] = {}
+
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df, feature_finding=feature_finding_params)
 
     return [map_fig, remote_link, json.dumps(map_selection)]
 

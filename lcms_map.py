@@ -120,7 +120,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
 # Creates the figure for map plot
 # overlay_data is a dataframe that includes the overlay, rt and mz are the expected columns
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None, featurefinding=None):
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None, feature_finding=None):
     min_rt = 0
     max_rt = 1000000
     min_mz = 0
@@ -269,13 +269,17 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         pass
 
     # Checking if we should be detecting features
-    if featurefinding is not None:
-        features_df = pd.DataFrame()
-        features_df["mz"] = [100]
-        features_df["rt"] = [5]
-        features_df["i"] = [1000]
+    if feature_finding is not None:
+        import feature_finding as ff
 
-        feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='pink', size=10, symbol="circle", opacity=0.7), name="Feature Detection")
+        features_df = ff.perform_feature_finding(filename, feature_finding)
+
+        features_df = features_df[features_df["rt"] > min_rt]
+        features_df = features_df[features_df["rt"] < max_rt]
+        features_df = features_df[features_df["mz"] > min_mz]
+        features_df = features_df[features_df["mz"] < max_mz]
+
+        feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="circle", opacity=0.7), name="Feature Detection")
         fig.add_trace(feature_overlay_fig)
 
 
