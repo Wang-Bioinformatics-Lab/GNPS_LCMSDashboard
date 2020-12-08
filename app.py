@@ -49,8 +49,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    #'CACHE_TYPE': "null",
-    'CACHE_TYPE': 'filesystem',
+    'CACHE_TYPE': "null",
+    #'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -253,6 +253,7 @@ DATASELECTION_CARD = [
                                         {'label': 'Test', 'value': 'Test'},
                                         {'label': 'Trivial', 'value': 'Trivial'},
                                         {'label': 'TidyMS', 'value': 'TidyMS'},
+                                        {'label': 'MZmine2', 'value': 'MZmine2'},
                                     ],
                                     searchable=False,
                                     clearable=False,

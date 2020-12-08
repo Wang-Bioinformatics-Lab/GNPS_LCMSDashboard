@@ -92,7 +92,53 @@ def _tidyms_feature_finding(filename):
 
 # TODO: 
 def _mzmine_feature_finding(filename):
-    return None
+    import xmltodict
+    import os
+
+    batch_base = "feature_finding/batch_files/QE_Batchbase.xml"
+    filled_batch = "filled_batch.xml"
+
+    batch_xml = xmltodict.parse(open(batch_base).read())
+
+    all_batch_steps = batch_xml["batch"]["batchstep"]
+
+    ##Setting input files
+    for batch_step in all_batch_steps:
+        if batch_step["@method"] == "net.sf.mzmine.modules.rawdatamethods.rawdataimport.RawDataImportModule":
+            #Found loading module
+            batch_step["parameter"]["file"] = [filename]
+
+        if batch_step["@method"] == "io.github.mzmine.modules.io.rawdataimport.RawDataImportModule":
+            #Found loading module
+            batch_step["parameter"]["file"] = [filename]
+
+    output_prefix = os.path.abspath("output_mzmine")
+    output_ms2_csv = output_prefix + "_quant.csv"
+    output_ms2_mgf = output_prefix + ".mgf"
+
+    batch_text = xmltodict.unparse(batch_xml, pretty=True)
+    batch_text = batch_text.replace("GNPSEXPORTPREFIX", output_prefix)
+
+    with open(filled_batch, "w") as o:
+        o.write(batch_text)
+    
+    # Figuring out how to launch MZmine via script
+    mzmine_script_path = os.path.join("feature_finding/mzmine2/MZmine-2.53-Linux", "startMZmine_Linux.sh")
+    if not os.path.exists(mzmine_script_path):
+        mzmine_script_path = os.path.join("feature_finding/mzmine2/MZmine-2.53-Linux", "startMZmine-Linux")
+        
+    cmd = "export _JAVA_OPTIONS=-Djava.io.tmpdir=/scratch && export TMP=/scratch && {} {}".format(mzmine_script_path, filled_batch)
+    print(cmd)
+    os.system(cmd)
+
+    mzmine_features_df = pd.read_csv(output_ms2_csv)
+
+    features_df = pd.DataFrame()
+    features_df['mz'] = mzmine_features_df['row m/z']
+    features_df['i'] = mzmine_features_df['{} Peak area'.format(os.path.basename(filename))]
+    features_df['rt'] = mzmine_features_df['row retention time']
+
+    return features_df
 
 # TODO: 
 def _openms_feature_finding(filename):
