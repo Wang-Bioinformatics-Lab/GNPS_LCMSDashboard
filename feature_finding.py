@@ -12,6 +12,9 @@ def perform_feature_finding(filename, params):
 
     if params["type"] == "Trivial":
         return _trivial_feature_finding(filename)
+
+    if params["type"] == "TidyMS":
+        return _tidyms_feature_finding(filename)
     
 
 def _test_feature_finding(filename):
@@ -65,6 +68,27 @@ def _trivial_feature_finding(filename):
 
     return features_df
 
+# TODO: 
+def _tidyms_feature_finding(filename):
+    import tidyms as ms
+
+    ms_data = ms.MSData(filename,
+                     ms_mode="centroid",
+                     instrument="orbitrap",
+                     separation="uplc")
+    
+    roi, feature_data = ms_data.detect_features()
+
+    print(feature_data)
+
+    features_df = pd.DataFrame()
+    features_df['mz'] = feature_data['mz']
+    features_df['i'] = feature_data['area']
+    features_df['rt'] = feature_data['rt'] / 60
+
+    print(features_df)
+
+    return features_df
 
 # TODO: 
 def _mzmine_feature_finding(filename):

@@ -252,6 +252,7 @@ DATASELECTION_CARD = [
                                         {'label': 'Off', 'value': 'Off'},
                                         {'label': 'Test', 'value': 'Test'},
                                         {'label': 'Trivial', 'value': 'Trivial'},
+                                        {'label': 'TidyMS', 'value': 'TidyMS'},
                                     ],
                                     searchable=False,
                                     clearable=False,
