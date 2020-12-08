@@ -826,7 +826,10 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
                 id='map-plot2',
                 figure=placeholder_ms2_plot,
                 config={
-                    'doubleClick': 'reset'
+                    'doubleClick': 'reset',
+                    'modeBarButtonsToRemove': [
+                        "toggleSpikelines"
+                    ]
                 }
             ),
             html.Br(),
