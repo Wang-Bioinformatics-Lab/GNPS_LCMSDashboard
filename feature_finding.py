@@ -17,7 +17,7 @@ def perform_feature_finding(filename, params):
         return _tidyms_feature_finding(filename)
 
     if params["type"] == "MZmine2":
-        return _mzmine_feature_finding(filename)
+        return _mzmine_feature_finding(filename, params["params"])
     
 
 def _test_feature_finding(filename):
@@ -94,11 +94,11 @@ def _tidyms_feature_finding(filename):
     return features_df
 
 # TODO: 
-def _mzmine_feature_finding(filename):
+def _mzmine_feature_finding(filename, parameters):
     import xmltodict
     import os
 
-    batch_base = "feature_finding/batch_files/QE_Batchbase.xml"
+    batch_base = "feature_finding/batch_files/Generic_Batchbase.xml"
     filled_batch = "filled_batch.xml"
 
     batch_xml = xmltodict.parse(open(batch_base).read())
@@ -119,9 +119,19 @@ def _mzmine_feature_finding(filename):
     output_ms2_csv = output_prefix + "_quant.csv"
     output_ms2_mgf = output_prefix + ".mgf"
 
+    # Subsituting inputs and outputs
     batch_text = xmltodict.unparse(batch_xml, pretty=True)
     batch_text = batch_text.replace("GNPSEXPORTPREFIX", output_prefix)
+    batch_text = batch_text.replace("FEATUREFINDING_PPMTOLERANCE", str(parameters["feature_finding_ppm"]))
+    batch_text = batch_text.replace("FEATUREFINDING_NOISELEVEL", str(parameters["feature_finding_noise"]))
+    batch_text = batch_text.replace("FEATUREFINDING_MINABSOLUTEHEIGHT", str(float(parameters["feature_finding_noise"]) * 3.0 ))
+    
+    
+    batch_text = batch_text.replace("FEATUREFINDING_MINPEAKDURATION", str(parameters["feature_finding_min_peak_rt"]))
+    batch_text = batch_text.replace("FEATUREFINDING_MAXPEAKDURATION", str(parameters["feature_finding_max_peak_rt"]))
 
+    batch_text = batch_text.replace("FEATUREFINDING_RTTOLERANCE", str(parameters["feature_finding_rt_tolerance"]))
+    
     with open(filled_batch, "w") as o:
         o.write(batch_text)
     

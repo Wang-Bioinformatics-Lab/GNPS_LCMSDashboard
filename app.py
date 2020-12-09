@@ -605,6 +605,67 @@ DATASLICE_CARD = [
     )
 ]
 
+FEATURE_FINDING_PANEL = [
+    dbc.CardHeader(html.H5("Feature Finding Options")),
+    dbc.CardBody(
+        [   
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Precursor PPM Tolerance", addon_type="prepend"),
+                            dbc.Input(id='feature_finding_ppm', placeholder="PPM tolerance for feature finding", value=10),
+                        ],
+                        className="mb-3",
+                    )
+                ),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("MS1 Noise Level", addon_type="prepend"),
+                            dbc.Input(id='feature_finding_noise', placeholder="Noise for feature finding", value=10000),
+                        ],
+                        className="mb-3",
+                    )
+                ),
+            ]),
+
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Min Peak Width (Minutes)", addon_type="prepend"),
+                            dbc.Input(id='feature_finding_min_peak_rt', placeholder="RT Min for feature finding", value=0.05),
+                        ],
+                        className="mb-3",
+                    )
+                ),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Max Peak Width (Minutes)", addon_type="prepend"),
+                            dbc.Input(id='feature_finding_max_peak_rt', placeholder="RT Max for feature finding", value=1.5),
+                        ],
+                        className="mb-3",
+                    )
+                ),
+            ]),
+
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("RT Tolerance (Minutes)", addon_type="prepend"),
+                            dbc.Input(id='feature_finding_rt_tolerance', placeholder="RT Tolerance for Isotopic peaks", value=0.3),
+                        ],
+                        className="mb-3",
+                    )
+                ),
+            ]),
+        ]
+    )
+]
+
 USI1_FILTERING_PANEL = [
     dbc.CardHeader(html.H5("USI Scan Filtering Options")),
     dbc.CardBody(
@@ -817,6 +878,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Bruker LCMS", href="/?usi=mzspec%3AMSV000086015%3AStdMix_02__GA2_01_55623&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
+            html.A("Bruker LCMS - PA14 rhlR", href="/?usi=mzspec:MSV000083500:ccms_peak/9177.mzML"),
+            html.Br(),
             html.A("Waters LCMS", href="/?usi=mzspec%3AMSV000084977%3AOEPKS7_B_1_neg&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
             html.A("Agilent LCMS", href="/?usi=mzspec:MSV000084060:KM0001"),
@@ -906,6 +969,24 @@ BODY = dbc.Container(
                 style={"width": "50%"}
             )
         ], style={"marginTop": 30}),
+
+        # This is the Feature Finding Panel
+        dbc.Row([
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(FEATURE_FINDING_PANEL),
+                    ],
+                        #className="w-50"
+                    ),
+                ],
+                id='feature-finding-collapse',
+                is_open=False,
+                style={"width": "50%"}
+            )
+        ], style={"marginTop": 30}),
+
+
 
         # Show Data
         dbc.Row([
@@ -1430,15 +1511,12 @@ def determine_xic_target(search, clickData, existing_xic):
 @cache.memoize()
 def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None, feature_finding=None):
     lcms_fig = lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_data)
-
-    try:
-        lcms_fig = _integrate_feature_finding(filename, lcms_fig, map_selection=map_selection, feature_finding=feature_finding) 
-    except:
-        pass
+    lcms_fig = _integrate_feature_finding(filename, lcms_fig, map_selection=map_selection, feature_finding=feature_finding)
 
     return lcms_fig
 
 
+# This calls the actual feature finding so it can be cached
 @cache.memoize()
 def _perform_feature_finding(filename, feature_finding=None):
     import feature_finding as ff
@@ -1446,7 +1524,7 @@ def _perform_feature_finding(filename, feature_finding=None):
 
     return features_df
 
-
+# Integrates the feature finding with the output plotly figure
 def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_finding=None):
     min_rt = 0
     max_rt = 1000000
@@ -1477,6 +1555,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
             feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="circle", opacity=0.7), name="Feature Detection")
             lcms_fig.add_trace(feature_overlay_fig)
         except:
+            raise
             pass
 
     return lcms_fig
@@ -1821,8 +1900,20 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('overlay-rt', 'value'),
               Input('overlay-size', 'value'),
               Input('overlay-color', 'value'),
-              Input('feature_finding_type', 'value')])
-def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, feature_finding_type):
+              Input('feature_finding_type', 'value'),
+              Input('feature_finding_ppm', 'value'),
+              Input('feature_finding_noise', 'value'),
+              Input('feature_finding_min_peak_rt', 'value'),
+              Input('feature_finding_max_peak_rt', 'value'),
+              Input('feature_finding_rt_tolerance', 'value'),
+              ])
+def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, 
+                feature_finding_type,
+                feature_finding_ppm,
+                feature_finding_noise,
+                feature_finding_min_peak_rt,
+                feature_finding_max_peak_rt, 
+                feature_finding_rt_tolerance):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -1881,7 +1972,13 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         feature_finding_params = {}
         feature_finding_params["type"] = feature_finding_type
         feature_finding_params["params"] = {}
-
+        feature_finding_params["params"]["feature_finding_ppm"] = feature_finding_ppm
+        feature_finding_params["params"]["feature_finding_noise"] = feature_finding_noise
+        feature_finding_params["params"]["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
+        feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
+        feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
+        
+        
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df, feature_finding=feature_finding_params)
 
@@ -2036,6 +2133,16 @@ def toggle_collapse1(show_lcms_1st_map, is_open):
 )
 def toggle_collapse_filters(show_filters):
     return [show_filters, show_filters]
+
+
+@app.callback(
+    [Output("feature-finding-collapse", "is_open")],
+    [Input("feature_finding_type", "value")],
+)
+def toggle_collapse_feature_finding(feature_finding_type):
+    if feature_finding_type == "MZmine2":
+        return [True]
+    return [False]
 
 
 if __name__ == "__main__":
