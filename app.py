@@ -884,6 +884,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("LCMS XIC by Formula - QC Amitryptiline", href='/?usi=mzspec%3AMSV000085852%3AQC_0&usi2=&xicmz=&xic_formula=C20H23N&xic_tolerance=0.01&xic_ppm_tolerance=20&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"autosize"%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC'),
             html.Br(),
+            html.A("LCMS auto zoomed by URL", href='/?xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"xaxis.range%5B0%5D"%3A+3.225196497160058%2C+"xaxis.range%5B1%5D"%3A+3.4834247492797554%2C+"yaxis.range%5B0%5D"%3A+521.8432333663449%2C+"yaxis.range%5B1%5D"%3A+615.6041749343235%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=None&overlay_mz=row+m%2Fz&overlay_rt=row+retention+time&overlay_color=&overlay_size=&feature_finding_type=Off#{"usi":%20"mzspec:MSV000085852:QC_0",%20"usi2":%20""}'),
+            html.Br(),
             html.A("LCMS auto zoomed by scan in USI", href="/?usi=mzspec:MSV000085852:QC_0:scan:2277"),
             html.Br(),
             html.A("Thermo Q Exactive LCMS", href="/?usi=mzspec%3AMSV000084951%3AAH22&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
@@ -1951,7 +1953,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     import sys
     print(triggered_id, file=sys.stderr)
     print(url_search, file=sys.stderr)
-    print("MAP SELECTION XXXXXXXXXX", map_selection, current_map_selection, triggered_id, usi, file=sys.stderr)
+    print("MAP SELECTION XXXXXXXXXX", map_selection, current_map_selection, highlight_box, triggered_id, usi, file=sys.stderr)
 
     # We have to do a bit of convoluted object, if {'autosize': True}, that means loading from the URL
     try:

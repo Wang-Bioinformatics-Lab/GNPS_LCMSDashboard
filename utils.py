@@ -380,7 +380,7 @@ def _resolve_map_plot_selection(url_search, usi):
 
     # Lets start off with taking the url bounds
     try:
-        current_map_selection = json.loads(_get_param_from_url(url_search, "map_plot_zoom", "{}"))
+        current_map_selection = json.loads(_get_param_from_url(url_search, "", "map_plot_zoom", "{}"))
     except:
         pass
 
