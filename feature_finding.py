@@ -109,11 +109,11 @@ def _mzmine_feature_finding(filename):
     for batch_step in all_batch_steps:
         if batch_step["@method"] == "net.sf.mzmine.modules.rawdatamethods.rawdataimport.RawDataImportModule":
             #Found loading module
-            batch_step["parameter"]["file"] = [filename]
+            batch_step["parameter"]["file"] = [os.path.abspath(filename)]
 
         if batch_step["@method"] == "io.github.mzmine.modules.io.rawdataimport.RawDataImportModule":
             #Found loading module
-            batch_step["parameter"]["file"] = [filename]
+            batch_step["parameter"]["file"] = [os.path.abspath(filename)]
 
     output_prefix = os.path.abspath("output_mzmine")
     output_ms2_csv = output_prefix + "_quant.csv"
@@ -130,7 +130,7 @@ def _mzmine_feature_finding(filename):
     if not os.path.exists(mzmine_script_path):
         mzmine_script_path = os.path.join("feature_finding/mzmine2/MZmine-2.53-Linux", "startMZmine-Linux")
         
-    cmd = "export _JAVA_OPTIONS=-Djava.io.tmpdir=/scratch && export TMP=/scratch && {} {}".format(mzmine_script_path, filled_batch)
+    cmd = "{} {}".format(mzmine_script_path, filled_batch)
     print(cmd)
     os.system(cmd)
 

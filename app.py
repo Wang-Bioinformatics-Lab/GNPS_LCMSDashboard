@@ -252,7 +252,7 @@ DATASELECTION_CARD = [
                                         {'label': 'Off', 'value': 'Off'},
                                         {'label': 'Test', 'value': 'Test'},
                                         {'label': 'Trivial', 'value': 'Trivial'},
-                                        {'label': 'TidyMS', 'value': 'TidyMS'},
+                                        # {'label': 'TidyMS', 'value': 'TidyMS'},
                                         {'label': 'MZmine2', 'value': 'MZmine2'},
                                     ],
                                     searchable=False,
@@ -1164,7 +1164,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("overlay-mz", "value"),
                 Output("overlay-rt", "value"),
                 Output("overlay-color", "value"),
-                Output("overlay-size", "value")],
+                Output("overlay-size", "value"),
+                Output("feature_finding_type", "value")],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     xic_formula = ""
@@ -1186,6 +1187,7 @@ def determine_url_only_parameters(search):
     overlay_rt = dash.no_update
     overlay_color = dash.no_update
     overlay_size = dash.no_update
+    feature_finding_type = dash.no_update
 
     
 
@@ -1295,6 +1297,13 @@ def determine_url_only_parameters(search):
         overlay_size = str(urllib.parse.parse_qs(search[1:])["overlay_size"][0])
     except:
         pass
+
+    try:
+        feature_finding_type = str(urllib.parse.parse_qs(search[1:])["feature_finding_type"][0])
+    except:
+        pass
+
+    
     
     return [xic_formula, 
             xic_peptide, 
@@ -1307,7 +1316,8 @@ def determine_url_only_parameters(search):
             show_lcms_2nd_map, 
             tic_option, polarity_filtering, 
             polarity_filtering2, 
-            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size]
+            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size,
+            feature_finding_type]
 
 
 
@@ -1942,11 +1952,12 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("overlay-mz", "value"),
               Input("overlay-rt", "value"),
               Input("overlay-color", "value"),
-              Input("overlay-size", "value"),])
+              Input("overlay-size", "value"),
+              Input("feature_finding_type", "value")])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
-                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size):
+                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, feature_finding_type):
 
     url_params = {}
     url_params["usi"] = usi
@@ -1973,6 +1984,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["overlay_rt"] = overlay_rt
     url_params["overlay_color"] = overlay_color
     url_params["overlay_size"] = overlay_size
+    url_params["feature_finding_type"] = feature_finding_type
 
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href="/?" + urllib.parse.urlencode(url_params) , target="_blank")
