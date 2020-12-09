@@ -916,7 +916,7 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("LCMS with Feature Finding Overlay from FBMN with Sizing of highlight", href="/?usi=mzspec:GNPS:TASK-bc7e7e3d61714464a6b47d247933040e-f.MSV000085444/ccms_peak/peak/Hui_N1.mzML&overlay_usi=mzspec:GNPS:TASK-bc7e7e3d61714464a6b47d247933040e-quantification_table_reformatted/&overlay_size=Hui_N1.mzML%20Peak%20area#%7B%7D"),
             html.Br(),
-            html.A("LCMS with MZMine2 Feature Finding Active", href="/?usi=mzspec%3AMSV000085852%3AQC_0&usi2=&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"autosize"%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=None&overlay_mz=row+m%2Fz&overlay_rt=row+retention+time&overlay_color=&overlay_size=&feature_finding_type=MZmine2"),
+            html.A("LCMS with MZMine2 Feature Finding Active", href='/?usi=mzspec%3AMSV000085852%3AQC_0&usi2=&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"autosize"%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=None&overlay_mz=row+m%2Fz&overlay_rt=row+retention+time&overlay_color=&overlay_size=&feature_finding_type=MZmine2'),
         ]
     )
 ]
