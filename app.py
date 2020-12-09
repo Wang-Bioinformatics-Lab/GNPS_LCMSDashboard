@@ -245,7 +245,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("Feature Finding", width=4.8, style={"width":"150px"}),
+                                dbc.Label("Feature Finding (Beta)", width=4.8, style={"width":"150px"}),
                                 dcc.Dropdown(
                                     id='feature_finding_type',
                                     options=[
