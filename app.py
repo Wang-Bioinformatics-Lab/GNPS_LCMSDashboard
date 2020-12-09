@@ -1574,7 +1574,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
             features_df = features_df[features_df["mz"] > min_mz]
             features_df = features_df[features_df["mz"] < max_mz]
 
-            feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="circle", opacity=0.7), name="Feature Detection")
+            feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="diamond", opacity=0.7), name="Feature Detection")
             lcms_fig.add_trace(feature_overlay_fig)
         except:
             pass

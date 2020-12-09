@@ -1,6 +1,7 @@
 import pandas as pd
 from utils import _spectrum_generator
 from utils import _get_scan_polarity
+import uuid
 
 def perform_feature_finding(filename, params):
     """
@@ -99,7 +100,6 @@ def _mzmine_feature_finding(filename, parameters):
     import os
 
     batch_base = "feature_finding/batch_files/Generic_Batchbase.xml"
-    filled_batch = "filled_batch.xml"
 
     batch_xml = xmltodict.parse(open(batch_base).read())
 
@@ -115,9 +115,11 @@ def _mzmine_feature_finding(filename, parameters):
             #Found loading module
             batch_step["parameter"]["file"] = [os.path.abspath(filename)]
 
-    output_prefix = os.path.abspath("output_mzmine")
+    output_prefix = os.path.abspath(os.path.join("temp", "feature-finding", "{}_{}".format(os.path.basename(filename), str(uuid.uuid4()).replace("-", "")  )))
+    output_prefix = output_prefix.replace(".", "_")
     output_ms2_csv = output_prefix + "_quant.csv"
     output_ms2_mgf = output_prefix + ".mgf"
+    filled_batch = output_prefix + "_filled_batch.xml"
 
     # Subsituting inputs and outputs
     batch_text = xmltodict.unparse(batch_xml, pretty=True)
