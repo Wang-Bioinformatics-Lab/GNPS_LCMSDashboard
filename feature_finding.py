@@ -140,7 +140,7 @@ def _mzmine_feature_finding(filename, parameters):
     if not os.path.exists(mzmine_script_path):
         mzmine_script_path = os.path.join("feature_finding/mzmine2/MZmine-2.53-Linux", "startMZmine-Linux")
         
-    cmd = "{} {}".format(mzmine_script_path, filled_batch)
+    cmd = "export JAVA_OPTS='-Xmx4096m' && {} {}".format(mzmine_script_path, filled_batch)
     print(cmd)
     os.system(cmd)
 
