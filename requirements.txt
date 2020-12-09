@@ -45,3 +45,5 @@ pyteomics
 psims
 molmass
 netcdf4
+tidyms
+xmltodict

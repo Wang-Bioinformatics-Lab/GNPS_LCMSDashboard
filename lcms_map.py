@@ -268,4 +268,7 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
     except:
         pass
 
+    
+
+
     return fig
