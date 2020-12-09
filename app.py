@@ -1014,7 +1014,7 @@ BODY = dbc.Container(
                                 dbc.Card(FEATUREFINDING_RESULTS_CARD),
                             ],
                             id='featurefinding-results-collapse',
-                            is_open=True,
+                            is_open=False,
                         ),
                         html.Br(),
                         dbc.Card(EXAMPLE_DASHBOARD),
