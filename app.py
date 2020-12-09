@@ -764,7 +764,7 @@ INTEGRATION_CARD = [
         [
             dcc.Loading(
                 id="integration-table",
-                children=[html.Div([html.Div(id="loading-output-100")])],
+                children=[html.Div([html.Div(id="loading-output-1001")])],
                 type="default",
             ),
             html.Br(),
@@ -778,6 +778,20 @@ INTEGRATION_CARD = [
         ]
     )
 ]
+
+FEATUREFINDING_RESULTS_CARD = [
+    dbc.CardHeader(html.H5("Feature Finding Results")),
+    dbc.CardBody(
+        [
+            dcc.Loading(
+                id="feature-finding-table",
+                children=[html.Div([html.Div(id="loading-output-100")])],
+                type="default",
+            ),
+        ]
+    )
+]
+
 
 SUMMARY_CARD = [
     dbc.CardHeader(html.H5("File Summaries")),
@@ -994,6 +1008,14 @@ BODY = dbc.Container(
                 [
                     dbc.Col([
                         dbc.Card(MIDDLE_DASHBOARD),
+                        html.Br(),
+                        dbc.Collapse(
+                            [
+                                dbc.Card(FEATUREFINDING_RESULTS_CARD),
+                            ],
+                            id='featurefinding-results-collapse',
+                            is_open=True,
+                        ),
                         html.Br(),
                         dbc.Card(EXAMPLE_DASHBOARD),
                     ],
@@ -2143,6 +2165,16 @@ def toggle_collapse_feature_finding(feature_finding_type):
     if feature_finding_type == "MZmine2":
         return [True]
     return [False]
+
+@app.callback(
+    [Output("featurefinding-results-collapse", "is_open")],
+    [Input("feature_finding_type", "value")],
+)
+def toggle_collapse_feature_finding(feature_finding_type):
+    if feature_finding_type == "Off":
+        return [False]
+    return [True]
+
 
 
 if __name__ == "__main__":
