@@ -886,7 +886,7 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("LCMS auto zoomed by scan in USI", href="/?usi=mzspec:MSV000085852:QC_0:scan:2277"),
             html.Br(),
-            html.A("Thermo LCMS", href="/?usi=mzspec%3AMSV000084951%3AAH22&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.A("Thermo Q Exactive LCMS", href="/?usi=mzspec%3AMSV000084951%3AAH22&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
             html.A("Sciex LCMS", href="/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
@@ -1531,9 +1531,8 @@ def determine_xic_target(search, clickData, existing_xic):
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None, feature_finding=None):
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None):
     lcms_fig = lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_data)
-    lcms_fig = _integrate_feature_finding(filename, lcms_fig, map_selection=map_selection, feature_finding=feature_finding)
 
     return lcms_fig
 
@@ -1565,6 +1564,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
             max_mz = float(map_selection["yaxis.range[1]"])
 
     # Checking if we should be detecting features
+    features_df = pd.DataFrame()
     if feature_finding is not None:
         try:
             features_df = _perform_feature_finding(filename, feature_finding=feature_finding)
@@ -1577,10 +1577,9 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
             feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="circle", opacity=0.7), name="Feature Detection")
             lcms_fig.add_trace(feature_overlay_fig)
         except:
-            raise
             pass
 
-    return lcms_fig
+    return lcms_fig, features_df
 
 
 # Creating TIC plot
@@ -1911,7 +1910,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 # https://github.com/plotly/dash-datashader
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
-@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children'), Output('map-plot-zoom', 'children')],
+@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children'), Output('map-plot-zoom', 'children'), Output("feature-finding-table", 'children')],
               [Input('url', 'search'), 
               Input('usi', 'value'), 
               Input('map-plot', 'relayoutData'), 
@@ -1988,6 +1987,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         pass
 
     # Feature Finding parameters
+    table_graph = dash.no_update
     if feature_finding_type == "Off":
         feature_finding_params = None
     else:
@@ -1999,12 +1999,33 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         feature_finding_params["params"]["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
         feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
         feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
+
+        
         
         
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df, feature_finding=feature_finding_params)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df)
 
-    return [map_fig, remote_link, json.dumps(map_selection)]
+    # adding on feature finding data
+    map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
+
+    try:
+        # Creating a table
+        table_graph = dash_table.DataTable(
+            id='table',
+            columns=[{"name": i, "id": i} for i in features_df.columns],
+            data=features_df.to_dict('records'),
+            sort_action="native",
+            page_action="native",
+            page_size= 10,
+            filter_action="native",
+            export_format="csv"
+        )
+    except:
+        pass
+
+
+    return [map_fig, remote_link, json.dumps(map_selection), table_graph]
 
 
 @app.callback([Output('map-plot2', 'figure')],

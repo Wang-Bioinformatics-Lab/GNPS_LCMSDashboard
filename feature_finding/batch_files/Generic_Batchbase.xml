@@ -118,7 +118,7 @@
                 <parameter name="Search minimum in RT range (min)">0.5</parameter>
                 <parameter name="Minimum relative height">1.0E-4</parameter>
                 <parameter name="Minimum absolute height">FEATUREFINDING_MINABSOLUTEHEIGHT</parameter>
-                <parameter name="Min ratio of peak top/edge">2.0</parameter>
+                <parameter name="Min ratio of peak top/edge">1.5</parameter>
                 <parameter name="Peak duration range (min)">
                     <min>FEATUREFINDING_MINPEAKDURATION</min>
                     <max>FEATUREFINDING_MAXPEAKDURATION</max>
