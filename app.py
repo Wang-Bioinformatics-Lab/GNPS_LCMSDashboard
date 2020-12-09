@@ -49,8 +49,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    'CACHE_TYPE': "null",
-    #'CACHE_TYPE': 'filesystem',
+    #'CACHE_TYPE': "null",
+    'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -1419,7 +1419,58 @@ def determine_xic_target(search, clickData, existing_xic):
 
 @cache.memoize()
 def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None, feature_finding=None):
-    return lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_data, feature_finding=feature_finding)
+    lcms_fig = lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_data)
+
+    try:
+        lcms_fig = _integrate_feature_finding(filename, lcms_fig, map_selection=map_selection, feature_finding=feature_finding) 
+    except:
+        pass
+
+    return lcms_fig
+
+
+@cache.memoize()
+def _perform_feature_finding(filename, feature_finding=None):
+    import feature_finding as ff
+    features_df = ff.perform_feature_finding(filename, feature_finding)
+
+    return features_df
+
+
+def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_finding=None):
+    min_rt = 0
+    max_rt = 1000000
+    min_mz = 0
+    max_mz = 2000
+
+    if map_selection is not None:
+        if "xaxis.range[0]" in map_selection:
+            min_rt = float(map_selection["xaxis.range[0]"])
+        if "xaxis.range[1]" in map_selection:
+            max_rt = float(map_selection["xaxis.range[1]"])
+
+        if "yaxis.range[0]" in map_selection:
+            min_mz = float(map_selection["yaxis.range[0]"])
+        if "yaxis.range[1]" in map_selection:
+            max_mz = float(map_selection["yaxis.range[1]"])
+
+    # Checking if we should be detecting features
+    if feature_finding is not None:
+        try:
+            features_df = _perform_feature_finding(filename, feature_finding=feature_finding)
+
+            features_df = features_df[features_df["rt"] > min_rt]
+            features_df = features_df[features_df["rt"] < max_rt]
+            features_df = features_df[features_df["mz"] > min_mz]
+            features_df = features_df[features_df["mz"] < max_mz]
+
+            feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="circle", opacity=0.7), name="Feature Detection")
+            lcms_fig.add_trace(feature_overlay_fig)
+        except:
+            pass
+
+    return lcms_fig
+
 
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
