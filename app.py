@@ -840,16 +840,30 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
     )
 ]
 
+LOADING_STATUS_PANEL = [
+    dbc.CardHeader(html.H5("Loading Status")),
+    dbc.CardBody([
+        dbc.Label("MS2 Map", width=4.8, style={"width":"160px", "margin-left": "25px"}),
+        dcc.Loading(
+            id="loading-ms2-map",
+            children="No",
+            type="circle",
+        )
+    ])
+]
+
 
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
+
+        # Top Dashboard Panel
         dbc.Row([
             dbc.Col(
                 dbc.Card(TOP_DASHBOARD), 
                 className="w-100"
             ),
-        ], style={"marginTop": 30}),
+        ], style={"marginTop": 10}),
 
         # This is the filtering Panel
         dbc.Row([
@@ -877,7 +891,15 @@ BODY = dbc.Container(
                 is_open=True,
                 style={"width": "50%"}
             )
-        ], style={"marginTop": 30}),
+        ], style={"marginTop": 10}),
+
+        # This is the loading status panel
+        dbc.Row([
+            dbc.Col(
+                dbc.Card(LOADING_STATUS_PANEL),
+                className="w-100"
+            ),
+        ], style={"marginTop": 10}),
 
         # Show Data
         dbc.Row([
@@ -906,7 +928,7 @@ BODY = dbc.Container(
             ],
                 className="w-50"
             ),
-        ], style={"marginTop": 30}),
+        ], style={"marginTop": 20}),
     ],
     fluid=True,
     className="",
@@ -1719,7 +1741,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 # https://github.com/plotly/dash-datashader
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
-@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children'), Output('map-plot-zoom', 'children')],
+@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children'), Output('map-plot-zoom', 'children'), Output("loading-ms2-map", "children")],
               [Input('url', 'search'), 
               Input('usi', 'value'), 
               Input('map-plot', 'relayoutData'), 
@@ -1785,7 +1807,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df)
 
-    return [map_fig, remote_link, json.dumps(map_selection)]
+    return [map_fig, remote_link, json.dumps(map_selection), "Yes"]
 
 
 @app.callback([Output('map-plot2', 'figure')],
