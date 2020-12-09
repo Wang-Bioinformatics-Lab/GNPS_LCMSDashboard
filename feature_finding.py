@@ -15,6 +15,9 @@ def perform_feature_finding(filename, params):
 
     if params["type"] == "TidyMS":
         return _tidyms_feature_finding(filename)
+
+    if params["type"] == "MZmine2":
+        return _mzmine_feature_finding(filename)
     
 
 def _test_feature_finding(filename):
