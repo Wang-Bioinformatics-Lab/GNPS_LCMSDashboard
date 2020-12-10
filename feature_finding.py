@@ -19,6 +19,9 @@ def perform_feature_finding(filename, params):
 
     if params["type"] == "MZmine2":
         return _mzmine_feature_finding(filename, params["params"])
+
+    if params["type"] == "Peakonly":
+        return _peakonly_feature_finding(filename)
     
     if params["type"] == "Dinosaur":
         return _dinosaur_feature_finding(filename)
@@ -182,3 +185,6 @@ def _dinosaur_feature_finding(filename):
     features_df['rt'] = temp_features_df['rtApex']
     
     return features_df
+
+def _peakonly_feature_finding(filename):
+    return None
