@@ -187,4 +187,20 @@ def _dinosaur_feature_finding(filename):
     return features_df
 
 def _peakonly_feature_finding(filename):
-    return None
+    import os
+
+    output_filename = "temp/feature-finding/{}_{}".format(os.path.basename(filename), str(uuid.uuid4()).replace("-", ""))
+
+    peakonly_script_path = "peakonly_batch.py"
+    cmd = "cd feature_finding/peakonly && python {} {} {}".format(peakonly_script_path, os.path.abspath(filename), os.path.abspath(output_filename))
+    print(cmd)
+    os.system(cmd)
+
+    temp_features_df = pd.read_csv(output_filename, sep='\t')
+
+    features_df = pd.DataFrame()
+    features_df['mz'] = temp_features_df['mz']
+    features_df['i'] = temp_features_df['i']
+    features_df['rt'] = temp_features_df['rt']
+    
+    return features_df
