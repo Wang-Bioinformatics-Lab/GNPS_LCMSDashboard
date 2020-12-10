@@ -170,7 +170,7 @@ def _dinosaur_feature_finding(filename):
     output_filename = "{}_{}".format(os.path.basename(filename), str(uuid.uuid4()).replace("-", ""))
 
     dinosaur_script_path = "feature_finding/dinosaur/Dinosaur-1.2.0.free.jar"
-    cmd = "java -Xmx4096m -jar {} --verbose --profiling --concurrency=8 --outName={} --outDir={} {}".format(dinosaur_script_path, output_filename, output_folder, filename)
+    cmd = "java -Xmx4096m -jar {} --verbose --profiling --concurrency=8 --maxCharge=2 --nReport=0 --outName={} --outDir={} {}".format(dinosaur_script_path, output_filename, output_folder, filename)
     print(cmd)
     os.system(cmd)
 
