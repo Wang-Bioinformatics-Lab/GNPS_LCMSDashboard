@@ -20,6 +20,9 @@ def perform_feature_finding(filename, params):
     if params["type"] == "MZmine2":
         return _mzmine_feature_finding(filename, params["params"])
     
+    if params["type"] == "Dinosaur":
+        return _dinosaur_feature_finding(filename)
+    
 
 def _test_feature_finding(filename):
     features_df = pd.DataFrame()
@@ -159,3 +162,23 @@ def _mzmine_feature_finding(filename, parameters):
 def _openms_feature_finding(filename):
     return None
 
+
+def _dinosaur_feature_finding(filename):
+    import os
+
+    output_folder = os.path.abspath(os.path.join("temp", "feature-finding"))
+    output_filename = "{}_{}".format(os.path.basename(filename), str(uuid.uuid4()).replace("-", ""))
+
+    dinosaur_script_path = "feature_finding/dinosaur/Dinosaur-1.2.0.free.jar"
+    cmd = "java -Xmx4096m -jar {} --verbose --profiling --concurrency=8 --outName={} --outDir={} {}".format(dinosaur_script_path, output_filename, output_folder, filename)
+    print(cmd)
+    os.system(cmd)
+
+    temp_features_df = pd.read_csv(os.path.join(output_folder, output_filename + ".features.tsv"), sep='\t')
+
+    features_df = pd.DataFrame()
+    features_df['mz'] = temp_features_df['mz']
+    features_df['i'] = temp_features_df['intensitySum']
+    features_df['rt'] = temp_features_df['rtApex']
+    
+    return features_df
