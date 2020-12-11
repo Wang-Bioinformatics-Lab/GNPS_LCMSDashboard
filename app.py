@@ -321,6 +321,26 @@ DATASELECTION_CARD = [
                         ),
                     )
                 ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Overlay Filter Column", addon_type="prepend"),
+                                dbc.Input(id='overlay-filter-column', placeholder="Enter Overlay filter column", value=""),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Overlay Filter Value", addon_type="prepend"),
+                                dbc.Input(id='overlay-filter-value', placeholder="Enter Overlay size column", value=""),
+                            ],
+                            className="mb-3",
+                        ),
+                    )
+                ]),
             ], className="col-sm"),
             ## Right Panel
             dbc.Col([
@@ -1273,6 +1293,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("overlay-rt", "value"),
                 Output("overlay-color", "value"),
                 Output("overlay-size", "value"),
+                Output('overlay-filter-column', 'value'),
+                Output('overlay-filter-value', 'value'),
                 Output("feature_finding_type", "value")],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
@@ -1295,6 +1317,8 @@ def determine_url_only_parameters(search):
     overlay_rt = dash.no_update
     overlay_color = dash.no_update
     overlay_size = dash.no_update
+    overlay_filter_column = dash.no_update
+    overlay_filter_value = dash.no_update
     feature_finding_type = dash.no_update
 
     
@@ -1407,6 +1431,16 @@ def determine_url_only_parameters(search):
         pass
 
     try:
+        overlay_filter_column = str(urllib.parse.parse_qs(search[1:])["overlay_filter_column"][0])
+    except:
+        pass
+
+    try:
+        overlay_filter_value = str(urllib.parse.parse_qs(search[1:])["overlay_filter_value"][0])
+    except:
+        pass
+
+    try:
         feature_finding_type = str(urllib.parse.parse_qs(search[1:])["feature_finding_type"][0])
     except:
         pass
@@ -1424,7 +1458,7 @@ def determine_url_only_parameters(search):
             show_lcms_2nd_map, 
             tic_option, polarity_filtering, 
             polarity_filtering2, 
-            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size,
+            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_filter_column, overlay_filter_value,
             feature_finding_type]
 
 
@@ -1924,6 +1958,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('overlay-rt', 'value'),
               Input('overlay-size', 'value'),
               Input('overlay-color', 'value'),
+              Input('overlay-filter-column', 'value'),
+              Input('overlay-filter-value', 'value'),
               Input('feature_finding_type', 'value'),
               Input('feature_finding_ppm', 'value'),
               Input('feature_finding_noise', 'value'),
@@ -1931,7 +1967,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('feature_finding_max_peak_rt', 'value'),
               Input('feature_finding_rt_tolerance', 'value'),
               ])
-def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, 
+def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, 
+                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_ppm,
                 feature_finding_noise,
@@ -1980,6 +2017,10 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
 
         overlay_df["mz"] = overlay_df[overlay_mz]
         overlay_df["rt"] = overlay_df[overlay_rt]
+
+        if len(overlay_filter_column) > 0 and overlay_filter_column in overlay_df:
+            if len(overlay_filter_value) > 0:
+                overlay_df = overlay_df[overlay_df[overlay_filter_column] == overlay_filter_value]
 
         if len(overlay_size) > 0 and overlay_size in overlay_df:
             overlay_df["size"] = overlay_df[overlay_size]
@@ -2096,11 +2137,14 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("overlay-rt", "value"),
               Input("overlay-color", "value"),
               Input("overlay-size", "value"),
+              Input('overlay-filter-column', 'value'),
+              Input('overlay-filter-value', 'value'),
               Input("feature_finding_type", "value")])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
-                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, feature_finding_type):
+                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_filter_column, overlay_filter_value,
+                feature_finding_type):
 
     url_params = {}
     url_params["xicmz"] = xic_mz
@@ -2125,6 +2169,8 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["overlay_rt"] = overlay_rt
     url_params["overlay_color"] = overlay_color
     url_params["overlay_size"] = overlay_size
+    url_params["overlay_filter_column"] = overlay_filter_column
+    url_params["overlay_filter_value"] = overlay_filter_value
     url_params["feature_finding_type"] = feature_finding_type
 
     hash_params = {}
