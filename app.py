@@ -2012,7 +2012,6 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         file_path = overlay_usi_splits[2].split("-")[-1]
         task = overlay_usi_splits[2].split("-")[1]
         url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
-        r = requests.get(url)
         overlay_df = pd.read_csv(url, sep=None, nrows=20000)
 
         overlay_df["mz"] = overlay_df[overlay_mz]
@@ -2028,6 +2027,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         if len(overlay_color) > 0 and overlay_color in overlay_df:
             overlay_df["color"] = overlay_df[overlay_color]
     except:
+        raise
         pass
 
     # Feature Finding parameters
