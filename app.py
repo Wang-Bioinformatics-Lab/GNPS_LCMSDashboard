@@ -1147,31 +1147,10 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         }
     }
 
+    peaks, precursor_mz = ms2._get_ms2_peaks(updated_usi, scan_number)
+    usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
-        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
-        usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
-
-        # Lets also make a MASST link here
-        # We'll have to get the MS2 peaks from USI
-        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
-        
-        try:
-            r = requests.get(usi_json_url)
-            spectrum_json = r.json()
-            peaks = spectrum_json["peaks"]
-            precursor_mz = spectrum_json["precursor_mz"]
-        except:
-            # Lets look at file on disk
-            print("JSON USI EXCEPTION")
-            remote_link, local_filename = _resolve_usi(usi)
-            run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-            spectrum = run[scan_number]
-            peaks = spectrum.peaks("raw")
-            precursor_mz = spectrum.selected_precursors[0]["mz"]
-
-            # Let's try it here
-
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
         neg_ints = [intensity * -1 for intensity in ints]
@@ -1212,38 +1191,6 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         return ["MS2", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button, html.Br(), masst_button]]
 
     if "MS1" in ms2_identifier:
-        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
-        usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
-
-        try:
-            xic_mz = float(xic_mz)
-
-            # Adding zoom in the USI plotter
-            min_mz = xic_mz - 10
-            max_mz = xic_mz + 10
-            
-            usi_png_url += "&mz_min={}&mz_max={}".format(min_mz, max_mz)
-            usi_url += "&mz_min={}&mz_max={}".format(min_mz, max_mz)
-        except:
-            pass
-
-
-        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
-
-        try:
-            r = requests.get(usi_json_url)
-            spectrum_json = r.json()
-            peaks = spectrum_json["peaks"]
-        except:
-            # Lets look at file on disk
-            print("JSON USI EXCEPTION")
-            remote_link, local_filename = _resolve_usi(usi)
-            run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-            spectrum = run[scan_number]
-            peaks = spectrum.peaks("raw")
-
-        
-        
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
         neg_ints = [intensity * -1 for intensity in ints]
@@ -1272,6 +1219,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         interactive_fig.update_yaxes(range=[0, max(ints)])
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        
         return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
 
 @app.callback([ Output("xic_formula", "value"),
