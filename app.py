@@ -36,6 +36,7 @@ from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
 from utils import MS_precisions
 from utils import _convert_mzML
+import ms2
 import lcms_map
 from formula_utils import get_adduct_mass
 from molmass import Formula
@@ -1219,7 +1220,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         interactive_fig.update_yaxes(range=[0, max(ints)])
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
-        
+
         return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
 
 @app.callback([ Output("xic_formula", "value"),

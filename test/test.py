@@ -5,6 +5,7 @@ import lcms_map
 import pandas as pd
 import utils
 import tic
+import ms2 
 
 def test_xic_slow():
     remote_link, local_filename = utils._resolve_usi("mzspec:MSV000085852:QC_0")
@@ -68,4 +69,14 @@ def test_url_parsing():
     print(current_map_selection)
 
 def test_ms2_spectrum():
-    print("SCAN")
+    usi = "mzspec:MSV000085852:QC_0:scan:1"
+    remote_link, local_filename = utils._resolve_usi(usi)
+    peaks, mz = ms2._get_ms2_peaks(usi, 1)
+
+    assert(len(peaks) > 10)
+
+    usi = "mzspec:GNPS:TASK-f32283142ac34080ae737f3b2f1fa1c6-f.monicathukral/201204/P australis.mzXML:scan:501217"
+    remote_link, local_filename = utils._resolve_usi(usi)
+    peaks, mz = ms2._get_ms2_peaks(usi, 501217)
+
+    assert(len(peaks) > 10)
