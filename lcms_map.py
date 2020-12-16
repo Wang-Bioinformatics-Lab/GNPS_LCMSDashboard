@@ -44,15 +44,11 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
         except:
             pass
 
-        scan_polarity = _get_scan_polarity(spec)
-
         if polarity_filter == "None":
             pass
-        elif polarity_filter == "Positive":
-            if scan_polarity != "Positive":
-                continue
-        elif polarity_filter == "Negative":
-            if scan_polarity != "Negative":
+        else:
+            scan_polarity = _get_scan_polarity(spec)
+            if polarity_filter != scan_polarity:
                 continue
         
         if spec.ms_level == 1:
@@ -63,7 +59,10 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
             try:
                 # Filtering peaks by mz
-                peaks = spec.reduce(mz_range=(min_mz, max_mz))
+                if min_mz <= 0 and max_mz >= 2000:
+                    peaks = spec.peaks("raw")
+                else:
+                    peaks = spec.reduce(mz_range=(min_mz, max_mz))
 
                 # Sorting by intensity
                 peaks = peaks[peaks[:,1].argsort()]
