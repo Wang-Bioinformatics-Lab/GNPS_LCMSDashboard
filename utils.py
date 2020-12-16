@@ -8,6 +8,7 @@ import sys
 import pymzml
 import json
 import urllib.parse
+import tasks
 from tqdm import tqdm
 
 
@@ -128,24 +129,19 @@ def _resolve_usi(usi, temp_folder="temp"):
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
-
     converted_local_filename = filename + ".mzML"
 
-    if not os.path.isfile(converted_local_filename):
-        temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
-        wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
-        os.system(wget_cmd)
-        os.rename(temp_filename, local_filename)
-
-        temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
-        # Lets do a conversion
-        if file_extension == ".cdf":
-            _convert_cdf_to_mzML(local_filename, temp_filename)
-        else:
-            _convert_mzML(local_filename, temp_filename)
-
-        # Renaming the temp
-        os.rename(temp_filename, converted_local_filename)
+    # Only call if does not exists
+    if not os.path.exists(converted_local_filename):
+        # Calling the heavy lifting
+        print("XXXXXXXXXXXXXXXXXX", tasks.celery_instance)
+        try:
+            # If we have the celery instance up, we'll push it
+            result = tasks._download_convert_file.delay(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
+        except:
+            # If we have the celery instance is not up, we'll do it local
+            print("Downloading Local")
+            tasks._download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
 
     return remote_link, converted_local_filename
 
