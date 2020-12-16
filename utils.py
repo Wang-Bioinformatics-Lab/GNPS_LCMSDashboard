@@ -149,8 +149,7 @@ def _resolve_usi(usi, temp_folder="temp"):
         except:
             # If we have the celery instance is not up, we'll do it local
             print("Downloading Local")
-            raise
-            #tasks._download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
+            tasks._download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
 
     return remote_link, converted_local_filename
 
