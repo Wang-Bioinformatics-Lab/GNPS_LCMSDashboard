@@ -16,7 +16,7 @@ def _download_convert_file(remote_link, local_filename, converted_local_filename
         filename, file_extension = os.path.splitext(local_filename)
 
         temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
-        wget_cmd = "wget '{}' -O {}".format(remote_link, temp_filename)
+        wget_cmd = "wget '{}' -O {} 2> /dev/null".format(remote_link, temp_filename)
         os.system(wget_cmd)
         os.rename(temp_filename, local_filename)
 

@@ -10,6 +10,7 @@ import json
 import urllib.parse
 import tasks
 from tqdm import tqdm
+from time import sleep
 
 
 MS_precisions = {
@@ -138,10 +139,18 @@ def _resolve_usi(usi, temp_folder="temp"):
         try:
             # If we have the celery instance up, we'll push it
             result = tasks._download_convert_file.delay(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
+
+            # Waiting
+            while(1):
+                if result.ready():
+                    break
+                sleep(3)
+            result = result.get()
         except:
             # If we have the celery instance is not up, we'll do it local
             print("Downloading Local")
-            tasks._download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
+            raise
+            #tasks._download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
 
     return remote_link, converted_local_filename
 
