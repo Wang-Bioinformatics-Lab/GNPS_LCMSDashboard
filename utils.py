@@ -24,14 +24,61 @@ def _get_usi_display_filename(usi):
 
     return os.path.basename(usi_splits[2])
 
+def _usi_to_local_filename(usi):
+    """
+        This returns the converted filename
+    """
+    usi_splits = usi.split(":")
+
+    if "LOCAL" in usi_splits[1]:
+        converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
+        filename, file_extension = os.path.splitext(converted_local_filename)
+        converted_local_filename = filename + ".mzML"
+        return  converted_local_filename
+    
+    if "MSV" in usi_splits[1]:
+        converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
+        return converted_local_filename.replace(".mzML.mzML", ".mzML")
+
+    if "GNPS" in usi_splits[1]:
+        if "TASK-" in usi_splits[2]:
+            converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
+            filename, file_extension = os.path.splitext(converted_local_filename)
+            converted_local_filename = filename + ".mzML"
+            return converted_local_filename
+        elif "QUICKSTART-" in usi_splits[2]:
+            converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
+            filename, file_extension = os.path.splitext(converted_local_filename)
+            converted_local_filename = filename + ".mzML"
+            return converted_local_filename
+        elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
+            return werkzeug.utils.secure_filename(":".join(usi_splits[:5])) + ".mzML"
+
+    if "MTBLS" in usi_splits[1]:
+        converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
+        filename, file_extension = os.path.splitext(converted_local_filename)
+        converted_local_filename = filename + ".mzML"
+        return converted_local_filename
+
+    if "ST" in usi_splits[1]:
+        converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
+        filename, file_extension = os.path.splitext(converted_local_filename)
+        converted_local_filename = filename + ".mzML"
+        return converted_local_filename
+
 # Returns remote_link and local filepath
 def _resolve_usi(usi, temp_folder="temp"):
     usi_splits = usi.split(":")
 
+    converted_local_filename = os.path.join(temp_folder, _usi_to_local_filename(usi))
+
+    # Only call if does not exists
+    if os.path.exists(converted_local_filename):
+        return "", converted_local_filename
+
     if "LOCAL" in usi_splits[1]:
         local_filename = os.path.join(temp_folder, os.path.basename(usi_splits[2]))
         filename, file_extension = os.path.splitext(local_filename)
-        converted_local_filename = filename + ".mzML"
 
         if not os.path.isfile(converted_local_filename):
             temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
@@ -130,34 +177,30 @@ def _resolve_usi(usi, temp_folder="temp"):
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
-    converted_local_filename = filename + ".mzML"
 
-    # Only call if does not exists
-    if not os.path.exists(converted_local_filename):
-        # Calling the heavy lifting
-        print("XXXXXXXXXXXXXXXXXX", tasks.celery_instance)
-        try:
-            # If we have the celery instance up, we'll push it
-            result = tasks._download_convert_file.delay(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
+    # Calling the heavy lifting
+    try:
+        # If we have the celery instance up, we'll push it
+        result = tasks._download_convert_file.delay(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
 
-            # Waiting
-            while(1):
-                if result.ready():
-                    break
-                sleep(3)
-            result = result.get()
-        except:
-            # If we have the celery instance is not up, we'll do it local
-            print("Downloading Local")
-            tasks._download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
+        # Waiting
+        while(1):
+            if result.ready():
+                break
+            sleep(3)
+        result = result.get()
+    except:
+        # If we have the celery instance is not up, we'll do it local
+        print("Downloading Local")
+        tasks._download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
 
     return remote_link, converted_local_filename
 
 # First try msconvert, if the output fails, then we will do pyteomics to mzML and then msconvert
 def _convert_mzML(input_mzXML, output_mzML):
-    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'msLevel 1' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+    #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'msLevel 1' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
-    #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     conversion_ret_code = os.system(conversion_cmd)
 
     reconvert = False

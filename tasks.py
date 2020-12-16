@@ -6,6 +6,10 @@ import uuid
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
 
+
+##############################
+# Conversion
+##############################
 @celery_instance.task(time_limit=120)
 def _download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder="temp"):
     """
@@ -30,3 +34,16 @@ def _download_convert_file(remote_link, local_filename, converted_local_filename
         # Renaming the temp
         os.rename(temp_filename, converted_local_filename)
 
+#################################
+# Compute Data
+#################################
+@celery_instance.task(time_limit=15)
+def task_xic():
+    return "MING"
+
+
+celery_instance.conf.task_routes = {
+    'tasks._download_convert_file': {'queue': 'conversion'},
+    'tasks.task_xic': {'queue': 'compute'},
+    
+}
