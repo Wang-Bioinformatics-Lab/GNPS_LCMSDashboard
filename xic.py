@@ -8,6 +8,8 @@ import uuid
 import os
 import shutil
 import glob
+import logging
+
 
 def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit):
     if xic_tolerance_unit == "Da":

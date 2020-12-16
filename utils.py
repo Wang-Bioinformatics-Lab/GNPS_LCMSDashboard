@@ -309,7 +309,6 @@ def _calculate_file_stats(usi):
     response_dict = {}
     response_dict["USI"] = usi
     response_dict["Scans"] = number_scans
-    
 
     try:
         cmd = ["./bin/msaccess", local_filename, "-x",  'run_summary delimiter=tab']

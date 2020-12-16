@@ -24,6 +24,20 @@ def test_xic_metabolomics_fast():
 
     xic._xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
+
+def test_xic_metabolomics_slow():
+    remote_link, local_filename = utils._resolve_usi("mzspec:MSV000085852:QC_0")
+
+    all_xic_values = [["278.1902", 278.1902]]
+    xic_tolerance = 0.5
+    xic_ppm_tolerance = 10
+    xic_tolerance_unit = "Da"
+    rt_min = 5
+    rt_max = 6
+    polarity_filter = "Positive"
+
+    xic._xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+
 def test_xic_proteomics_fast():
     remote_link, local_filename = utils._resolve_usi("mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01")
 
@@ -36,6 +50,19 @@ def test_xic_proteomics_fast():
     polarity_filter = "Positive"
     
     xic._xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+
+def test_xic_proteomics_slow():
+    remote_link, local_filename = utils._resolve_usi("mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01")
+
+    all_xic_values = [["1040.057006835938", 1040.057006835938]]
+    xic_tolerance = 0.5
+    xic_ppm_tolerance = 10
+    xic_tolerance_unit = "Da"
+    rt_min = 0
+    rt_max = 100000
+    polarity_filter = "Positive"
+    
+    xic._xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
 
 ####################################
