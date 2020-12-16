@@ -45,7 +45,6 @@ from pyteomics import mass
 from xic import _xic_file_slow, _xic_file_fast
 
 
-
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
@@ -1417,7 +1416,7 @@ def determine_url_only_parameters(search):
               [Input('url', 'search'), Input('url', 'hash'), Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified')])
-def update_output(search, url_hash, filecontent, filename, filedate):
+def update_usi(search, url_hash, filecontent, filename, filedate):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
@@ -1439,11 +1438,10 @@ def update_output(search, url_hash, filecontent, filename, filedate):
 
         if extension == ".mzXML":
             mangled_name = str(uuid.uuid4())
-            temp_filename_mzXML = os.path.join("temp", "{}.mzXML".format(mangled_name))
             temp_filename = os.path.join("temp", "{}.mzXML".format(mangled_name))
             data = filecontent.encode("utf8").split(b";base64,")[1]
 
-            with open(temp_filename_mzXML, "wb") as temp_file:
+            with open(temp_filename, "wb") as temp_file:
                 temp_file.write(base64.decodebytes(data))
 
             usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
@@ -1465,8 +1463,6 @@ def update_output(search, url_hash, filecontent, filename, filedate):
     # Resolving USI
     usi = _get_param_from_url(search, url_hash, "usi", usi)
     usi2 = _get_param_from_url(search, url_hash, "usi2", usi2)
-
-    print(usi)
 
     return [usi, usi2, "Using URL USI"]
     
@@ -1993,8 +1989,6 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
         feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
 
-        
-        
         
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df)

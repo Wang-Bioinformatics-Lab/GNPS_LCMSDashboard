@@ -52,6 +52,16 @@ def test_2dmap_metabolomics():
     remote_link, local_filename = utils._resolve_usi("mzspec:MSV000085852:QC_0")
     lcms_map._create_map_fig(local_filename)
 
+def test_2dmap_metabolomics_data():
+    remote_link, local_filename = utils._resolve_usi("mzspec:MSV000085852:QC_0")
+    
+    min_rt = 0
+    max_rt = 1000000
+    min_mz = 0
+    max_mz = 2000
+
+    lcms_map._gather_lcms_data(local_filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None")
+
 def test_2dmap_metabolomics_zoomed():
     remote_link, local_filename = utils._resolve_usi("mzspec:MSV000085852:QC_0")
 
@@ -67,6 +77,16 @@ def test_2dmap_metabolomics_zoomed():
 def test_2dmap_proteomics():
     remote_link, local_filename = utils._resolve_usi("mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01")
     lcms_map._create_map_fig(local_filename)
+
+def test_2dmap_proteomics_data():
+    remote_link, local_filename = utils._resolve_usi("mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01")
+    
+    min_rt = 0
+    max_rt = 1000000
+    min_mz = 0
+    max_mz = 2000
+
+    lcms_map._gather_lcms_data(local_filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None")
 
 def test_2dmap_proteomics_zoomed():
     remote_link, local_filename = utils._resolve_usi("mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01")

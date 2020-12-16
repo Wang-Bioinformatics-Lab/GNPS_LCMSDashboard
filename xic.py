@@ -95,6 +95,10 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
     return xic_df, ms2_data
 
 def _xic_file_fast(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, temp_folder="temp"):
+    """
+        xic values are tuples where the first value is the string and the second is the value
+    """
+
     xic_df = pd.DataFrame()
 
     for target_mz in all_xic_values:
