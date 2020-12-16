@@ -31,6 +31,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
     # Iterating through all data with a custom scan iterator
     # It handles custom bounds on RT
+
     for spec in _spectrum_generator(filename, min_rt, max_rt):
         try:
             # Still waiting for the window

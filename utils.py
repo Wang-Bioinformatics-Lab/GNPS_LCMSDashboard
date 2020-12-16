@@ -467,18 +467,25 @@ def _find_lcms_rt(filename, rt_query):
 
 def _spectrum_generator(filename, min_rt, max_rt):
     run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
-    try:
-        min_rt_index = _find_lcms_rt(filename, min_rt) # These are inclusive on left
-        max_rt_index = _find_lcms_rt(filename, max_rt) + 1 # Exclusive on the right
 
-        for spec_index in tqdm(range(min_rt_index, max_rt_index)):
-            spec = run[spec_index]
-            yield spec
-        print("USED INDEX")
-    except:
+    # Don't do this if the min_rt and max_rt are not reasonable values
+    if min_rt <= 0 and max_rt > 1000:
         for spec in run:
             yield spec
-        print("USED BRUTEFORCE")
+
+    else:
+        try:
+            min_rt_index = _find_lcms_rt(filename, min_rt) # These are inclusive on left
+            max_rt_index = _find_lcms_rt(filename, max_rt) + 1 # Exclusive on the right
+
+            for spec_index in tqdm(range(min_rt_index, max_rt_index)):
+                spec = run[spec_index]
+                yield spec
+            print("USED INDEX")
+        except:
+            for spec in run:
+                yield spec
+            print("USED BRUTEFORCE")
 
 # Getting the Overlay data
 def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt):
