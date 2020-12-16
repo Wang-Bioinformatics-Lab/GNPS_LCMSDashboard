@@ -8,12 +8,6 @@ import tic
 import ms2 
 
 
-def test_2d_mapping():
-    remote_link, local_filename = utils._resolve_usi("mzspec:MSV000085852:QC_0")
-    lcms_map._create_map_fig(local_filename)
-
-
-
 
 
 def test_tic():
