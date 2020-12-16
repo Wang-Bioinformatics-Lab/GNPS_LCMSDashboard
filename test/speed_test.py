@@ -94,10 +94,10 @@ def test_2dmap_metabolomics_zoomed():
 
     map_selection = {}
     map_selection["xaxis.range[0]"] = "5"
-    map_selection["xaxis.range[1]"] = "8"
+    map_selection["xaxis.range[1]"] = "7.5"
 
     map_selection["yaxis.range[0]"] = "500"
-    map_selection["yaxis.range[1]"] = "1000"
+    map_selection["yaxis.range[1]"] = "750"
 
     lcms_map._create_map_fig(local_filename, map_selection=map_selection)
 

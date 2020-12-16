@@ -1953,14 +1953,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     # Adding a overlay for the figure
     overlay_df = None
     try:
-        overlay_usi_splits = overlay_usi.split(":")
-        file_path = overlay_usi_splits[2].split("-")[-1]
-        task = overlay_usi_splits[2].split("-")[1]
-        url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
-        overlay_df = pd.read_csv(url, sep=None, nrows=20000)
-
-        overlay_df["mz"] = overlay_df[overlay_mz]
-        overlay_df["rt"] = overlay_df[overlay_rt]
+        utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt)
 
         if len(overlay_filter_column) > 0 and overlay_filter_column in overlay_df:
             if len(overlay_filter_value) > 0:
@@ -1972,7 +1965,6 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         if len(overlay_color) > 0 and overlay_color in overlay_df:
             overlay_df["color"] = overlay_df[overlay_color]
     except:
-        raise
         pass
 
     # Feature Finding parameters

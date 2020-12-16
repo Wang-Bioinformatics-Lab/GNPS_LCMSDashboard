@@ -475,3 +475,16 @@ def _spectrum_generator(filename, min_rt, max_rt):
         for spec in run:
             yield spec
         print("USED BRUTEFORCE")
+
+# Getting the Overlay data
+def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt):
+    overlay_usi_splits = overlay_usi.split(":")
+    file_path = overlay_usi_splits[2].split("-")[-1]
+    task = overlay_usi_splits[2].split("-")[1]
+    url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
+    overlay_df = pd.read_csv(url, sep=None, nrows=20000)
+
+    overlay_df["mz"] = overlay_df[overlay_mz]
+    overlay_df["rt"] = overlay_df[overlay_rt]
+
+    return overlay_df

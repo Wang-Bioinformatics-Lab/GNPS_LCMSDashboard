@@ -175,6 +175,8 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
     width = max(min(min_size*4, 750), 120)
     height = max(min(int(min_size*1.75), 500), 80)
 
+    print("Datashader Len", len(df))
+
     cvs = ds.Canvas(plot_width=width, plot_height=height)
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 
@@ -192,8 +194,6 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
     if max_rt < 100000:
         fig.update_xaxes(range=[min_rt, max_rt])
         
-    
-
     too_many_ms2 = False
     MAX_MS2 = 1000000
     if len(all_ms2_scan) > MAX_MS2 or len(all_ms3_scan) > MAX_MS2:
@@ -267,8 +267,5 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
             
     except:
         pass
-
-    
-
 
     return fig
