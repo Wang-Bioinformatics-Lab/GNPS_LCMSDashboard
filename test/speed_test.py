@@ -27,7 +27,7 @@ def test_xic_metabolomics_fast():
 def test_xic_proteomics_fast():
     remote_link, local_filename = utils._resolve_usi("mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01")
 
-    all_xic_values = [["1040.057006835938"]]
+    all_xic_values = [["1040.057006835938", 1040.057006835938]]
     xic_tolerance = 0.5
     xic_ppm_tolerance = 10
     xic_tolerance_unit = "Da"
