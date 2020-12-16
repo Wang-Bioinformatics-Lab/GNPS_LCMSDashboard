@@ -1,1 +1,2 @@
 wget ftp://massive.ucsd.edu/MSV000085852/ccms_peak/QC_raw/QC_0.mzML
+wget "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task=ce31b7fdd01244dbb31478147889de1e&block=main&file=f.aaksenov/GC_data/Sterols_data/Samples/0104006.cdf" -O 0104006.cdf

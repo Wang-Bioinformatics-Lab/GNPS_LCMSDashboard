@@ -8,9 +8,7 @@ import tic
 import ms2 
 
 
-
-
-def test_tic():
+def test_tic_slow():
     df = pd.read_csv("usi_list.tsv", sep='\t')
     for record in df.to_dict(orient="records"):
         print(record["usi"])
