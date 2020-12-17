@@ -10,7 +10,7 @@ import json
 import urllib.parse
 from tqdm import tqdm
 from time import sleep
-
+from download import _resolve_usi
 
 MS_precisions = {
     1 : 5e-6,

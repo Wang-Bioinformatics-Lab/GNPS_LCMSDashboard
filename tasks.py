@@ -2,7 +2,6 @@ from celery import Celery
 import download
 import os
 import uuid
-from xic import _xic_file_slow, _xic_file_fast
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
@@ -38,15 +37,15 @@ def _download_convert_file(remote_link, local_filename, converted_local_filename
 #################################
 # Compute Data
 #################################
-@celery_instance.task(time_limit=15)
-def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2):
-    if get_ms2 is False:
-        try:
-            return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-        except:
-            pass
+# @celery_instance.task(time_limit=15)
+# def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2):
+#     if get_ms2 is False:
+#         try:
+#             return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+#         except:
+#             pass
 
-    return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+#     return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
 
 celery_instance.conf.task_routes = {

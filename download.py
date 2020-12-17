@@ -10,7 +10,7 @@ import json
 import urllib.parse
 from tqdm import tqdm
 from time import sleep
-
+import tasks
 
 def _get_usi_display_filename(usi):
     usi_splits = usi.split(":")
