@@ -5,52 +5,14 @@ import lcms_map
 import pandas as pd
 import utils
 import tic
+import ms2 
+import download
 
-def test_slow():
-    all_xic_values = [["278.1902", 278.1902]]
-    xic_tolerance = 0.5
-    xic_ppm_tolerance = 10
-    xic_tolerance_unit = "Da"
-    rt_min = 5
-    rt_max = 6
-    polarity_filter = "Positive"
-
-    xic._xic_file_slow("QC_0.mzML", all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-    
-def test_fast():
-    all_xic_values = [["278.1902", 278.1902]]
-    xic_tolerance = 0.5
-    xic_ppm_tolerance = 10
-    xic_tolerance_unit = "Da"
-    rt_min = 5
-    rt_max = 6
-    polarity_filter = "Positive"
-
-    xic._xic_file_fast("QC_0.mzML", all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-
-def test_2d_mapping():
-    lcms_map._create_map_fig("QC_0.mzML")
-
-def test_scan_in_usi():
-    usi = "mzspec:MSV000085852:QC_0:scan:3548"
-    remote_link, local_filename = utils._resolve_usi(usi)
-    current_map_selection, highlight_box = utils._resolve_map_plot_selection(None, usi)
-
-    import sys
-    print(current_map_selection, highlight_box, file=sys.stderr)
-
-def test_resolve():
+def test_tic_slow():
     df = pd.read_csv("usi_list.tsv", sep='\t')
     for record in df.to_dict(orient="records"):
         print(record["usi"])
-        remote_link, local_filename = utils._resolve_usi(record["usi"])
-        lcms_map._create_map_fig(local_filename)
-
-def test_tic():
-    df = pd.read_csv("usi_list.tsv", sep='\t')
-    for record in df.to_dict(orient="records"):
-        print(record["usi"])
-        remote_link, local_filename = utils._resolve_usi(record["usi"])
+        remote_link, local_filename = download._resolve_usi(record["usi"])
         tic._tic_file_slow(local_filename)
 
 def test_url_parsing():
@@ -61,3 +23,25 @@ def test_url_parsing():
 
     current_map_selection, highlight_box = utils._resolve_map_plot_selection(params_string, "")
     print(current_map_selection)
+
+
+def test_scan_in_usi():
+    usi = "mzspec:MSV000085852:QC_0:scan:3548"
+    remote_link, local_filename = download._resolve_usi(usi)
+    current_map_selection, highlight_box = utils._resolve_map_plot_selection(None, usi)
+
+    import sys
+    print(current_map_selection, highlight_box, file=sys.stderr)
+
+def test_ms2_spectrum():
+    usi = "mzspec:MSV000085852:QC_0:scan:1"
+    remote_link, local_filename = download._resolve_usi(usi)
+    peaks, mz = ms2._get_ms2_peaks(usi, 1)
+
+    assert(len(peaks) > 10)
+
+    usi = "mzspec:GNPS:TASK-f32283142ac34080ae737f3b2f1fa1c6-f.monicathukral/201204/P australis.mzXML:scan:501217"
+    remote_link, local_filename = download._resolve_usi(usi)
+    peaks, mz = ms2._get_ms2_peaks(usi, 501217)
+
+    assert(len(peaks) > 10)

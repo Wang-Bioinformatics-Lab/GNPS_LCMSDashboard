@@ -31,6 +31,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
     # Iterating through all data with a custom scan iterator
     # It handles custom bounds on RT
+
     for spec in _spectrum_generator(filename, min_rt, max_rt):
         try:
             # Still waiting for the window
@@ -43,15 +44,11 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
         except:
             pass
 
-        scan_polarity = _get_scan_polarity(spec)
-
         if polarity_filter == "None":
             pass
-        elif polarity_filter == "Positive":
-            if scan_polarity != "Positive":
-                continue
-        elif polarity_filter == "Negative":
-            if scan_polarity != "Negative":
+        else:
+            scan_polarity = _get_scan_polarity(spec)
+            if polarity_filter != scan_polarity:
                 continue
         
         if spec.ms_level == 1:
@@ -62,7 +59,10 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
             try:
                 # Filtering peaks by mz
-                peaks = spec.reduce(mz_range=(min_mz, max_mz))
+                if min_mz <= 0 and max_mz >= 2000:
+                    peaks = spec.peaks("raw")
+                else:
+                    peaks = spec.reduce(mz_range=(min_mz, max_mz))
 
                 # Sorting by intensity
                 peaks = peaks[peaks[:,1].argsort()]
@@ -175,6 +175,8 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
     width = max(min(min_size*4, 750), 120)
     height = max(min(int(min_size*1.75), 500), 80)
 
+    print("Datashader Len", len(df))
+
     cvs = ds.Canvas(plot_width=width, plot_height=height)
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 
@@ -192,8 +194,6 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
     if max_rt < 100000:
         fig.update_xaxes(range=[min_rt, max_rt])
         
-    
-
     too_many_ms2 = False
     MAX_MS2 = 1000000
     if len(all_ms2_scan) > MAX_MS2 or len(all_ms3_scan) > MAX_MS2:
@@ -267,8 +267,5 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
             
     except:
         pass
-
-    
-
 
     return fig

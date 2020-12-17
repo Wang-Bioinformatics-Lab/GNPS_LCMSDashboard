@@ -30,18 +30,21 @@ import uuid
 import base64
 from flask_caching import Cache
 
-from utils import _resolve_usi, _get_usi_display_filename
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
 from utils import MS_precisions
-from utils import _convert_mzML
+
+from download import _resolve_usi, _get_usi_display_filename
+from download import _convert_mzML
+
+import ms2
 import lcms_map
 from formula_utils import get_adduct_mass
 from molmass import Formula
 from pyteomics import mass
 
-from xic import _xic_file_slow, _xic_file_fast
+from xic import _xic_file_fast, _xic_file_slow
 
 
 
@@ -1147,31 +1150,10 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         }
     }
 
+    peaks, precursor_mz = ms2._get_ms2_peaks(updated_usi, scan_number)
+    usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
-        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
-        usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
-
-        # Lets also make a MASST link here
-        # We'll have to get the MS2 peaks from USI
-        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
-        
-        try:
-            r = requests.get(usi_json_url)
-            spectrum_json = r.json()
-            peaks = spectrum_json["peaks"]
-            precursor_mz = spectrum_json["precursor_mz"]
-        except:
-            # Lets look at file on disk
-            print("JSON USI EXCEPTION")
-            remote_link, local_filename = _resolve_usi(usi)
-            run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-            spectrum = run[scan_number]
-            peaks = spectrum.peaks("raw")
-            precursor_mz = spectrum.selected_precursors[0]["mz"]
-
-            # Let's try it here
-
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
         neg_ints = [intensity * -1 for intensity in ints]
@@ -1212,38 +1194,6 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         return ["MS2", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button, html.Br(), masst_button]]
 
     if "MS1" in ms2_identifier:
-        usi_image_url = "https://metabolomics-usi.ucsd.edu/svg/?usi={}&plot_title={}".format(updated_usi, ms2_identifier)
-        usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
-
-        try:
-            xic_mz = float(xic_mz)
-
-            # Adding zoom in the USI plotter
-            min_mz = xic_mz - 10
-            max_mz = xic_mz + 10
-            
-            usi_png_url += "&mz_min={}&mz_max={}".format(min_mz, max_mz)
-            usi_url += "&mz_min={}&mz_max={}".format(min_mz, max_mz)
-        except:
-            pass
-
-
-        usi_json_url = "https://metabolomics-usi.ucsd.edu/json/?usi={}".format(updated_usi)
-
-        try:
-            r = requests.get(usi_json_url)
-            spectrum_json = r.json()
-            peaks = spectrum_json["peaks"]
-        except:
-            # Lets look at file on disk
-            print("JSON USI EXCEPTION")
-            remote_link, local_filename = _resolve_usi(usi)
-            run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-            spectrum = run[scan_number]
-            peaks = spectrum.peaks("raw")
-
-        
-        
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
         neg_ints = [intensity * -1 for intensity in ints]
@@ -1272,6 +1222,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         interactive_fig.update_yaxes(range=[0, max(ints)])
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+
         return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
 
 @app.callback([ Output("xic_formula", "value"),
@@ -1468,7 +1419,7 @@ def determine_url_only_parameters(search):
               [Input('url', 'search'), Input('url', 'hash'), Input('upload-data', 'contents')],
               [State('upload-data', 'filename'),
                State('upload-data', 'last_modified')])
-def update_output(search, url_hash, filecontent, filename, filedate):
+def update_usi(search, url_hash, filecontent, filename, filedate):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
@@ -1490,11 +1441,10 @@ def update_output(search, url_hash, filecontent, filename, filedate):
 
         if extension == ".mzXML":
             mangled_name = str(uuid.uuid4())
-            temp_filename_mzXML = os.path.join("temp", "{}.mzXML".format(mangled_name))
             temp_filename = os.path.join("temp", "{}.mzXML".format(mangled_name))
             data = filecontent.encode("utf8").split(b";base64,")[1]
 
-            with open(temp_filename_mzXML, "wb") as temp_file:
+            with open(temp_filename, "wb") as temp_file:
                 temp_file.write(base64.decodebytes(data))
 
             usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
@@ -1516,8 +1466,6 @@ def update_output(search, url_hash, filecontent, filename, filedate):
     # Resolving USI
     usi = _get_param_from_url(search, url_hash, "usi", usi)
     usi2 = _get_param_from_url(search, url_hash, "usi2", usi2)
-
-    print(usi)
 
     return [usi, usi2, "Using URL USI"]
     
@@ -1716,7 +1664,6 @@ def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
 def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
-
 
     if get_ms2 is False:
         try:
@@ -2008,14 +1955,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     # Adding a overlay for the figure
     overlay_df = None
     try:
-        overlay_usi_splits = overlay_usi.split(":")
-        file_path = overlay_usi_splits[2].split("-")[-1]
-        task = overlay_usi_splits[2].split("-")[1]
-        url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
-        overlay_df = pd.read_csv(url, sep=None, nrows=20000)
-
-        overlay_df["mz"] = overlay_df[overlay_mz]
-        overlay_df["rt"] = overlay_df[overlay_rt]
+        utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt)
 
         if len(overlay_filter_column) > 0 and overlay_filter_column in overlay_df:
             if len(overlay_filter_value) > 0:
@@ -2027,7 +1967,6 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         if len(overlay_color) > 0 and overlay_color in overlay_df:
             overlay_df["color"] = overlay_df[overlay_color]
     except:
-        raise
         pass
 
     # Feature Finding parameters
@@ -2044,8 +1983,6 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
         feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
 
-        
-        
         
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df)

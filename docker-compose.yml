@@ -22,6 +22,45 @@ services:
       LETSENCRYPT_HOST: gnps-lcms.ucsd.edu
       LETSENCRYPT_EMAIL: miw023@ucsd.edu
 
+  gnpslcms-worker-conversion:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gnpslcms-worker-conversion
+    volumes:
+      - ./output:/app/output:rw
+      - ./logs:/app/logs:rw
+      - ./temp:/app/temp
+    command: /app/run_worker_conversion.sh
+    restart: unless-stopped
+    depends_on: 
+      - redis
+    networks:
+      - default
+      - nginx-net
+
+  gnpslcms-worker-compute:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gnpslcms-worker-compute
+    volumes:
+      - ./output:/app/output:rw
+      - ./logs:/app/logs:rw
+      - ./temp:/app/temp
+    command: /app/run_worker_compute.sh
+    restart: unless-stopped
+    depends_on: 
+      - redis
+    networks:
+      - default
+      - nginx-net
+
+  redis:
+    image: redis
+    networks:
+      - default
+
 networks:
   nginx-net:
     external:
