@@ -30,19 +30,22 @@ import uuid
 import base64
 from flask_caching import Cache
 
-from utils import _resolve_usi, _get_usi_display_filename
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
 from utils import MS_precisions
-from utils import _convert_mzML
+
+from download import _resolve_usi, _get_usi_display_filename
+from download import _convert_mzML
+
 import ms2
 import lcms_map
 from formula_utils import get_adduct_mass
 from molmass import Formula
 from pyteomics import mass
 
-from xic import _xic_file_slow, _xic_file_fast
+from xic import _xic_file_fast, _xic_file_slow
+
 
 
 server = Flask(__name__)
@@ -1661,7 +1664,6 @@ def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
 def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
-
 
     if get_ms2 is False:
         try:

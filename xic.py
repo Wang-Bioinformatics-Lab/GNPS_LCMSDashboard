@@ -10,13 +10,34 @@ import shutil
 import glob
 import logging
 
-
 def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit):
     if xic_tolerance_unit == "Da":
         return target_mz - xic_tolerance, target_mz + xic_tolerance
     else:
         calculated_tolerance = target_mz / 1000000 * xic_ppm_tolerance
         return target_mz - calculated_tolerance, target_mz + calculated_tolerance
+
+# def xic_file(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
+#     """
+#         Calling the XIC directly or indirectly
+#     """
+
+#     # Calling the heavy lifting
+#     try:
+#         # If we have the celery instance up, we'll push it
+#         result = task_xic.delay(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
+
+#         # Waiting
+#         while(1):
+#             if result.ready():
+#                 break
+#             sleep(1)
+#         result = result.get()
+#     except:
+#         # If we have the celery instance is not up, we'll do it local
+#         raise
+#         #tasks.task_xic(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
+
 
 def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):
     # Saving out MS2 locations

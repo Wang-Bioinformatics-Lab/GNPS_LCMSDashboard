@@ -12,7 +12,7 @@ def test_tic_slow():
     df = pd.read_csv("usi_list.tsv", sep='\t')
     for record in df.to_dict(orient="records"):
         print(record["usi"])
-        remote_link, local_filename = utils._resolve_usi(record["usi"])
+        remote_link, local_filename = download._resolve_usi(record["usi"])
         tic._tic_file_slow(local_filename)
 
 def test_url_parsing():
@@ -27,7 +27,7 @@ def test_url_parsing():
 
 def test_scan_in_usi():
     usi = "mzspec:MSV000085852:QC_0:scan:3548"
-    remote_link, local_filename = utils._resolve_usi(usi)
+    remote_link, local_filename = download._resolve_usi(usi)
     current_map_selection, highlight_box = utils._resolve_map_plot_selection(None, usi)
 
     import sys
@@ -35,13 +35,13 @@ def test_scan_in_usi():
 
 def test_ms2_spectrum():
     usi = "mzspec:MSV000085852:QC_0:scan:1"
-    remote_link, local_filename = utils._resolve_usi(usi)
+    remote_link, local_filename = download._resolve_usi(usi)
     peaks, mz = ms2._get_ms2_peaks(usi, 1)
 
     assert(len(peaks) > 10)
 
     usi = "mzspec:GNPS:TASK-f32283142ac34080ae737f3b2f1fa1c6-f.monicathukral/201204/P australis.mzXML:scan:501217"
-    remote_link, local_filename = utils._resolve_usi(usi)
+    remote_link, local_filename = download._resolve_usi(usi)
     peaks, mz = ms2._get_ms2_peaks(usi, 501217)
 
     assert(len(peaks) > 10)
