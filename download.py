@@ -96,20 +96,24 @@ def _resolve_usi(usi, temp_folder="temp"):
         lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
         lookup_request = requests.get(lookup_url)
 
-        resolution_json = lookup_request.json()
+        try:
+            resolution_json = lookup_request.json()
 
-        remote_path = None
-        
-        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
-        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
+            remote_path = None
+            
+            mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
+            mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
 
-        if len(mzML_resolutions) > 0:
-            remote_path = mzML_resolutions[0]["file_descriptor"]
-        elif len(mzXML_resolutions) > 0:
-            remote_path = mzXML_resolutions[0]["file_descriptor"]
+            if len(mzML_resolutions) > 0:
+                remote_path = mzML_resolutions[0]["file_descriptor"]
+            elif len(mzXML_resolutions) > 0:
+                remote_path = mzXML_resolutions[0]["file_descriptor"]
 
-        # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
+            # Format into FTP link
+            remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
+        except:
+            # We did not successfully look it up, this is the fallback try
+            remote_link = f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
     elif "GNPS" in usi_splits[1]:
         if "TASK-" in usi_splits[2]:
 
