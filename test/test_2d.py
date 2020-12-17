@@ -10,7 +10,7 @@ def test_2d_mapping():
     remote_link, local_filename = download._resolve_usi("mzspec:MSV000085852:QC_0")
     lcms_map._create_map_fig(local_filename)
 
-def test_resolve():
+def test_2d_mapping_many():
     df = pd.read_csv("usi_list.tsv", sep='\t')
     for record in df.to_dict(orient="records"):
         print(record["usi"])
