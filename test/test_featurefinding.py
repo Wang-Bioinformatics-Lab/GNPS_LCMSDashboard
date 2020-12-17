@@ -3,10 +3,10 @@ import sys
 import tidyms as ms
 from pyopenms import *
 
-def test_mzmine():
-    sys.path.insert(0, "..")
-    import feature_finding
-    feature_finding._mzmine_feature_finding("QC_0.mzML")
+# def test_mzmine():
+#     sys.path.insert(0, "..")
+#     import feature_finding
+#     feature_finding._mzmine_feature_finding("QC_0.mzML")
 
 
 # def test_featurefinding():

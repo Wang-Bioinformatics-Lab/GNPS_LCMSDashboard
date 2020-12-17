@@ -6,7 +6,7 @@ import pandas as pd
 import utils
 import tic
 import ms2 
-
+import download
 
 def test_tic_slow():
     df = pd.read_csv("usi_list.tsv", sep='\t')
