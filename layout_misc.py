@@ -58,6 +58,8 @@ EXAMPLE_DASHBOARD = [
 
             html.A("Thermo LCMS - Orbitrap Elite - Proteomics - Pandey Draft Proteome", href="/?usi=mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01"),
             html.Br(),
+            html.A("Thermo LCMS - RAW - ProteoXchange", href="/?usi=mzspec:PXD007600:20150416_41_F1_S28_ZT_1_4.raw"),
+            html.Br(),
             html.Br(),
 
             html.H5("Different Data Sources Examples - LC/MS Metabolomics"),
