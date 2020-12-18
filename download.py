@@ -61,6 +61,7 @@ def _usi_to_local_filename(usi):
 
     if "PXD" in usi_splits[1]:
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
+        print(converted_local_filename, file=sys.stderr)
         return converted_local_filename.replace(".mzML.mzML", ".mzML")
 
 

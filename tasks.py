@@ -10,7 +10,7 @@ celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://
 ##############################
 # Conversion
 ##############################
-@celery_instance.task(time_limit=120)
+@celery_instance.task(time_limit=240)
 def _download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder="temp"):
     """
         This function does the serialization of downloading files
