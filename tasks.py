@@ -28,6 +28,8 @@ def _download_convert_file(remote_link, local_filename, converted_local_filename
         # Lets do a conversion
         if file_extension.lower() == ".cdf":
             download._convert_cdf_to_mzML(local_filename, temp_filename)
+        elif file_extension.lower() == ".raw":
+            download._convert_raw_to_mzML(local_filename, temp_filename)
         else:
             download._convert_mzML(local_filename, temp_filename)
 

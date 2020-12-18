@@ -1,9 +1,3 @@
-build:
-	docker build -t gnpslibrary . 
-
-bash:
-	docker run -it --rm gnpslibrary /bin/bash
-
 server-compose-build-nocache:
 	docker-compose build --no-cache
 
