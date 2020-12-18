@@ -198,9 +198,17 @@ def _convert_raw_to_mzML(input_raw, output_mzML):
     """
     This will convert Thermo RAW to mzML
     """
-    conversion_cmd = "mono /src/bin/x64/Debug/ThermoRawFileParser.exe -i={} -o={} -f=1".format(input_raw, "temp")
 
-    conversion_ret_code = os.system(conversion_cmd)
+    output_directory = "temp"
+    thermo_converted_filename = os.path.join(output_directory, os.path.splitext(os.path.basename(input_raw))[0] + ".mzML")
+
+    import subprocess
+    conversion_cmd = ["mono", "/src/bin/x64/Debug/ThermoRawFileParser.exe", "-i={}".format(input_raw), "-o={}".format(output_directory), "-f=1"]
+    subprocess.check_call(" ".join(conversion_cmd), shell=True)
+
+
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
+    os.system(conversion_cmd)
 
 
 # First try msconvert, if the output fails, then we will do pyteomics to mzML and then msconvert
