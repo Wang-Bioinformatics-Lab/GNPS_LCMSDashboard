@@ -120,6 +120,8 @@ def _resolve_gnps_usi(usi):
         source_file = os.path.basename(spectrum_dict["spectruminfo"]["source_file"])
         remote_link = "ftp://ccms-ftp.ucsd.edu/GNPS_Library_Provenance/{}/{}".format(task, source_file)
 
+    return remote_link
+
 def _resolve_mtbls_usi(usi):
     usi_splits = usi.split(':')
 
@@ -208,6 +210,7 @@ def _resolve_usi(usi, temp_folder="temp"):
         remote_link = _resolve_pxd_usi(usi)
 
     # Getting Data Local, TODO: likely should serialize it
+    print(usi, remote_link)
     local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
 
