@@ -175,6 +175,22 @@ def _resolve_pxd_usi(usi):
 
     return remote_link
 
+def _resolve_usi_remotelink(usi):
+    usi_splits = usi.split(":")
+    
+    if "MSV" in usi_splits[1]:
+        remote_link = _resolve_msv_usi(usi)
+    elif "GNPS" in usi_splits[1]:
+        remote_link = _resolve_gnps_usi(usi)
+    elif "MTBLS" in usi_splits[1]:
+        remote_link = _resolve_mtbls_usi(usi)
+    elif "ST" in usi_splits[1]:
+        remote_link = _resolve_metabolomicsworkbench_usi(usi)
+    elif "PXD" in usi_splits[1]:
+        remote_link = _resolve_pxd_usi(usi)
+
+    return remote_link
+
 # Returns remote_link and local filepath
 def _resolve_usi(usi, temp_folder="temp"):
     usi_splits = usi.split(":")
@@ -201,16 +217,7 @@ def _resolve_usi(usi, temp_folder="temp"):
 
         return "", converted_local_filename
 
-    if "MSV" in usi_splits[1]:
-        remote_link = _resolve_msv_usi(usi)
-    elif "GNPS" in usi_splits[1]:
-        remote_link = _resolve_gnps_usi(usi)
-    elif "MTBLS" in usi_splits[1]:
-        remote_link = _resolve_mtbls_usi(usi)
-    elif "ST" in usi_splits[1]:
-        remote_link = _resolve_metabolomicsworkbench_usi(usi)
-    elif "PXD" in usi_splits[1]:
-        remote_link = _resolve_pxd_usi(usi)
+    remote_link = _resolve_usi_remotelink(usi)
 
     # Getting Data Local, TODO: likely should serialize it
     print("ZZZZZZZZZZZZZZZZZZZZZZZZZ", usi, remote_link, file=sys.stderr)

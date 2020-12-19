@@ -5,7 +5,13 @@ import pandas as pd
 import download
 import os
 
-def test_resolve():
+def test_resolve_remote_url():
+    df = pd.read_csv("usi_list.tsv", sep='\t')
+    for record in df.to_dict(orient="records"):
+        remote_link = download._resolve_usi_remotelink(record["usi"])
+        print(record["usi"], remote_link)
+
+def test_resolve_download():
     df = pd.read_csv("usi_list.tsv", sep='\t')
     for record in df.to_dict(orient="records"):
         print(record["usi"])
