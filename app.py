@@ -132,7 +132,9 @@ NAVBAR = dbc.Navbar(
 )
 
 DATASELECTION_CARD = [
-    dbc.CardHeader(html.H5("Data Selection")),
+    dbc.CardHeader([
+        html.H5("Data Selection"),
+    ]),
     dbc.CardBody(dbc.Row(
         [   ## Left Panel
             dbc.Col([
@@ -1031,6 +1033,7 @@ BODY = dbc.Container(
                 className="w-50"
             ),
         ], style={"marginTop": 30}),
+        html.Br(),
     ],
     fluid=True,
     className="",
