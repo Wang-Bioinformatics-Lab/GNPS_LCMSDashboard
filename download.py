@@ -82,11 +82,14 @@ def _resolve_msv_usi(usi):
         
         mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
         mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
+        raw_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1].lower() == ".raw"]
 
         if len(mzML_resolutions) > 0:
             remote_path = mzML_resolutions[0]["file_descriptor"]
         elif len(mzXML_resolutions) > 0:
             remote_path = mzXML_resolutions[0]["file_descriptor"]
+        elif len(raw_resolutions) > 0:
+            remote_path = raw_resolutions[0]["file_descriptor"]
 
         # Format into FTP link
         remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
@@ -210,7 +213,7 @@ def _resolve_usi(usi, temp_folder="temp"):
         remote_link = _resolve_pxd_usi(usi)
 
     # Getting Data Local, TODO: likely should serialize it
-    print(usi, remote_link)
+    print("ZZZZZZZZZZZZZZZZZZZZZZZZZ", usi, remote_link, file=sys.stderr)
     local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
 

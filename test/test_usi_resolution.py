@@ -25,6 +25,12 @@ def test_raw_filename():
     converted_filename = download._usi_to_local_filename("mzspec:PXD022935:21720-TMT-Fra-1-1.raw")          # Should be in MassIVE
 
     # try:
+    #     remote_link, local_filename = download._resolve_usi("mzspec:PXD022935:21720-TMT-Fra-1-1.raw")
+    # except:
+    #     raise
+    #     pass
+
+    # try:
     #     remote_link, local_filename = download._resolve_usi("mzspec:PXD007600:20150416_41_F1_S28_ZT_1_4.raw")
     # except:
     #     pass
