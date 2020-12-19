@@ -174,6 +174,8 @@ def _resolve_usi(usi, temp_folder="temp"):
         elif len(mzXML_resolutions) > 0:
             remote_path = mzXML_resolutions[0]["file_descriptor"]
 
+        # Format into FTP link
+        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
     elif "PXD" in usi_splits[1]:
         # Lets first do lookup in PXD, and then try to find the filename and path
         dataset_accession = usi_splits[1]

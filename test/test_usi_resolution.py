@@ -23,8 +23,8 @@ def test_resolve_filename():
 def test_raw_filename():
     converted_filename = download._usi_to_local_filename("mzspec:PXD007600:20150416_41_F1_S28_ZT_1_4.raw")
 
-    try:
-        remote_link, local_filename = download._resolve_usi("mzspec:PXD007600:20150416_41_F1_S28_ZT_1_4.raw")
-    except:
-        pass
+    # try:
+    #     remote_link, local_filename = download._resolve_usi("mzspec:PXD007600:20150416_41_F1_S28_ZT_1_4.raw")
+    # except:
+    #     pass
     
