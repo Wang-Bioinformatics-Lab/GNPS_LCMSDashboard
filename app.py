@@ -55,7 +55,7 @@ import ms2
 import lcms_map
 import tasks
 from formula_utils import get_adduct_mass
-from xic import _xic_file_fast, _xic_file_slow
+import xic
 
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD
@@ -1708,20 +1708,46 @@ def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tole
     remote_link, local_filename = _resolve_usi(usi)
 
     # If we are able, we will split up the query, one per file
-
-    if get_ms2 is False:
-        try:
-            return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-        except:
-            pass
-
-    return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-
+    return xic.xic_file(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
+    
 def _perform_batch_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     if _is_worker_up():
-        print( " Doing stuff ")
+        print( " Doing Worker stuff ")
     else:
-        print(" Normal Stuff ")
+        # This is the standard thing
+        df_long_list = []
+        for usi_element in usi_list:
+            if len(usi_list) == 1 and len(all_xic_values) == 1:
+                xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=True)
+            else:
+                xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False)
+
+            # Performing Normalization only if we have multiple XICs available
+            if xic_norm is True:
+                try:
+                    for key in xic_df.columns:
+                        if key == "rt":
+                            continue
+                        xic_df[key] = xic_df[key] / max(xic_df[key])
+                except:
+                    pass
+
+            # Formatting for Plotting
+            target_names = list(xic_df.columns)
+            target_names.remove("rt")
+            df_long = pd.melt(xic_df, id_vars="rt", value_vars=target_names)
+            df_long["USI"] = usi_element
+
+            if usi_element in usi1_list:
+                df_long["GROUP"] = "TOP"
+            else:
+                df_long["GROUP"] = "BOTTOM"
+
+            df_long_list.append(df_long)
+
+        merged_df_long = pd.concat(df_long_list)
+
+        return merged_df_long
 
 
 def _is_worker_up():
@@ -1851,6 +1877,9 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             pass
 
     # Performing XIC for all USI in the list
+
+    # TODO: Replace this code
+
     df_long_list = []
     for usi_element in usi_list:
         if len(usi_list) == 1 and len(all_xic_values) == 1:
