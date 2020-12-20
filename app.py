@@ -60,18 +60,28 @@ from xic import _xic_file_fast, _xic_file_slow
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD
 
-
-
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
-cache = Cache(app.server, config={
-    'CACHE_TYPE': "null",
-    #'CACHE_TYPE': 'filesystem',
-    'CACHE_DIR': 'temp/flask-cache',
-    'CACHE_DEFAULT_TIMEOUT': 0,
-    'CACHE_THRESHOLD': 1000000
-})
+
+# Optionally turn on caching
+if __name__ == "__main__":
+    cache = Cache(app.server, config={
+        'CACHE_TYPE': "null",
+        #'CACHE_TYPE': 'filesystem',
+        'CACHE_DIR': 'temp/flask-cache',
+        'CACHE_DEFAULT_TIMEOUT': 0,
+        'CACHE_THRESHOLD': 1000000
+    })
+else:
+    cache = Cache(app.server, config={
+        #'CACHE_TYPE': "null",
+        'CACHE_TYPE': 'filesystem',
+        'CACHE_DIR': 'temp/flask-cache',
+        'CACHE_DEFAULT_TIMEOUT': 0,
+        'CACHE_THRESHOLD': 1000000
+    })
+
 server = app.server
 
 app.index_string = """<!DOCTYPE html>
