@@ -9,6 +9,7 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
+from time import sleep
 
 # Plotly Imports
 
@@ -23,6 +24,7 @@ from flask_caching import Cache
 
 # Misc Library
 
+import sys
 import os
 from zipfile import ZipFile
 import urllib.parse
@@ -1548,10 +1550,13 @@ def _perform_feature_finding(filename, feature_finding=None):
             if result.ready():
                 break
             sleep(3)
-        features_df = result.get()
+        features_list = result.get()
     except:
+        raise
         # If we have the celery instance is not up, we'll do it local
-        features_df = tasks.task_featurefinding.delay(filename, feature_finding)
+        features_list = tasks.task_featurefinding.delay(filename, feature_finding)
+
+    features_df = pd.DataFrame(features_list)
 
     return features_df
 
@@ -1587,6 +1592,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
             feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="diamond", opacity=0.7), name="Feature Detection")
             lcms_fig.add_trace(feature_overlay_fig)
         except:
+            raise
             pass
 
     return lcms_fig, features_df

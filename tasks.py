@@ -2,6 +2,7 @@ from celery import Celery
 import download
 import os
 import uuid
+import feature_finding
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
@@ -33,7 +34,8 @@ def _download_convert_file(usi, temp_folder="temp"):
 
 @celery_instance.task(time_limit=60)
 def task_featurefinding(filename, params):
-    return feature_finding.perform_feature_finding(filename, params)
+    feature_df = feature_finding.perform_feature_finding(filename, params)
+    return feature_df.to_dict(orient="records")
 
 
 celery_instance.conf.task_routes = {
