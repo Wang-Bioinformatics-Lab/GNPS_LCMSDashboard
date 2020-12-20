@@ -1850,7 +1850,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     plotting_df = plotting_df[plotting_df["USI"].isin(plot_usi_list)]
 
     # Cleaning up the USI to show
-    plotting_df["USI"] = plotting_df["USI"].apply(lambda x: _get_usi_display_filename(x))
+    plotting_df["USI"] = plotting_df["USI"].apply(lambda x: download._get_usi_display_filename(x))
 
     
     if len(plot_usi_list) == 1:

@@ -15,7 +15,7 @@ def _download_convert_file(usi, temp_folder="temp"):
         This function does the serialization of downloading files
     """
 
-    download._resolve_usi(usi, temp_folder=temp_folder)
+    return download._resolve_usi(usi, temp_folder=temp_folder)
 
 #################################
 # Compute Data
