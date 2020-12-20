@@ -35,7 +35,9 @@ EXAMPLE_DASHBOARD = [
             html.H5("Various Vendor Examples - LC/MS Metabolomics"),
             html.Hr(),
             
-            html.A("Thermo Q Exactive LCMS", href="/?usi=mzspec%3AMSV000084951%3AAH22&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.A("Thermo Q Exactive LCMS mzML", href="/?usi=mzspec%3AMSV000084951%3AAH22&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
+            html.Br(),
+            html.A("Thermo Q Exactive LCMS RAW", href="/?usi=mzspec%3AMSV000086206%3Araw/raw/S_N1.raw&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
             html.A("Sciex LCMS", href="/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
@@ -54,7 +56,11 @@ EXAMPLE_DASHBOARD = [
             html.H5("Basic Examples - LC/MS Proteomics"),
             html.Hr(),
 
-            html.A("Thermo LCMS - Orbitrap Elite - Proteomics - Pandey Draft Proteome", href="/?usi=mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01"),
+            html.A("Thermo LCMS - Orbitrap Elite - Proteomics - Pandey Draft Proteome - mzML from MassIVE", href="/?usi=mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01"),
+            html.Br(),
+            html.A("Thermo LCMS - Orbitrap Velos - Proteomics - Pandey Draft Proteome - RAW from PRIDE via PX", href="/?usi=mzspec:PXD000561:Adult_Adrenalgland_bRP_Velos_1_f07.raw"),
+            html.Br(),
+            html.A("Thermo LCMS - Q Exactive HF - Proteomics - TMT10Plex - RAW from MassIVE via PX", href="/?usi=mzspec:PXD022935:21720-TMT-Fra-1-1.raw"),
             html.Br(),
             html.Br(),
 

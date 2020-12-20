@@ -59,6 +59,138 @@ def _usi_to_local_filename(usi):
         converted_local_filename = filename + ".mzML"
         return converted_local_filename
 
+    if "PXD" in usi_splits[1]:
+        converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
+        print(converted_local_filename, file=sys.stderr)
+        return converted_local_filename.replace(".mzML.mzML", ".mzML")
+
+
+def _resolve_msv_usi(usi):
+    usi_splits = usi.split(':')
+
+    msv_usi = usi
+    if len(usi.split(":")) == 3:
+        msv_usi = "{}:scan:1".format(usi)
+    
+    lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
+    lookup_request = requests.get(lookup_url)
+
+    try:
+        resolution_json = lookup_request.json()
+
+        remote_path = None
+        
+        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
+        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
+        raw_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1].lower() == ".raw"]
+
+        if len(mzML_resolutions) > 0:
+            remote_path = mzML_resolutions[0]["file_descriptor"]
+        elif len(mzXML_resolutions) > 0:
+            remote_path = mzXML_resolutions[0]["file_descriptor"]
+        elif len(raw_resolutions) > 0:
+            remote_path = raw_resolutions[0]["file_descriptor"]
+
+        # Format into FTP link
+        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
+    except:
+        # We did not successfully look it up, this is the fallback try
+        remote_link = f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
+
+    return remote_link
+
+def _resolve_gnps_usi(usi):
+    usi_splits = usi.split(':')
+
+    if "TASK-" in usi_splits[2]:
+        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
+        filename = "-".join(usi_splits[2].split("-")[2:])
+        task = usi_splits[2].split("-")[1]
+
+        remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+    elif "QUICKSTART-" in usi_splits[2]:
+        filename = "-".join(usi_splits[2].split("-")[2:])
+        task = usi_splits[2].split("-")[1]
+        remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
+    elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
+        print("Library Entry")
+        # Lets find the provenance file
+        accession = usi_splits[4]
+        url = "https://gnps.ucsd.edu/ProteoSAFe/SpectrumCommentServlet?SpectrumID={}".format(accession)
+        r = requests.get(url)
+        spectrum_dict = r.json()
+        task = spectrum_dict["spectruminfo"]["task"]
+        source_file = os.path.basename(spectrum_dict["spectruminfo"]["source_file"])
+        remote_link = "ftp://ccms-ftp.ucsd.edu/GNPS_Library_Provenance/{}/{}".format(task, source_file)
+
+    return remote_link
+
+def _resolve_mtbls_usi(usi):
+    usi_splits = usi.split(':')
+
+    dataset_accession = usi_splits[1]
+    filename = usi_splits[2]
+    remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
+
+    return remote_link
+
+def _resolve_metabolomicsworkbench_usi(usi):
+    usi_splits = usi.split(':')
+
+    # First looking 
+    dataset_accession = usi_splits[1]
+    filename = usi_splits[2]
+        
+    # Query Accession
+    url = "https://massive.ucsd.edu/ProteoSAFe/QueryDatasets?task=N%2FA&file=&pageSize=30&offset=0&query=%257B%2522full_search_input%2522%253A%2522%2522%252C%2522table_sort_history%2522%253A%2522createdMillis_dsc%2522%252C%2522query%2522%253A%257B%257D%252C%2522title_input%2522%253A%2522{}%2522%257D&target=&_=1606254845533".format(dataset_accession)
+    r = requests.get(url)
+    data_json = r.json()
+
+    msv_accession = data_json["row_data"][0]["dataset"]
+
+    msv_usi = "mzspec:{}:{}:scan:1".format(msv_accession, filename)
+
+    return _resolve_msv_usi(msv_usi)
+
+def _resolve_pxd_usi(usi):
+    usi_splits = usi.split(':')
+
+    # Lets first do lookup in PXD, and then try to find the filename and path
+    dataset_accession = usi_splits[1]
+    filename = usi_splits[2]
+
+    lookup_url = f"http://proteomecentral.proteomexchange.org/cgi/GetDataset?ID={dataset_accession}&outputMode=json&test=no"
+    lookup_request = requests.get(lookup_url)
+    resolution_json = lookup_request.json()
+
+    # Checking if this is a dataset from PRIDE or MassIVE
+    remote_link = ""
+    full_dataset_links = [dataset_obj["name"] for dataset_obj in resolution_json["fullDatasetLinks"]]
+    if "MassIVE dataset URI" in full_dataset_links:
+        return _resolve_msv_usi(usi)
+    elif "PRIDE project URI" in full_dataset_links:
+        for filename_object in resolution_json["datasetFiles"]:
+            if filename in filename_object["value"]:
+                remote_link = filename_object["value"]
+
+    return remote_link
+
+def _resolve_usi_remotelink(usi):
+    usi_splits = usi.split(":")
+    
+    if "MSV" in usi_splits[1]:
+        remote_link = _resolve_msv_usi(usi)
+    elif "GNPS" in usi_splits[1]:
+        remote_link = _resolve_gnps_usi(usi)
+    elif "MTBLS" in usi_splits[1]:
+        remote_link = _resolve_mtbls_usi(usi)
+    elif "ST" in usi_splits[1]:
+        remote_link = _resolve_metabolomicsworkbench_usi(usi)
+    elif "PXD" in usi_splits[1]:
+        remote_link = _resolve_pxd_usi(usi)
+
+    return remote_link
+
 # Returns remote_link and local filepath
 def _resolve_usi(usi, temp_folder="temp"):
     usi_splits = usi.split(":")
@@ -85,93 +217,10 @@ def _resolve_usi(usi, temp_folder="temp"):
 
         return "", converted_local_filename
 
-    if "MSV" in usi_splits[1]:
-        # Test: mzspec:MSV000084494:GNPS00002_A3_p:scan:1
-        # Bigger Test: mzspec:MSV000083388:1_p_153001_01072015:scan:12
-        # Checking the splits
-        msv_usi = usi
-        if len(usi.split(":")) == 3:
-            msv_usi = "{}:scan:1".format(usi)
-        
-        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
-        lookup_request = requests.get(lookup_url)
-
-        try:
-            resolution_json = lookup_request.json()
-
-            remote_path = None
-            
-            mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
-            mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
-
-            if len(mzML_resolutions) > 0:
-                remote_path = mzML_resolutions[0]["file_descriptor"]
-            elif len(mzXML_resolutions) > 0:
-                remote_path = mzXML_resolutions[0]["file_descriptor"]
-
-            # Format into FTP link
-            remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
-        except:
-            # We did not successfully look it up, this is the fallback try
-            remote_link = f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
-    elif "GNPS" in usi_splits[1]:
-        if "TASK-" in usi_splits[2]:
-
-            # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
-            filename = "-".join(usi_splits[2].split("-")[2:])
-            task = usi_splits[2].split("-")[1]
-
-            remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
-        elif "QUICKSTART-" in usi_splits[2]:
-            filename = "-".join(usi_splits[2].split("-")[2:])
-            task = usi_splits[2].split("-")[1]
-            remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
-        elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
-            print("Library Entry")
-            # Lets find the provenance file
-            accession = usi_splits[4]
-            url = "https://gnps.ucsd.edu/ProteoSAFe/SpectrumCommentServlet?SpectrumID={}".format(accession)
-            r = requests.get(url)
-            spectrum_dict = r.json()
-            task = spectrum_dict["spectruminfo"]["task"]
-            source_file = os.path.basename(spectrum_dict["spectruminfo"]["source_file"])
-            remote_link = "ftp://ccms-ftp.ucsd.edu/GNPS_Library_Provenance/{}/{}".format(task, source_file)
-    elif "MTBLS" in usi_splits[1]:
-        dataset_accession = usi_splits[1]
-        filename = usi_splits[2]
-        remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
-    elif "ST" in usi_splits[1]:
-        # First looking 
-        dataset_accession = usi_splits[1]
-        filename = usi_splits[2]
-         
-        # Query Accession
-        url = "https://massive.ucsd.edu/ProteoSAFe/QueryDatasets?task=N%2FA&file=&pageSize=30&offset=0&query=%257B%2522full_search_input%2522%253A%2522%2522%252C%2522table_sort_history%2522%253A%2522createdMillis_dsc%2522%252C%2522query%2522%253A%257B%257D%252C%2522title_input%2522%253A%2522{}%2522%257D&target=&_=1606254845533".format(dataset_accession)
-        r = requests.get(url)
-        data_json = r.json()
-
-        msv_accession = data_json["row_data"][0]["dataset"]
-        msv_usi = "mzspec:{}:{}:scan:1".format(msv_accession, filename)
-
-        lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
-        lookup_request = requests.get(lookup_url)
-
-        resolution_json = lookup_request.json()
-
-        remote_path = None
-        
-        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
-        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
-
-        if len(mzML_resolutions) > 0:
-            remote_path = mzML_resolutions[0]["file_descriptor"]
-        elif len(mzXML_resolutions) > 0:
-            remote_path = mzXML_resolutions[0]["file_descriptor"]
-
-        # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
+    remote_link = _resolve_usi_remotelink(usi)
 
     # Getting Data Local, TODO: likely should serialize it
+    print("ZZZZZZZZZZZZZZZZZZZZZZZZZ", usi, remote_link, file=sys.stderr)
     local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
 
@@ -194,11 +243,29 @@ def _resolve_usi(usi, temp_folder="temp"):
     return remote_link, converted_local_filename
 
 
+def _convert_raw_to_mzML(input_raw, output_mzML):
+    """
+    This will convert Thermo RAW to mzML
+    """
 
+    output_directory = "temp"
+    thermo_converted_filename = os.path.join(output_directory, os.path.splitext(os.path.basename(input_raw))[0] + ".mzML")
+
+    import subprocess
+    conversion_cmd = ["mono", "/src/bin/x64/Debug/ThermoRawFileParser.exe", "-i={}".format(input_raw), "-o={}".format(output_directory), "-f=1"]
+    subprocess.check_call(" ".join(conversion_cmd), shell=True)
+
+
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
+    os.system(conversion_cmd)
 
 
 # First try msconvert, if the output fails, then we will do pyteomics to mzML and then msconvert
 def _convert_mzML(input_mzXML, output_mzML):
+    """
+    This will convert mzXML and mzML to mzML
+    """
+
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'msLevel 1' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
