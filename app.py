@@ -1707,6 +1707,8 @@ def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tole
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
 
+    # If we are able, we will split up the query, one per file
+
     if get_ms2 is False:
         try:
             return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
@@ -1715,6 +1717,26 @@ def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tole
 
     return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
+def _perform_batch_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
+    if _is_worker_up():
+        print( " Doing stuff ")
+    else:
+        print(" Normal Stuff ")
+
+
+def _is_worker_up():
+    """Gives us utility function to tell is celery is up and running
+
+    Returns:
+        [type]: [description]
+    """
+
+    try:
+        result = tasks.task_computeheartbeat.delay()
+        result.task_id
+        return True
+    except:
+        return False
 
 
 def _integrate_files(long_data_df, xic_integration_type):
@@ -1752,6 +1774,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
+
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{

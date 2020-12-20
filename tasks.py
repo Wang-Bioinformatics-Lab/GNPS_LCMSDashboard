@@ -38,8 +38,14 @@ def task_featurefinding(filename, params):
     return feature_df.to_dict(orient="records")
 
 
+@celery_instance.task(time_limit=60)
+def task_computeheartbeat():
+    return "Up"
+
+
 celery_instance.conf.task_routes = {
     'tasks._download_convert_file': {'queue': 'conversion'},
     'tasks.task_xic': {'queue': 'compute'},
     'tasks.task_featurefinding': {'queue': 'compute'},
+    'tasks.task_computeheartbeat': {'queue': 'compute'},
 }
