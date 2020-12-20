@@ -10,7 +10,6 @@ import json
 import urllib.parse
 from tqdm import tqdm
 from time import sleep
-import tasks
 
 def _get_usi_display_filename(usi):
     usi_splits = usi.split(":")
@@ -191,6 +190,18 @@ def _resolve_usi_remotelink(usi):
 
     return remote_link
 
+def _resolve_exists_local(usi, temp_folder="temp"):
+    usi_splits = usi.split(":")
+
+    converted_local_filename = os.path.join(temp_folder, _usi_to_local_filename(usi))
+
+    # Only call if does not exists
+    if os.path.exists(converted_local_filename):
+        return True
+    
+    return False
+
+
 # Returns remote_link and local filepath
 def _resolve_usi(usi, temp_folder="temp"):
     usi_splits = usi.split(":")
@@ -220,25 +231,25 @@ def _resolve_usi(usi, temp_folder="temp"):
     remote_link = _resolve_usi_remotelink(usi)
 
     # Getting Data Local, TODO: likely should serialize it
-    print("ZZZZZZZZZZZZZZZZZZZZZZZZZ", usi, remote_link, file=sys.stderr)
     local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
     filename, file_extension = os.path.splitext(local_filename)
 
-    # Calling the heavy lifting
-    try:
-        # If we have the celery instance up, we'll push it
-        result = tasks._download_convert_file.delay(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
+    temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
+    wget_cmd = "wget '{}' -O {} 2> /dev/null".format(remote_link, temp_filename)
+    os.system(wget_cmd)
+    os.rename(temp_filename, local_filename)
 
-        # Waiting
-        while(1):
-            if result.ready():
-                break
-            sleep(3)
-        result = result.get()
-    except:
-        # If we have the celery instance is not up, we'll do it local
-        print("Downloading Local")
-        tasks._download_convert_file(remote_link, local_filename, converted_local_filename, temp_folder=temp_folder)
+    temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
+    # Lets do a conversion
+    if file_extension.lower() == ".cdf":
+        _convert_cdf_to_mzML(local_filename, temp_filename)
+    elif file_extension.lower() == ".raw":
+        _convert_raw_to_mzML(local_filename, temp_filename)
+    else:
+        _convert_mzML(local_filename, temp_filename)
+
+    # Renaming the temp
+    os.rename(temp_filename, converted_local_filename)
 
     return remote_link, converted_local_filename
 

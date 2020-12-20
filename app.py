@@ -48,11 +48,10 @@ from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
 from utils import MS_precisions
 
-from download import _resolve_usi, _get_usi_display_filename
-from download import _convert_mzML
-
+import download
 import ms2
 import lcms_map
+import tasks
 from formula_utils import get_adduct_mass
 from xic import _xic_file_fast, _xic_file_slow
 
@@ -65,8 +64,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 cache = Cache(app.server, config={
-    #'CACHE_TYPE': "null",
-    'CACHE_TYPE': 'filesystem',
+    'CACHE_TYPE': "null",
+    #'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'temp/flask-cache',
     'CACHE_DEFAULT_TIMEOUT': 0,
     'CACHE_THRESHOLD': 1000000
@@ -1043,6 +1042,49 @@ app.layout = html.Div(children=[NAVBAR, BODY])
 
 
 
+def _resolve_usi(usi, temp_folder="temp"):
+    """
+    This function interacts with the task queuing system so that it can be abstracted out
+
+    Args:
+        usi ([type]): [description]
+        tempfolder (str, optional): [description]. Defaults to "temp".
+
+    Raises:
+        Exception: [description]
+
+    Returns:
+        [type]: [description]
+    """
+
+    if download._resolve_exists_local(usi):
+        # We can do it in line because we know that it won't actually do the call
+        return download._resolve_usi(usi)
+    else:
+        # Calling the heavy lifting
+        try:
+            # If we have the celery instance up, we'll push it
+            result = tasks._download_convert_file.delay(usi, temp_folder=temp_folder)
+
+            # Waiting
+            while(1):
+                if result.ready():
+                    break
+                sleep(3)
+            result = result.get()
+            return result
+        except:
+            # If we have the celery instance is not up, we'll do it local
+            print("Downloading Local")
+            return tasks._download_convert_file(usi, temp_folder=temp_folder)
+
+
+
+
+
+
+
+
 
 
 # This helps to update the ms2/ms1 plot
@@ -1118,7 +1160,9 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         }
     }
 
-    peaks, precursor_mz = ms2._get_ms2_peaks(updated_usi, scan_number)
+    # Getting Spectrum Peaks
+    remote_link, local_filename = _resolve_usi(usi)
+    peaks, precursor_mz = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
     usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
@@ -1492,8 +1536,22 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
 # This calls the actual feature finding so it can be cached
 @cache.memoize()
 def _perform_feature_finding(filename, feature_finding=None):
-    import feature_finding as ff
-    features_df = ff.perform_feature_finding(filename, feature_finding)
+    import tasks
+
+    # Calling the heavy lifting
+    try:
+        # If we have the celery instance up, we'll push it
+        result = tasks.task_featurefinding.delay(filename, feature_finding)
+
+        # Waiting
+        while(1):
+            if result.ready():
+                break
+            sleep(3)
+        features_df = result.get()
+    except:
+        # If we have the celery instance is not up, we'll do it local
+        features_df = tasks.task_featurefinding.delay(filename, feature_finding)
 
     return features_df
 
