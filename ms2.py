@@ -1,7 +1,6 @@
 import requests
 import pymzml
 import json
-from download import _resolve_usi
 from utils import MS_precisions
 
 def _get_ms2_peaks(usi, local_filename, scan_number):

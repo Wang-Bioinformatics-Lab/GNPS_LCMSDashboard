@@ -10,7 +10,7 @@ import json
 import urllib.parse
 from tqdm import tqdm
 from time import sleep
-from download import _resolve_usi
+import sys
 
 MS_precisions = {
     1 : 5e-6,
@@ -21,9 +21,7 @@ MS_precisions = {
 
 import subprocess, io
 
-def _calculate_file_stats(usi):
-    remote_link, local_filename = _resolve_usi(usi)
-
+def _calculate_file_stats(usi, local_filename):
     run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
     number_scans = run.get_spectrum_count()
 
@@ -43,8 +41,9 @@ def _calculate_file_stats(usi):
         all_lines = str(out).replace("\\t", "\t").split("\\n")
         all_lines = [line for line in all_lines if len(line) > 10 ]
         updated_version = "\n".join(all_lines)
-        import sys
+        
         print(updated_version, file=sys.stderr)
+        
         data = io.StringIO(updated_version)
         df = pd.read_csv(data, sep="\t")
         
@@ -94,7 +93,7 @@ def _get_param_from_url(search, url_hash, param_key, default):
 
     return default
 
-def _resolve_map_plot_selection(url_search, usi):
+def _resolve_map_plot_selection(url_search, usi, local_filename):
     current_map_selection = {}
     highlight_box = None
 
@@ -116,7 +115,6 @@ def _resolve_map_plot_selection(url_search, usi):
                 # Lets get out of here and not set anything
                 raise Exception
             
-            remote_link, local_filename = _resolve_usi(usi)
             run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
             spec = run[scan_number]
             rt = spec.scan_time_in_minutes()

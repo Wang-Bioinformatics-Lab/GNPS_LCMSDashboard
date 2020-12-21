@@ -1085,8 +1085,7 @@ def _resolve_usi(usi, temp_folder="temp"):
         # We can do it in line because we know that it won't actually do the call
         return download._resolve_usi(usi)
     else:
-        # Calling the heavy lifting
-        try:
+        if _is_worker_up():
             # If we have the celery instance up, we'll push it
             result = tasks._download_convert_file.delay(usi, temp_folder=temp_folder)
 
@@ -1097,18 +1096,10 @@ def _resolve_usi(usi, temp_folder="temp"):
                 sleep(3)
             result = result.get()
             return result
-        except:
+        else:
             # If we have the celery instance is not up, we'll do it local
             print("Downloading Local")
             return tasks._download_convert_file(usi, temp_folder=temp_folder)
-
-
-
-
-
-
-
-
 
 
 # This helps to update the ms2/ms1 plot
@@ -2131,7 +2122,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi)
+    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename)
 
     import sys
     print(triggered_id, file=sys.stderr)
@@ -2215,7 +2206,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi)
+    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename)
     
     # We have to do a bit of convoluted object, if {'autosize': True}, that means the original load
     try:
@@ -2325,7 +2316,7 @@ def get_file_summary(usi, usi2):
     usi_list = usi1_list + usi2_list
     usi_list = usi_list[:MAX_LCMS_FILES]
 
-    all_file_stats = [_calculate_file_stats(usi) for usi in usi_list]
+    all_file_stats = [_calculate_file_stats(usi, _resolve_usi(usi)[1]) for usi in usi_list]
     stats_df = pd.DataFrame(all_file_stats)        
     table = dbc.Table.from_dataframe(stats_df, striped=True, bordered=True, hover=True, size="sm")
 
