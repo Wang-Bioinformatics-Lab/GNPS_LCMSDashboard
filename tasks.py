@@ -3,6 +3,9 @@ import download
 import os
 import uuid
 import feature_finding
+import xic
+from joblib import Memory
+memory = Memory("/app/temp/xic-cache", verbose=0)
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
@@ -21,16 +24,13 @@ def _download_convert_file(usi, temp_folder="temp"):
 #################################
 # Compute Data
 #################################
-# @celery_instance.task(time_limit=15)
-# def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2):
-#     if get_ms2 is False:
-#         try:
-#             return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-#         except:
-#             pass
+@celery_instance.task(time_limit=60)
+def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
+    # Caching
+    xic_file = memory.cache(xic.xic_file)
 
-#     return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-
+    xic_df, ms2_data = xic_file(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
+    return xic_df.to_dict(orient="records"), ms2_data
 
 @celery_instance.task(time_limit=60)
 def task_featurefinding(filename, params):
@@ -38,8 +38,14 @@ def task_featurefinding(filename, params):
     return feature_df.to_dict(orient="records")
 
 
+@celery_instance.task(time_limit=60)
+def task_computeheartbeat():
+    return "Up"
+
+
 celery_instance.conf.task_routes = {
     'tasks._download_convert_file': {'queue': 'conversion'},
     'tasks.task_xic': {'queue': 'compute'},
     'tasks.task_featurefinding': {'queue': 'compute'},
+    'tasks.task_computeheartbeat': {'queue': 'compute'},
 }

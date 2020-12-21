@@ -17,26 +17,30 @@ def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance
         calculated_tolerance = target_mz / 1000000 * xic_ppm_tolerance
         return target_mz - calculated_tolerance, target_mz + calculated_tolerance
 
-# def xic_file(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
-#     """
-#         Calling the XIC directly or indirectly
-#     """
+def xic_file(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
+    """This is the external function that others will call to get XIC data
 
-#     # Calling the heavy lifting
-#     try:
-#         # If we have the celery instance up, we'll push it
-#         result = task_xic.delay(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
+    Args:
+        input_filename ([type]): [description]
+        all_xic_values ([type]): [description]
+        xic_tolerance ([type]): [description]
+        xic_ppm_tolerance ([type]): [description]
+        xic_tolerance_unit ([type]): [description]
+        rt_min ([type]): [description]
+        rt_max ([type]): [description]
+        polarity_filter ([type]): [description]
+        get_ms2 (bool, optional): [description]. Defaults to False.
 
-#         # Waiting
-#         while(1):
-#             if result.ready():
-#                 break
-#             sleep(1)
-#         result = result.get()
-#     except:
-#         # If we have the celery instance is not up, we'll do it local
-#         raise
-#         #tasks.task_xic(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
+    Returns:
+        [type]: [description]
+    """
+    if get_ms2 is False:
+        try:
+            return _xic_file_fast(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+        except:
+            pass
+
+    return _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
 
 def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):

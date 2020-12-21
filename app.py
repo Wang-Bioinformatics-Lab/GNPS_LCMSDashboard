@@ -55,7 +55,7 @@ import ms2
 import lcms_map
 import tasks
 from formula_utils import get_adduct_mass
-from xic import _xic_file_fast, _xic_file_slow
+import xic
 
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD
@@ -1707,14 +1707,104 @@ def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tole
     # This is the business end of XIC extraction
     remote_link, local_filename = _resolve_usi(usi)
 
-    if get_ms2 is False:
-        try:
-            return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-        except:
-            pass
+    # If we are able, we will split up the query, one per file
+    return xic.xic_file(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
 
-    return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+@cache.memoize()
+def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):
+    GET_MS2 = False
+    ms2_data = {}
 
+    xic_df_list = []
+    
+    if _is_worker_up():
+        for usi_element in usi_list:
+            if len(usi_list) == 1 and len(all_xic_values) == 1:
+                GET_MS2 = True
+
+            # Doing it async with tasks
+            remote_link, local_filename = _resolve_usi(usi_element)
+
+            result_list = []
+            for xic_value in all_xic_values:
+                result = tasks.task_xic.delay(local_filename, [xic_value], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=GET_MS2)
+                result_list.append(result)
+
+            # Waiting
+            for result in result_list:
+                while(1):
+                    if result.ready():
+                        break
+                    sleep(0.5)
+
+                # Waiting on results
+                xic_list, ms2_data = result.get()
+                xic_df = pd.DataFrame(xic_list)
+
+                xic_dict = {}
+                xic_dict["df"] = xic_df
+                xic_dict["usi"] = usi_element
+                xic_df_list.append(xic_dict)
+
+    else:
+        for usi_element in usi_list:
+            if len(usi_list) == 1 and len(all_xic_values) == 1:
+                GET_MS2 = True
+            
+            # Doing it all local
+            xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=GET_MS2)
+
+            xic_dict = {}
+            xic_dict["df"] = xic_df
+            xic_dict["usi"] = usi_element
+            xic_df_list.append(xic_dict)
+    
+    # Performing Normalization and formatting
+    df_long_list = []
+    for xic_dict in xic_df_list:
+        xic_df = xic_dict["df"]
+        usi_element = xic_dict["usi"]
+
+        # Performing Normalization only if we have multiple XICs available
+        if xic_norm is True:
+            try:
+                for key in xic_df.columns:
+                    if key == "rt":
+                        continue
+                    xic_df[key] = xic_df[key] / max(xic_df[key])
+            except:
+                pass
+
+        # Formatting for Plotting
+        target_names = list(xic_df.columns)
+        target_names.remove("rt")
+        df_long = pd.melt(xic_df, id_vars="rt", value_vars=target_names)
+        df_long["USI"] = usi_element
+
+        if usi_element in usi1_list:
+            df_long["GROUP"] = "TOP"
+        else:
+            df_long["GROUP"] = "BOTTOM"
+
+        df_long_list.append(df_long)
+
+    merged_df_long = pd.concat(df_long_list)
+    return merged_df_long, ms2_data
+
+
+def _is_worker_up():
+    """Gives us utility function to tell is celery is up and running
+
+    Returns:
+        [type]: [description]
+    """
+
+    try:
+        result = tasks.task_computeheartbeat.delay()
+        result.task_id
+        return True
+    except:
+        return False
 
 
 def _integrate_files(long_data_df, xic_integration_type):
@@ -1752,6 +1842,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
+
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
@@ -1828,37 +1919,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             pass
 
     # Performing XIC for all USI in the list
-    df_long_list = []
-    for usi_element in usi_list:
-        if len(usi_list) == 1 and len(all_xic_values) == 1:
-            xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=True)
-        else:
-            xic_df, ms2_data = _perform_xic(usi_element, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False)
-
-        # Performing Normalization only if we have multiple XICs available
-        if xic_norm is True:
-            try:
-                for key in xic_df.columns:
-                    if key == "rt":
-                        continue
-                    xic_df[key] = xic_df[key] / max(xic_df[key])
-            except:
-                pass
-
-        # Formatting for Plotting
-        target_names = list(xic_df.columns)
-        target_names.remove("rt")
-        df_long = pd.melt(xic_df, id_vars="rt", value_vars=target_names)
-        df_long["USI"] = usi_element
-
-        if usi_element in usi1_list:
-            df_long["GROUP"] = "TOP"
-        else:
-            df_long["GROUP"] = "BOTTOM"
-
-        df_long_list.append(df_long)
-
-    merged_df_long = pd.concat(df_long_list)
+    merged_df_long, ms2_data = _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
     # Limit the plotting USIs, but not the integrals below
     plotting_df = merged_df_long

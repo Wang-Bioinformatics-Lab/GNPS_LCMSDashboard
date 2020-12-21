@@ -7,7 +7,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 RUN pip install -U Celery
 RUN conda install -c conda-forge openjdk
-#RUN conda install -c conda-forge mono
 
 ################## METADATA ######################
 LABEL base_image="mono:latest"

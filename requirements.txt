@@ -47,3 +47,4 @@ molmass
 netcdf4
 xmltodict
 redis
+joblib
