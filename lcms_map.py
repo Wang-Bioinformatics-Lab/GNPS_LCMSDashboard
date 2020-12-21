@@ -237,6 +237,7 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
 
         size_column = None
         color_column = None
+        hover_column = None
         
         if "size" in overlay_data:
             size_column = "size"
@@ -247,25 +248,38 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         if "color" in overlay_data:
             color_column = "color"
             overlay_data[color_column] = overlay_data[color_column] / max(overlay_data[color_column]) * 10
-
+        
+        if "hover" in overlay_data:
+            hover_column = "hover"
 
         if size_column is None and color_column is None:
-            scatter_overlay_fig = go.Scattergl(x=overlay_data["rt"], y=overlay_data["mz"], mode='markers', marker=dict(color='gray', size=10, symbol="circle", opacity=0.7), name="Overlay")
-            fig.add_trace(scatter_overlay_fig)
+            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", hover_name=hover_column)
+            scatter_overlay_fig.update_traces(marker=dict(color="gray", symbol="circle", opacity=0.7, size=10))
         elif size_column is not None and color_column is None:
-            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", size=size_column)
+            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", size=size_column, labels=label_dict)
             scatter_overlay_fig.update_traces(marker=dict(color="gray", symbol="circle", opacity=0.7))
-            fig.add_trace(scatter_overlay_fig.data[0])
         elif size_column is None and color_column is not None:
-            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", color=color_column)
+            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", color=color_column, labels=label_dict)
             scatter_overlay_fig.update_traces(marker=dict(size=10, symbol="circle", opacity=0.7))
-            fig.add_trace(scatter_overlay_fig.data[0])
         else:
-            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", color=color_column, size=size_column)
+            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", color=color_column, size=size_column, labels=label_dict)
             scatter_overlay_fig.update_traces(marker=dict(symbol="circle", opacity=0.7))
-            fig.add_trace(scatter_overlay_fig.data[0])
-            
+
+        # Actually pulling out the figure and adding it
+        _intermediate_fig = scatter_overlay_fig.data[0]
+        _intermediate_fig.name = "Overlay"
+        _intermediate_fig.showlegend = True
+
+        print("ZZZZZZZZZZ", _intermediate_fig)
+        # Showing the label
+        # if label_column is not None:
+        #     _intermediate_fig.hovertemplate = "rt=%{x}<br>mz=%{y}<br>%{label}<extra></extra>"
+        #     pass
+
+        fig.add_trace(_intermediate_fig)
     except:
+        raise
         pass
+
 
     return fig

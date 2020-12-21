@@ -49,6 +49,7 @@ from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
 from utils import MS_precisions
+from utils import _resolve_overlay
 
 import download
 import ms2
@@ -1602,11 +1603,12 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
             feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="diamond", opacity=0.7), name="Feature Detection")
             lcms_fig.add_trace(feature_overlay_fig)
         except:
-            raise
             pass
 
     return lcms_fig, features_df
 
+def _integrate_overlay(overlay_usi, lcms_fig):
+    return None
 
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
@@ -2058,18 +2060,26 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     # Adding a overlay for the figure
     overlay_df = None
     try:
-        utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt)
+        overlay_df = _resolve_overlay(overlay_usi, overlay_mz, overlay_rt)
 
+        # Filtering
         if len(overlay_filter_column) > 0 and overlay_filter_column in overlay_df:
             if len(overlay_filter_value) > 0:
                 overlay_df = overlay_df[overlay_df[overlay_filter_column] == overlay_filter_value]
 
+        # Adding Size
         if len(overlay_size) > 0 and overlay_size in overlay_df:
             overlay_df["size"] = overlay_df[overlay_size]
         
+        # Adding Color
         if len(overlay_color) > 0 and overlay_color in overlay_df:
             overlay_df["color"] = overlay_df[overlay_color]
+        
+        # Adding Label
+        overlay_df["hover"] = overlay_df["row ID"]
+
     except:
+        raise
         pass
 
     # Feature Finding parameters
