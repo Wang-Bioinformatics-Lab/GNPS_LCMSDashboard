@@ -1083,7 +1083,6 @@ def _resolve_usi(usi, temp_folder="temp"):
 
     if download._resolve_exists_local(usi):
         # We can do it in line because we know that it won't actually do the call
-        print("XXXXXXXXXXXXXXXXX", usi, file=sys.stderr)
         return download._resolve_usi(usi)
     else:
         if _is_worker_up():
