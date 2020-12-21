@@ -5,7 +5,7 @@ import uuid
 import feature_finding
 import xic
 from joblib import Memory
-memory = Memory("/app/temp/xic-cache", verbose=0)
+memory = Memory("temp/xic-cache", verbose=0)
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')

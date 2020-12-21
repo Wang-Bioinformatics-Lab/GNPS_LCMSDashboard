@@ -49,6 +49,7 @@ from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
 from utils import MS_precisions
+import utils
 
 import download
 import ms2
@@ -349,6 +350,17 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         ),
                     )
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Overlay Label Column", addon_type="prepend"),
+                                dbc.Input(id='overlay-hover', placeholder="Enter Overlay label column", value=""),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
                 ]),
                 dbc.Row([
                     dbc.Col(
@@ -1268,6 +1280,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("overlay-rt", "value"),
                 Output("overlay-color", "value"),
                 Output("overlay-size", "value"),
+                Output("overlay-hover", "value"),
                 Output('overlay-filter-column', 'value'),
                 Output('overlay-filter-value', 'value'),
                 Output("feature_finding_type", "value")],
@@ -1292,6 +1305,7 @@ def determine_url_only_parameters(search):
     overlay_rt = dash.no_update
     overlay_color = dash.no_update
     overlay_size = dash.no_update
+    overlay_hover = dash.no_update
     overlay_filter_column = dash.no_update
     overlay_filter_value = dash.no_update
     feature_finding_type = dash.no_update
@@ -1406,6 +1420,11 @@ def determine_url_only_parameters(search):
         pass
 
     try:
+        overlay_hover = str(urllib.parse.parse_qs(search[1:])["overlay_hover"][0])
+    except:
+        pass
+
+    try:
         overlay_filter_column = str(urllib.parse.parse_qs(search[1:])["overlay_filter_column"][0])
     except:
         pass
@@ -1419,7 +1438,6 @@ def determine_url_only_parameters(search):
         feature_finding_type = str(urllib.parse.parse_qs(search[1:])["feature_finding_type"][0])
     except:
         pass
-
     
     
     return [xic_formula, 
@@ -1433,7 +1451,7 @@ def determine_url_only_parameters(search):
             show_lcms_2nd_map, 
             tic_option, polarity_filtering, 
             polarity_filtering2, 
-            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_filter_column, overlay_filter_value,
+            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
             feature_finding_type]
 
 
@@ -1539,8 +1557,8 @@ def determine_xic_target(search, clickData, existing_xic):
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None):
-    lcms_fig = lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_data)
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
+    lcms_fig = lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
 
     return lcms_fig
 
@@ -1550,8 +1568,8 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
 def _perform_feature_finding(filename, feature_finding=None):
     import tasks
 
-    # Calling the heavy lifting
-    try:
+    # Checking if local or worker
+    if _is_worker_up():
         # If we have the celery instance up, we'll push it
         result = tasks.task_featurefinding.delay(filename, feature_finding)
 
@@ -1561,32 +1579,36 @@ def _perform_feature_finding(filename, feature_finding=None):
                 break
             sleep(3)
         features_list = result.get()
-    except:
-        raise
-        # If we have the celery instance is not up, we'll do it local
+    else:
         features_list = tasks.task_featurefinding.delay(filename, feature_finding)
 
     features_df = pd.DataFrame(features_list)
 
     return features_df
 
+
+@cache.memoize()
+def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover):
+    """This function handles getting data and formatting for the overlay, functions as caching middle shim
+
+    Args:
+        overlay_usi ([type]): [description]
+        overlay_mz ([type]): [description]
+        overlay_rt ([type]): [description]
+        overlay_filter_column ([type]): [description]
+        overlay_filter_value ([type]): [description]
+        overlay_size ([type]): [description]
+        overlay_color ([type]): [description]
+        overlay_hover ([type]): [description]
+    """
+
+    overlay_df = utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover)
+    
+    return overlay_df
+
 # Integrates the feature finding with the output plotly figure
 def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_finding=None):
-    min_rt = 0
-    max_rt = 1000000
-    min_mz = 0
-    max_mz = 2000
-
-    if map_selection is not None:
-        if "xaxis.range[0]" in map_selection:
-            min_rt = float(map_selection["xaxis.range[0]"])
-        if "xaxis.range[1]" in map_selection:
-            max_rt = float(map_selection["xaxis.range[1]"])
-
-        if "yaxis.range[0]" in map_selection:
-            min_mz = float(map_selection["yaxis.range[0]"])
-        if "yaxis.range[1]" in map_selection:
-            max_mz = float(map_selection["yaxis.range[1]"])
+    min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     # Checking if we should be detecting features
     features_df = pd.DataFrame()
@@ -1602,11 +1624,83 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
             feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="diamond", opacity=0.7), name="Feature Detection")
             lcms_fig.add_trace(feature_overlay_fig)
         except:
-            raise
             pass
 
     return lcms_fig, features_df
 
+def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=None):
+    """Given data, we try to put it on top of the LCMS View
+
+    Args:
+        overlay_usi ([type]): [description]
+        lcms_fig ([type]): [description]
+        overlay_mz ([type]): [description]
+        overlay_rt ([type]): [description]
+        overlay_filter_column ([type]): [description]
+        overlay_filter_value ([type]): [description]
+        overlay_size ([type]): [description]
+        overlay_color ([type]): [description]
+        overlay_hover ([type]): [description]
+        map_selection ([type], optional): [description]. Defaults to None.
+
+    Returns:
+        [type]: [description]
+    """
+
+    min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
+
+    # Adding in overlay data
+    # Adding a few extra things to the figure
+    try:
+        overlay_df = _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover)
+
+        overlay_df = overlay_df[overlay_df["rt"] > min_rt]
+        overlay_df = overlay_df[overlay_df["rt"] < max_rt]
+        overlay_df = overlay_df[overlay_df["mz"] > min_mz]
+        overlay_df = overlay_df[overlay_df["mz"] < max_mz]
+
+        size_column = None
+        color_column = None
+        hover_column = None
+        
+        if "size" in overlay_df:
+            size_column = "size"
+            overlay_df[size_column] = overlay_df[size_column].clip(lower=1)
+
+            # If we want to do other types of sizing
+            #overlay_df[size_column] = np.log(overlay_df[size_column])
+            #overlay_df[size_column] = overlay_df[size_column] / max(overlay_df[size_column]) * 10
+        
+        if "color" in overlay_df:
+            color_column = "color"
+            overlay_df[color_column] = overlay_df[color_column] / max(overlay_df[color_column]) * 10
+        
+        if "hover" in overlay_df:
+            hover_column = "hover"
+
+        if size_column is None and color_column is None:
+            scatter_overlay_fig = px.scatter(overlay_df, x="rt", y="mz", hover_name=hover_column)
+            scatter_overlay_fig.update_traces(marker=dict(color="gray", symbol="circle", opacity=0.7, size=10))
+        elif size_column is not None and color_column is None:
+            scatter_overlay_fig = px.scatter(overlay_df, x="rt", y="mz", size=size_column, hover_name=hover_column)
+            scatter_overlay_fig.update_traces(marker=dict(color="gray", symbol="circle", opacity=0.7))
+        elif size_column is None and color_column is not None:
+            scatter_overlay_fig = px.scatter(overlay_df, x="rt", y="mz", color=color_column, hover_name=hover_column)
+            scatter_overlay_fig.update_traces(marker=dict(size=10, symbol="circle", opacity=0.7))
+        else:
+            scatter_overlay_fig = px.scatter(overlay_df, x="rt", y="mz", color=color_column, size=size_column, hover_name=hover_column)
+            scatter_overlay_fig.update_traces(marker=dict(symbol="circle", opacity=0.7))
+
+        # Actually pulling out the figure and adding it
+        _intermediate_fig = scatter_overlay_fig.data[0]
+        _intermediate_fig.name = "Overlay"
+        _intermediate_fig.showlegend = True
+
+        lcms_fig.add_trace(_intermediate_fig)
+    except:
+        pass
+
+    return lcms_fig
 
 # Creating TIC plot
 @app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
@@ -2008,6 +2102,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('overlay-rt', 'value'),
               Input('overlay-size', 'value'),
               Input('overlay-color', 'value'),
+              Input('overlay-hover', 'value'),
               Input('overlay-filter-column', 'value'),
               Input('overlay-filter-value', 'value'),
               Input('feature_finding_type', 'value'),
@@ -2018,7 +2113,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('feature_finding_rt_tolerance', 'value'),
               ])
 def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, 
-                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_filter_column, overlay_filter_value, 
+                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_ppm,
                 feature_finding_noise,
@@ -2055,23 +2150,6 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     except:
         pass
 
-    # Adding a overlay for the figure
-    overlay_df = None
-    try:
-        utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt)
-
-        if len(overlay_filter_column) > 0 and overlay_filter_column in overlay_df:
-            if len(overlay_filter_value) > 0:
-                overlay_df = overlay_df[overlay_df[overlay_filter_column] == overlay_filter_value]
-
-        if len(overlay_size) > 0 and overlay_size in overlay_df:
-            overlay_df["size"] = overlay_df[overlay_size]
-        
-        if len(overlay_color) > 0 and overlay_color in overlay_df:
-            overlay_df["color"] = overlay_df[overlay_color]
-    except:
-        pass
-
     # Feature Finding parameters
     table_graph = dash.no_update
     if feature_finding_type == "Off":
@@ -2088,10 +2166,13 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
 
         
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, overlay_data=overlay_df)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
 
-    # adding on feature finding data
+    # Adding on Feature Finding data
     map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
+
+    # Adding on Overlay Data
+    map_fig = _integrate_overlay(overlay_usi, map_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=current_map_selection)
 
     try:
         # Creating a table
@@ -2177,13 +2258,14 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("overlay-rt", "value"),
               Input("overlay-color", "value"),
               Input("overlay-size", "value"),
+              Input("overlay-hover", "value"),
               Input('overlay-filter-column', 'value'),
               Input('overlay-filter-value', 'value'),
               Input("feature_finding_type", "value")])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
-                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_filter_column, overlay_filter_value,
+                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type):
 
     url_params = {}
@@ -2204,13 +2286,18 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["polarity_filtering"] = polarity_filtering
     url_params["polarity_filtering2"] = polarity_filtering2
     url_params["tic_option"] = tic_option
+
+    # Overlay Options
     url_params["overlay_usi"] = overlay_usi
     url_params["overlay_mz"] = overlay_mz
     url_params["overlay_rt"] = overlay_rt
     url_params["overlay_color"] = overlay_color
     url_params["overlay_size"] = overlay_size
+    url_params["overlay_hover"] = overlay_hover
     url_params["overlay_filter_column"] = overlay_filter_column
     url_params["overlay_filter_value"] = overlay_filter_value
+
+    # Feature Finding Options
     url_params["feature_finding_type"] = feature_finding_type
 
     hash_params = {}
