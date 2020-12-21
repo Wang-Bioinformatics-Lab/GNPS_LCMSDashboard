@@ -3,6 +3,7 @@ import download
 import os
 import uuid
 import feature_finding
+import xic
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
@@ -21,16 +22,10 @@ def _download_convert_file(usi, temp_folder="temp"):
 #################################
 # Compute Data
 #################################
-# @celery_instance.task(time_limit=15)
-# def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2):
-#     if get_ms2 is False:
-#         try:
-#             return _xic_file_fast(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-#         except:
-#             pass
-
-#     return _xic_file_slow(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
-
+@celery_instance.task(time_limit=30)
+def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
+    xic_df, ms2_data = xic.xic_file(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
+    return xic_df.to_dict(orient="records"), ms2_data
 
 @celery_instance.task(time_limit=60)
 def task_featurefinding(filename, params):
