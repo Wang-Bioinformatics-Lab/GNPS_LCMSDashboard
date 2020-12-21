@@ -11,6 +11,7 @@ from utils import _get_scan_polarity
 import plotly.express as px
 import plotly.graph_objects as go 
 
+import utils
 
 def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
     all_mz = []
@@ -120,22 +121,8 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
 # Creates the figure for map plot
 # overlay_data is a dataframe that includes the overlay, rt and mz are the expected columns
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, overlay_data=None):
-    min_rt = 0
-    max_rt = 1000000
-    min_mz = 0
-    max_mz = 2000
-
-    if map_selection is not None:
-        if "xaxis.range[0]" in map_selection:
-            min_rt = float(map_selection["xaxis.range[0]"])
-        if "xaxis.range[1]" in map_selection:
-            max_rt = float(map_selection["xaxis.range[1]"])
-
-        if "yaxis.range[0]" in map_selection:
-            min_mz = float(map_selection["yaxis.range[0]"])
-        if "yaxis.range[1]" in map_selection:
-            max_mz = float(map_selection["yaxis.range[1]"])
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
+    min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     import time
     start_time = time.time()
@@ -226,60 +213,6 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
                 width=0.1,
             ),
         )
-
-    # Adding in overlay data
-    # Adding a few extra things to the figure
-    try:
-        overlay_data = overlay_data[overlay_data["rt"] > min_rt]
-        overlay_data = overlay_data[overlay_data["rt"] < max_rt]
-        overlay_data = overlay_data[overlay_data["mz"] > min_mz]
-        overlay_data = overlay_data[overlay_data["mz"] < max_mz]
-
-        size_column = None
-        color_column = None
-        hover_column = None
-        
-        if "size" in overlay_data:
-            size_column = "size"
-            overlay_data[size_column] = overlay_data[size_column].clip(lower=1)
-            #overlay_data[size_column] = np.log(overlay_data[size_column])
-            #overlay_data[size_column] = overlay_data[size_column] / max(overlay_data[size_column]) * 10
-        
-        if "color" in overlay_data:
-            color_column = "color"
-            overlay_data[color_column] = overlay_data[color_column] / max(overlay_data[color_column]) * 10
-        
-        if "hover" in overlay_data:
-            hover_column = "hover"
-
-        if size_column is None and color_column is None:
-            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", hover_name=hover_column)
-            scatter_overlay_fig.update_traces(marker=dict(color="gray", symbol="circle", opacity=0.7, size=10))
-        elif size_column is not None and color_column is None:
-            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", size=size_column, labels=label_dict)
-            scatter_overlay_fig.update_traces(marker=dict(color="gray", symbol="circle", opacity=0.7))
-        elif size_column is None and color_column is not None:
-            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", color=color_column, labels=label_dict)
-            scatter_overlay_fig.update_traces(marker=dict(size=10, symbol="circle", opacity=0.7))
-        else:
-            scatter_overlay_fig = px.scatter(overlay_data, x="rt", y="mz", color=color_column, size=size_column, labels=label_dict)
-            scatter_overlay_fig.update_traces(marker=dict(symbol="circle", opacity=0.7))
-
-        # Actually pulling out the figure and adding it
-        _intermediate_fig = scatter_overlay_fig.data[0]
-        _intermediate_fig.name = "Overlay"
-        _intermediate_fig.showlegend = True
-
-        print("ZZZZZZZZZZ", _intermediate_fig)
-        # Showing the label
-        # if label_column is not None:
-        #     _intermediate_fig.hovertemplate = "rt=%{x}<br>mz=%{y}<br>%{label}<extra></extra>"
-        #     pass
-
-        fig.add_trace(_intermediate_fig)
-    except:
-        raise
-        pass
 
 
     return fig

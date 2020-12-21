@@ -146,6 +146,25 @@ def _resolve_map_plot_selection(url_search, usi):
     return current_map_selection, highlight_box
 
 
+def _determine_rendering_bounds(map_selection):
+    min_rt = 0
+    max_rt = 1000000
+    min_mz = 0
+    max_mz = 2000
+
+    if map_selection is not None:
+        if "xaxis.range[0]" in map_selection:
+            min_rt = float(map_selection["xaxis.range[0]"])
+        if "xaxis.range[1]" in map_selection:
+            max_rt = float(map_selection["xaxis.range[1]"])
+
+        if "yaxis.range[0]" in map_selection:
+            min_mz = float(map_selection["yaxis.range[0]"])
+        if "yaxis.range[1]" in map_selection:
+            max_mz = float(map_selection["yaxis.range[1]"])
+
+    return min_rt, max_rt, min_mz, max_mz
+
 # Binary Search, returns target
 def _find_lcms_rt(filename, rt_query):
     run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
@@ -205,7 +224,7 @@ def _spectrum_generator(filename, min_rt, max_rt):
             print("USED BRUTEFORCE")
 
 # Getting the Overlay data
-def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt):
+def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover):
     overlay_usi_splits = overlay_usi.split(":")
     file_path = overlay_usi_splits[2].split("-")[-1]
     task = overlay_usi_splits[2].split("-")[1]
@@ -214,5 +233,23 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt):
 
     overlay_df["mz"] = overlay_df[overlay_mz]
     overlay_df["rt"] = overlay_df[overlay_rt]
+
+    # Filtering
+    if len(overlay_filter_column) > 0 and overlay_filter_column in overlay_df:
+        if len(overlay_filter_value) > 0:
+            overlay_df = overlay_df[overlay_df[overlay_filter_column] == overlay_filter_value]
+
+    # Adding Size
+    if len(overlay_size) > 0 and overlay_size in overlay_df:
+        overlay_df["size"] = overlay_df[overlay_size]
+    
+    # Adding Color
+    if len(overlay_color) > 0 and overlay_color in overlay_df:
+        overlay_df["color"] = overlay_df[overlay_color]
+    
+    
+    # Adding Label
+    if len(overlay_hover) > 0 and overlay_hover in overlay_df:
+        overlay_df["hover"] = overlay_df[overlay_hover]
 
     return overlay_df
