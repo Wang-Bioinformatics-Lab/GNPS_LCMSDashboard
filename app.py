@@ -292,7 +292,7 @@ DATASELECTION_CARD = [
                                     style={
                                         "width":"60%"
                                     }
-                                )  
+                                )
                             ],
                             row=True,
                             className="mb-3",
@@ -355,8 +355,20 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.InputGroup(
                             [
-                                dbc.InputGroupAddon("Overlay Label Column", addon_type="prepend"),
-                                dbc.Input(id='overlay-hover', placeholder="Enter Overlay label column", value=""),
+                                dbc.InputGroupAddon("Overlay Label Column", addon_type="prepend", style={"margin-right":"20px"}),
+                                dcc.Dropdown(
+                                    id='overlay-hover',
+                                    options=[
+                                        {'label': 'None', 'value': ''},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )
+                                #dbc.Input(id='overlay-hover', placeholder="Enter Overlay label column", value=""),
                             ],
                             className="mb-3",
                         ),
@@ -2321,6 +2333,35 @@ def get_file_summary(usi, usi2):
     table = dbc.Table.from_dataframe(stats_df, striped=True, bordered=True, hover=True, size="sm")
 
     return [table]
+
+
+@app.callback([Output('overlay-hover', 'options')],
+              [Input('overlay-usi', 'value')])
+@cache.memoize()
+def get_overlay_options(overlay_usi):
+    """This function finds all the overlay options
+
+    Args:
+        overlay_usi ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+
+    overlay_df = _resolve_overlay(overlay_usi, "", "", "", "", "", "", "")
+
+    columns = list(overlay_df.columns)
+
+    options = []
+
+    for column in columns:
+        options.append({"label": column, "value": column})
+
+    return [options]
+
+###########################################
+# Hiding Panels
+###########################################
 
 # Show Hide Panels
 @app.callback(

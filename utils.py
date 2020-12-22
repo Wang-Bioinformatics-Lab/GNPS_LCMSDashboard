@@ -229,8 +229,13 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
     url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
     overlay_df = pd.read_csv(url, sep=None, nrows=20000)
 
-    overlay_df["mz"] = overlay_df[overlay_mz]
-    overlay_df["rt"] = overlay_df[overlay_rt]
+    # Adding mz
+    if len(overlay_mz) > 0 and overlay_mz in overlay_df:
+        overlay_df["mz"] = overlay_df[overlay_mz]
+
+    # Adding rt
+    if len(overlay_rt) > 0 and overlay_rt in overlay_df:
+        overlay_df["rt"] = overlay_df[overlay_rt]
 
     # Filtering
     if len(overlay_filter_column) > 0 and overlay_filter_column in overlay_df:
@@ -244,7 +249,6 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
     # Adding Color
     if len(overlay_color) > 0 and overlay_color in overlay_df:
         overlay_df["color"] = overlay_df[overlay_color]
-    
     
     # Adding Label
     if len(overlay_hover) > 0 and overlay_hover in overlay_df:
