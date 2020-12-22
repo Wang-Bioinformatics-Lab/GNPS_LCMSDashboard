@@ -335,8 +335,20 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.InputGroup(
                             [
-                                dbc.InputGroupAddon("Overlay color", addon_type="prepend"),
-                                dbc.Input(id='overlay-color', placeholder="Enter Overlay color column", value=""),
+                                dbc.InputGroupAddon("Overlay color", addon_type="prepend", style={"margin-right":"20px"}),
+                                #dbc.Input(id='overlay-color', placeholder="Enter Overlay color column", value=""),
+                                dcc.Dropdown(
+                                    id='overlay-color',
+                                    options=[
+                                        {'label': 'None', 'value': ''},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )
                             ],
                             className="mb-3",
                         ),
@@ -344,8 +356,20 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.InputGroup(
                             [
-                                dbc.InputGroupAddon("Overlay size", addon_type="prepend"),
-                                dbc.Input(id='overlay-size', placeholder="Enter Overlay size column", value=""),
+                                dbc.InputGroupAddon("Overlay size", addon_type="prepend", style={"margin-right":"20px"}),
+                                #dbc.Input(id='overlay-size', placeholder="Enter Overlay size column", value=""),
+                                dcc.Dropdown(
+                                    id='overlay-size',
+                                    options=[
+                                        {'label': 'None', 'value': ''},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )
                             ],
                             className="mb-3",
                         ),
@@ -368,7 +392,6 @@ DATASELECTION_CARD = [
                                         "width":"60%"
                                     }
                                 )
-                                #dbc.Input(id='overlay-hover', placeholder="Enter Overlay label column", value=""),
                             ],
                             className="mb-3",
                         ),
@@ -2335,7 +2358,7 @@ def get_file_summary(usi, usi2):
     return [table]
 
 
-@app.callback([Output('overlay-hover', 'options')],
+@app.callback([Output('overlay-hover', 'options'), Output('overlay-color', 'options'), Output('overlay-size', 'options')],
               [Input('overlay-usi', 'value')])
 @cache.memoize()
 def get_overlay_options(overlay_usi):
@@ -2357,7 +2380,7 @@ def get_overlay_options(overlay_usi):
     for column in columns:
         options.append({"label": column, "value": column})
 
-    return [options]
+    return [options, options, options]
 
 ###########################################
 # Hiding Panels
