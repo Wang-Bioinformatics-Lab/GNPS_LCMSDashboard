@@ -299,123 +299,27 @@ DATASELECTION_CARD = [
                             style={"margin-left": "4px"}
                     )),
                 ]),
-                html.H5(children='LCMS Overlay Options'),
                 dbc.Row([
                     dbc.Col(
-                        dbc.InputGroup(
+                        dbc.FormGroup(
                             [
-                                dbc.InputGroupAddon("Overlay USI", addon_type="prepend"),
-                                dbc.Input(id='overlay-usi', placeholder="Enter Overlay File USI"),
+                                dbc.Label("Show Overlay", html_for="show_overlay", width=5.8, style={"width":"160px", "margin-left": "25px"}),
+                                dbc.Col(
+                                    daq.ToggleSwitch(
+                                        id='show_overlay',
+                                        value=False,
+                                        size=50,
+                                        style={
+                                            "marginTop": "4px",
+                                            "width": "100px"
+                                        }
+                                    )
+                                ),
                             ],
+                            row=True,
                             className="mb-3",
-                        ),
-                    )
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("Overlay m/z", addon_type="prepend"),
-                                dbc.Input(id='overlay-mz', placeholder="Enter Overlay mz column", value="row m/z"),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("Overlay rt", addon_type="prepend"),
-                                dbc.Input(id='overlay-rt', placeholder="Enter Overlay rt column", value="row retention time"),
-                            ],
-                            className="mb-3",
-                        ),
-                    )
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("Overlay color", addon_type="prepend", style={"margin-right":"20px"}),
-                                #dbc.Input(id='overlay-color', placeholder="Enter Overlay color column", value=""),
-                                dcc.Dropdown(
-                                    id='overlay-color',
-                                    options=[
-                                        {'label': 'None', 'value': ''},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("Overlay size", addon_type="prepend", style={"margin-right":"20px"}),
-                                #dbc.Input(id='overlay-size', placeholder="Enter Overlay size column", value=""),
-                                dcc.Dropdown(
-                                    id='overlay-size',
-                                    options=[
-                                        {'label': 'None', 'value': ''},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )
-                            ],
-                            className="mb-3",
-                        ),
-                    )
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("Overlay Label Column", addon_type="prepend", style={"margin-right":"20px"}),
-                                dcc.Dropdown(
-                                    id='overlay-hover',
-                                    options=[
-                                        {'label': 'None', 'value': ''},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("Overlay Filter Column", addon_type="prepend"),
-                                dbc.Input(id='overlay-filter-column', placeholder="Enter Overlay filter column", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("Overlay Filter Value", addon_type="prepend"),
-                                dbc.Input(id='overlay-filter-value', placeholder="Enter Overlay size column", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    )
+                        )),
+                    dbc.Col(),
                 ]),
             ], className="col-sm"),
             ## Right Panel
@@ -763,6 +667,132 @@ FEATURE_FINDING_PANEL = [
     )
 ]
 
+OVERLAY_PANEL = [
+    dbc.CardHeader(html.H5("LCMS Overlay Options")),
+    dbc.CardBody(
+        [
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay USI", addon_type="prepend"),
+                            dbc.Input(id='overlay-usi', placeholder="Enter Overlay File USI"),
+                        ],
+                        className="mb-3",
+                    ),
+                )
+            ]),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay m/z", addon_type="prepend"),
+                            dbc.Input(id='overlay-mz', placeholder="Enter Overlay mz column", value="row m/z"),
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay rt", addon_type="prepend"),
+                            dbc.Input(id='overlay-rt', placeholder="Enter Overlay rt column", value="row retention time"),
+                        ],
+                        className="mb-3",
+                    ),
+                )
+            ]),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay color", addon_type="prepend", style={"margin-right":"20px"}),
+                            #dbc.Input(id='overlay-color', placeholder="Enter Overlay color column", value=""),
+                            dcc.Dropdown(
+                                id='overlay-color',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay size", addon_type="prepend", style={"margin-right":"20px"}),
+                            #dbc.Input(id='overlay-size', placeholder="Enter Overlay size column", value=""),
+                            dcc.Dropdown(
+                                id='overlay-size',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
+                        ],
+                        className="mb-3",
+                    ),
+                )
+            ]),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay Label Column", addon_type="prepend", style={"margin-right":"20px"}),
+                            dcc.Dropdown(
+                                id='overlay-hover',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+            ]),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay Filter Column", addon_type="prepend"),
+                            dbc.Input(id='overlay-filter-column', placeholder="Enter Overlay filter column", value=""),
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay Filter Value", addon_type="prepend"),
+                            dbc.Input(id='overlay-filter-value', placeholder="Enter Overlay size column", value=""),
+                        ],
+                        className="mb-3",
+                    ),
+                )
+            ]),
+        ]
+    )
+
+]
+
 USI1_FILTERING_PANEL = [
     dbc.CardHeader(html.H5("USI Scan Filtering Options")),
     dbc.CardBody(
@@ -1021,7 +1051,7 @@ BODY = dbc.Container(
                 ],
                 id='usi1-filtering-collapse',
                 is_open=True,
-                style={"width": "50%"}
+                style={"width": "50%", "marginTop": 30}
             ),
             dbc.Collapse(
                 [
@@ -1033,9 +1063,9 @@ BODY = dbc.Container(
                 ],
                 id='usi2-filtering-collapse',
                 is_open=True,
-                style={"width": "50%"}
+                style={"width": "50%", "marginTop": 30}
             )
-        ], style={"marginTop": 30}),
+        ]),
 
         # This is the Feature Finding Panel
         dbc.Row([
@@ -1049,9 +1079,24 @@ BODY = dbc.Container(
                 ],
                 id='feature-finding-collapse',
                 is_open=False,
-                style={"width": "50%"}
+                style={"width": "50%", "marginTop": 30}
             )
-        ], style={"marginTop": 30}),
+        ]),
+
+        dbc.Row([
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(OVERLAY_PANEL),
+                    ],
+                        #className="w-50"
+                    ),
+                ],
+                id='overlay-collapse',
+                is_open=False,
+                style={"width": "50%", "marginTop": 30}
+            )
+        ]),
 
 
 
@@ -2429,6 +2474,14 @@ def toggle_collapse_feature_finding(feature_finding_type):
     if feature_finding_type == "Off":
         return [False]
     return [True]
+
+@app.callback(
+    [Output("overlay-collapse", "is_open")],
+    [Input("show_overlay", "value")],
+)
+def toggle_collapse_overlay_options(show):
+    return [show]
+
 
 
 
