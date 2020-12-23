@@ -280,7 +280,7 @@ def _convert_mzML(input_mzXML, output_mzML):
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'msLevel 1' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
-    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --zlib --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {}".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     conversion_ret_code = os.system(conversion_cmd)
 
