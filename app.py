@@ -1807,6 +1807,7 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
 
     if len(all_usi) > 1 and show_multiple_tic is True:
         all_usi_tic_df = []
+
         for current_usi in all_usi:
             if len(current_usi) < 2:
                 continue
@@ -1881,10 +1882,18 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
 def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
     remote_link, local_filename = _resolve_usi(usi)
 
-    from tic import _tic_file_slow
+    if _is_worker_up():
+        result = tasks.task_tic.delay(local_filename, tic_option=tic_option, polarity_filter=polarity_filter)
 
-    return _tic_file_slow(local_filename, tic_option=tic_option, polarity_filter=polarity_filter)
-    
+        # Waiting
+        while(1):
+            if result.ready():
+                break
+            sleep(1)
+        result = result.get()
+        return pd.DataFrame(result)
+    else:
+        return pd.DataFrame(tasks.task_tic(local_filename, tic_option=tic_option, polarity_filter=polarity_filter))
 
 
 @cache.memoize()
