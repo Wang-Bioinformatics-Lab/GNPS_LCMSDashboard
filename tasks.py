@@ -34,7 +34,7 @@ def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
 
 @celery_instance.task(time_limit=60)
 def task_tic(input_filename, tic_option="TIC", polarity_filter="None"):
-    tic_df = tic._tic_file_slow(input_filename, tic_option=tic_option, polarity_filter=polarity_filter)
+    tic_df = tic.tic_file(input_filename, tic_option=tic_option, polarity_filter=polarity_filter)
     return tic_df.to_dict(orient="records")
 
 @celery_instance.task(time_limit=60)
