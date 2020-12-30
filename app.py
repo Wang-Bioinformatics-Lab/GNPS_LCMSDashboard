@@ -67,6 +67,7 @@ app.title = 'GNPS - LCMS Browser'
 
 # Optionally turn on caching
 if __name__ == "__main__":
+    WORKER_UP = False
     cache = Cache(app.server, config={
         'CACHE_TYPE': "null",
         #'CACHE_TYPE': 'filesystem',
@@ -75,6 +76,7 @@ if __name__ == "__main__":
         'CACHE_THRESHOLD': 1000000
     })
 else:
+    WORKER_UP = True
     cache = Cache(app.server, config={
         #'CACHE_TYPE': "null",
         'CACHE_TYPE': 'filesystem',
@@ -1629,7 +1631,25 @@ def determine_xic_target(search, clickData, existing_xic):
 
 @cache.memoize()
 def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
-    lcms_fig = lcms_map._create_map_fig(filename, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
+    min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
+
+    print("BEFORE AGGREGATE")
+
+    if _is_worker_up():
+        print("WORKER AGGREGATE")
+        result = tasks.task_lcms_aggregate.delay(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+
+        # Waiting
+        while(1):
+            if result.ready():
+                break
+            sleep(0.25)
+        agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = result.get()
+    else:
+        print("CALL AGGREGATE")
+        agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+
+    lcms_fig = lcms_map._create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
 
     return lcms_fig
 
@@ -1787,6 +1807,7 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
 
     if len(all_usi) > 1 and show_multiple_tic is True:
         all_usi_tic_df = []
+
         for current_usi in all_usi:
             if len(current_usi) < 2:
                 continue
@@ -1861,10 +1882,18 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
 def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
     remote_link, local_filename = _resolve_usi(usi)
 
-    from tic import _tic_file_slow
+    if _is_worker_up():
+        result = tasks.task_tic.delay(local_filename, tic_option=tic_option, polarity_filter=polarity_filter)
 
-    return _tic_file_slow(local_filename, tic_option=tic_option, polarity_filter=polarity_filter)
-    
+        # Waiting
+        while(1):
+            if result.ready():
+                break
+            sleep(1)
+        result = result.get()
+        return pd.DataFrame(result)
+    else:
+        return pd.DataFrame(tasks.task_tic(local_filename, tic_option=tic_option, polarity_filter=polarity_filter))
 
 
 @cache.memoize()
@@ -1964,9 +1993,14 @@ def _is_worker_up():
         [type]: [description]
     """
 
+    # Cheap Check
+    return WORKER_UP
+
+    # Expensive Check
     try:
         result = tasks.task_computeheartbeat.delay()
         result.task_id
+
         return True
     except:
         return False

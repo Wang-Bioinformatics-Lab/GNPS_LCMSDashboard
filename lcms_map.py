@@ -10,6 +10,7 @@ from utils import _spectrum_generator
 from utils import _get_scan_polarity
 import plotly.express as px
 import plotly.graph_objects as go 
+import xarray
 
 import utils
 
@@ -123,11 +124,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
     return ms1_results, ms2_results, ms3_results
 
-# Creates the figure for map plot
-# overlay_data is a dataframe that includes the overlay, rt and mz are the expected columns
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
-    min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
-
+def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
     import time
     start_time = time.time()
     ms1_results, ms2_results, ms3_results = _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
@@ -176,6 +173,19 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
 
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
+    agg_dict = agg.to_dict()
+
+    return agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan
+
+
+# Creates the figure for map plot
+# overlay_data is a dataframe that includes the overlay, rt and mz are the expected columns
+def _create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
+    min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
+
+    agg = xarray.DataArray.from_dict(agg_dict)
+
+    # Creating the figures
     fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", height=600, template="plotly_white")
     fig.update_traces(hoverongaps=False)
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'))
