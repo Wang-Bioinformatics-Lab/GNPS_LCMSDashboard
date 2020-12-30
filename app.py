@@ -881,6 +881,9 @@ DEBUG_CARD = [
                 children=[html.Div([html.Div(id="loading-output-16")])],
                 type="default",
             ),
+            html.Div(
+                id="server-status",
+            ),
         ]
     )
 ]
@@ -1032,6 +1035,11 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
+        dcc.Interval(
+            id='interval-component',
+            interval=30*1000, # in milliseconds
+            n_intervals=1
+        ),
         dbc.Row([
             dbc.Col(
                 dbc.Card(TOP_DASHBOARD), 
@@ -2482,6 +2490,25 @@ def toggle_collapse_feature_finding(feature_finding_type):
 def toggle_collapse_overlay_options(show):
     return [show]
 
+###########################################
+# Status Panels
+###########################################
+@app.callback(
+    [Output("server-status", "children")],
+    [Input('interval-component', 'n_intervals')],
+)
+def server_status(interval):
+    queued_task_dict = tasks.celery_instance.control.inspect().reserved()
+
+    queued_tasks = []
+
+    for worker in queued_task_dict:
+        queued_tasks += queued_task_dict[worker]
+
+    convert_tasks = [task for task in queued_tasks if "tasks._download_convert_file" in  task["name"]]
+    compute_tasks = [task for task in queued_tasks if "tasks.task" in  task["name"]]
+
+    return ["Queued Tasks - {}, {}".format(len(compute_tasks), len(convert_tasks))]
 
 
 
