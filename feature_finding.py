@@ -2,10 +2,10 @@ import pandas as pd
 from utils import _spectrum_generator
 from utils import _get_scan_polarity
 import uuid
+import subprocess
 
 
-
-def perform_feature_finding(filename, params):
+def perform_feature_finding(filename, params, timeout=90):
     """
     Do stuff for feature finding
     """
@@ -20,10 +20,10 @@ def perform_feature_finding(filename, params):
         return _tidyms_feature_finding(filename)
 
     if params["type"] == "MZmine2":
-        return _mzmine_feature_finding(filename, params["params"])
+        return _mzmine_feature_finding(filename, params["params"], timeout=timeout)
     
     if params["type"] == "Dinosaur":
-        return _dinosaur_feature_finding(filename)
+        return _dinosaur_feature_finding(filename, timeout=timeout)
     
 
 def _test_feature_finding(filename):
@@ -100,7 +100,7 @@ def _tidyms_feature_finding(filename):
     return features_df
 
 # TODO: 
-def _mzmine_feature_finding(filename, parameters):
+def _mzmine_feature_finding(filename, parameters, timeout=90):
     import xmltodict
     import os
 
@@ -149,7 +149,8 @@ def _mzmine_feature_finding(filename, parameters):
         
     cmd = "export JAVA_OPTS='-Xmx4096m' && {} {}".format(mzmine_script_path, filled_batch)
     print(cmd)
-    os.system(cmd)
+    _call_feature_finding_tool(cmd, timeout=timeout)
+    
 
     mzmine_features_df = pd.read_csv(output_ms2_csv)
 
@@ -165,7 +166,7 @@ def _openms_feature_finding(filename):
     return None
 
 
-def _dinosaur_feature_finding(filename):
+def _dinosaur_feature_finding(filename, timeout=90):
     import os
 
     output_folder = os.path.abspath(os.path.join("temp", "feature-finding"))
@@ -174,7 +175,7 @@ def _dinosaur_feature_finding(filename):
     dinosaur_script_path = "feature_finding/dinosaur/Dinosaur-1.2.0.free.jar"
     cmd = "java -Xmx4096m -jar {} --verbose --profiling --concurrency=8 --maxCharge=2 --nReport=0 --outName={} --outDir={} {}".format(dinosaur_script_path, output_filename, output_folder, filename)
     print(cmd)
-    os.system(cmd)
+    _call_feature_finding_tool(cmd, timeout=timeout)
 
     temp_features_df = pd.read_csv(os.path.join(output_folder, output_filename + ".features.tsv"), sep='\t')
 
@@ -184,3 +185,26 @@ def _dinosaur_feature_finding(filename):
     features_df['rt'] = temp_features_df['rtApex']
     
     return features_df
+
+def _call_feature_finding_tool(cmd, timeout=90):
+    """This calls the feature finding tool but also does proper cleanup by killing all child processes
+
+    Args:
+        cmd ([type]): [description]
+        timeout (int, optional): [description]. Defaults to 90.
+    """
+
+    try:
+        p = subprocess.Popen([cmd], shell=True)
+        p.wait(timeout=timeout)
+        return 0
+    except subprocess.TimeoutExpired:
+        # Killing off child and all other children
+        import psutil
+        parent_pid = p.pid
+        parent = psutil.Process(parent_pid)
+        for child in parent.children(recursive=True):
+            child.kill()
+        parent.kill()
+
+    return 1

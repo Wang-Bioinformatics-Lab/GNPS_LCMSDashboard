@@ -3,10 +3,17 @@ import sys
 import tidyms as ms
 from pyopenms import *
 
-# def test_mzmine():
-#     sys.path.insert(0, "..")
-#     import feature_finding
-#     feature_finding._mzmine_feature_finding("QC_0.mzML")
+def test_mzmine():
+    parameters = {}
+    parameters["feature_finding_ppm"] = 10
+    parameters["feature_finding_noise"] = 10000
+    parameters["feature_finding_min_peak_rt"] = 0.05
+    parameters["feature_finding_max_peak_rt"] = 1.5
+    parameters["feature_finding_rt_tolerance"] = 0.3
+
+    sys.path.insert(0, "..")
+    import feature_finding
+    feature_finding._mzmine_feature_finding("QC_0.mzML", parameters, timeout=5)
 
 
 # def test_featurefinding():
