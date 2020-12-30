@@ -65,6 +65,9 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
                 else:
                     peaks = spec.reduce(mz_range=(min_mz, max_mz))
 
+                # Filtering out zero rows
+                peaks = peaks[~np.any(peaks < 1.0, axis=1)]
+
                 # Sorting by intensity
                 peaks = peaks[peaks[:,1].argsort()]
                 peaks = peaks[-100:]
@@ -76,6 +79,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
                 all_rt += len(mz) * [rt]
                 all_scan += len(mz) * [spec.ID]
                 all_index += len(mz) * [number_spectra]
+
             except:
                 pass
         elif spec.ms_level == 2:
