@@ -4,6 +4,7 @@ import os
 import uuid
 import feature_finding
 import xic
+import lcms_map
 from joblib import Memory
 memory = Memory("temp/xic-cache", verbose=0)
 
@@ -24,6 +25,11 @@ def _download_convert_file(usi, temp_folder="temp"):
 #################################
 # Compute Data
 #################################
+@celery_instance.task(time_limit=120)
+def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
+    return lcms_map._aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+
+
 @celery_instance.task(time_limit=60)
 def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     # Caching
@@ -45,6 +51,7 @@ def task_computeheartbeat():
 
 celery_instance.conf.task_routes = {
     'tasks._download_convert_file': {'queue': 'conversion'},
+    'tasks.task_lcms_aggregate': {'queue': 'compute'},
     'tasks.task_xic': {'queue': 'compute'},
     'tasks.task_featurefinding': {'queue': 'compute'},
     'tasks.task_computeheartbeat': {'queue': 'compute'},
