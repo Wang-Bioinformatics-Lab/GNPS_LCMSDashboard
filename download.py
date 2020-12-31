@@ -267,7 +267,8 @@ def _convert_raw_to_mzML(input_raw, output_mzML):
     subprocess.check_call(" ".join(conversion_cmd), shell=True)
 
 
-    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
+    #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
     os.system(conversion_cmd)
 
 
@@ -358,7 +359,9 @@ def _convert_mzML(input_mzXML, output_mzML):
 
                             
         # Round trip through MsConvert
-        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(temp_filename, output_mzML, os.path.dirname(output_mzML))
+        #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(temp_filename, output_mzML, os.path.dirname(output_mzML))
+        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense'".format(temp_filename, output_mzML, os.path.dirname(output_mzML))
+
         conversion_ret_code = os.system(conversion_cmd)
 
         try:
