@@ -251,6 +251,13 @@ def _resolve_usi(usi, temp_folder="temp"):
     # Renaming the temp
     os.rename(temp_filename, converted_local_filename)
 
+    # Cleanup
+    try:
+        if local_filename != converted_local_filename:
+            os.remove(local_filename)
+    except:
+        pass
+
     return remote_link, converted_local_filename
 
 

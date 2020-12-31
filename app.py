@@ -1923,6 +1923,8 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
     xic_df_list = []
     
     if _is_worker_up():
+        result_list = []
+
         for usi_element in usi_list:
             if len(usi_list) == 1 and len(all_xic_values) == 1:
                 GET_MS2 = True
@@ -1930,26 +1932,30 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
             # Doing it async with tasks
             remote_link, local_filename = _resolve_usi(usi_element)
 
-            result_list = []
             for xic_value in all_xic_values:
                 result = tasks.task_xic.delay(local_filename, [xic_value], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=GET_MS2)
-                result_list.append(result)
+                result_dict = {}
+                result_dict["result"] = result
+                result_dict["usi_element"] = usi_element
+                result_list.append(result_dict)
 
-            # Waiting
-            for result in result_list:
-                while(1):
-                    if result.ready():
-                        break
-                    sleep(0.5)
+        # Waiting
+        for result_dict in result_list:
+            result = result_dict["result"]
+            usi_element = result_dict["usi_element"]
+            while(1):
+                if result.ready():
+                    break
+                sleep(0.5)
 
-                # Waiting on results
-                xic_list, ms2_data = result.get()
-                xic_df = pd.DataFrame(xic_list)
+            # Waiting on results
+            xic_list, ms2_data = result.get()
+            xic_df = pd.DataFrame(xic_list)
 
-                xic_dict = {}
-                xic_dict["df"] = xic_df
-                xic_dict["usi"] = usi_element
-                xic_df_list.append(xic_dict)
+            xic_dict = {}
+            xic_dict["df"] = xic_df
+            xic_dict["usi"] = usi_element
+            xic_df_list.append(xic_dict)
 
     else:
         for usi_element in usi_list:
