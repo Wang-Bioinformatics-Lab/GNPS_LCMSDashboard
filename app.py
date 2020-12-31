@@ -1148,7 +1148,7 @@ app.layout = html.Div(children=[NAVBAR, BODY])
 
 
 
-def _resolve_usi(usi, temp_folder="temp"):
+def _resolve_usi(usi, temp_folder="temp", blocking=True):
     """
     This function interacts with the task queuing system so that it can be abstracted out
 
@@ -1170,6 +1170,9 @@ def _resolve_usi(usi, temp_folder="temp"):
         if _is_worker_up():
             # If we have the celery instance up, we'll push it
             result = tasks._download_convert_file.delay(usi, temp_folder=temp_folder)
+
+            if blocking is False:
+                return None, None
 
             # Waiting
             while(1):
@@ -1923,6 +1926,10 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
     xic_df_list = []
     
     if _is_worker_up():
+        # Queue up the resolution in a non-blocking manner
+        for usi_element in usi_list:
+            _resolve_usi(usi_element, blocking=False)
+
         for usi_element in usi_list:
             if len(usi_list) == 1 and len(all_xic_values) == 1:
                 GET_MS2 = True
