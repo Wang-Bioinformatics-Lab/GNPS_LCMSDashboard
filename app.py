@@ -1659,6 +1659,9 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
 def _perform_feature_finding(filename, feature_finding=None):
     import tasks
 
+    print("BEFORE WORKER")
+    print(_is_worker_up())
+
     # Checking if local or worker
     if _is_worker_up():
         # If we have the celery instance up, we'll push it
@@ -1671,7 +1674,7 @@ def _perform_feature_finding(filename, feature_finding=None):
             sleep(3)
         features_list = result.get()
     else:
-        features_list = tasks.task_featurefinding.delay(filename, feature_finding)
+        features_list = tasks.task_featurefinding(filename, feature_finding)
 
     features_df = pd.DataFrame(features_list)
 
@@ -1712,9 +1715,18 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
             features_df = features_df[features_df["mz"] > min_mz]
             features_df = features_df[features_df["mz"] < max_mz]
 
-            feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="diamond", opacity=0.7), name="Feature Detection")
-            lcms_fig.add_trace(feature_overlay_fig)
+            #feature_overlay_fig = go.Scattergl(x=features_df["rt"], y=features_df["mz"], mode='markers', marker=dict(color='green', size=10, symbol="diamond", opacity=0.7), name="Feature Detection")
+
+            feature_overlay_fig = px.scatter(features_df, x="rt", y="mz", hover_name="i")
+            feature_overlay_fig.update_traces(marker=dict(symbol="diamond", color='green', size=10, opacity=0.7))
+
+            _intermediate_fig = feature_overlay_fig.data[0]
+            _intermediate_fig.name = "Feature Detection"
+            _intermediate_fig.showlegend = True
+
+            lcms_fig.add_trace(_intermediate_fig)
         except:
+            raise
             pass
 
     return lcms_fig, features_df
