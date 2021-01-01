@@ -1973,31 +1973,34 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
     # Performing Normalization and formatting
     df_long_list = []
     for xic_dict in xic_df_list:
-        xic_df = xic_dict["df"]
-        usi_element = xic_dict["usi"]
+        try:
+            xic_df = xic_dict["df"]
+            usi_element = xic_dict["usi"]
 
-        # Performing Normalization only if we have multiple XICs available
-        if xic_norm is True:
-            try:
-                for key in xic_df.columns:
-                    if key == "rt":
-                        continue
-                    xic_df[key] = xic_df[key] / max(xic_df[key])
-            except:
-                pass
+            # Performing Normalization only if we have multiple XICs available
+            if xic_norm is True:
+                try:
+                    for key in xic_df.columns:
+                        if key == "rt":
+                            continue
+                        xic_df[key] = xic_df[key] / max(xic_df[key])
+                except:
+                    pass
 
-        # Formatting for Plotting
-        target_names = list(xic_df.columns)
-        target_names.remove("rt")
-        df_long = pd.melt(xic_df, id_vars="rt", value_vars=target_names)
-        df_long["USI"] = usi_element
+            # Formatting for Plotting
+            target_names = list(xic_df.columns)
+            target_names.remove("rt")
+            df_long = pd.melt(xic_df, id_vars="rt", value_vars=target_names)
+            df_long["USI"] = usi_element
 
-        if usi_element in usi1_list:
-            df_long["GROUP"] = "TOP"
-        else:
-            df_long["GROUP"] = "BOTTOM"
+            if usi_element in usi1_list:
+                df_long["GROUP"] = "TOP"
+            else:
+                df_long["GROUP"] = "BOTTOM"
 
-        df_long_list.append(df_long)
+            df_long_list.append(df_long)
+        except:
+            pass
 
     merged_df_long = pd.concat(df_long_list)
     return merged_df_long, ms2_data
