@@ -1356,7 +1356,13 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("overlay-hover", "value"),
                 Output('overlay-filter-column', 'value'),
                 Output('overlay-filter-value', 'value'),
-                Output("feature_finding_type", "value")],
+                Output("feature_finding_type", "value"),
+                Output("feature_finding_ppm", "value"),
+                Output("feature_finding_noise", "value"),
+                Output("feature_finding_min_peak_rt", "value"),
+                Output("feature_finding_max_peak_rt", "value"),
+                Output("feature_finding_rt_tolerance", "value"),
+                ],
               [Input('url', 'search')])
 def determine_url_only_parameters(search):
     xic_formula = ""
@@ -1381,9 +1387,14 @@ def determine_url_only_parameters(search):
     overlay_hover = dash.no_update
     overlay_filter_column = dash.no_update
     overlay_filter_value = dash.no_update
-    feature_finding_type = dash.no_update
 
-    
+    # Feature Finding
+    feature_finding_type = dash.no_update
+    feature_finding_ppm = dash.no_update
+    feature_finding_noise = dash.no_update
+    feature_finding_min_peak_rt = dash.no_update
+    feature_finding_max_peak_rt = dash.no_update
+    feature_finding_rt_tolerance = dash.no_update
 
     try:
         xic_formula = str(urllib.parse.parse_qs(search[1:])["xic_formula"][0])
@@ -1511,7 +1522,31 @@ def determine_url_only_parameters(search):
         feature_finding_type = str(urllib.parse.parse_qs(search[1:])["feature_finding_type"][0])
     except:
         pass
+
+    try:
+        feature_finding_ppm = str(urllib.parse.parse_qs(search[1:])["feature_finding_ppm"][0])
+    except:
+        pass
+
+    try:
+        feature_finding_noise = str(urllib.parse.parse_qs(search[1:])["feature_finding_noise"][0])
+    except:
+        pass
+
+    try:
+        feature_finding_min_peak_rt = str(urllib.parse.parse_qs(search[1:])["feature_finding_min_peak_rt"][0])
+    except:
+        pass
+
+    try:
+        feature_finding_max_peak_rt = str(urllib.parse.parse_qs(search[1:])["feature_finding_max_peak_rt"][0])
+    except:
+        pass
     
+    try:
+        feature_finding_rt_tolerance = str(urllib.parse.parse_qs(search[1:])["feature_finding_rt_tolerance"][0])
+    except:
+        pass
     
     return [xic_formula, 
             xic_peptide, 
@@ -1525,8 +1560,7 @@ def determine_url_only_parameters(search):
             tic_option, polarity_filtering, 
             polarity_filtering2, 
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
-            feature_finding_type]
-
+            feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance]
 
 
 # Handling file upload
@@ -2387,12 +2421,18 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("overlay-hover", "value"),
               Input('overlay-filter-column', 'value'),
               Input('overlay-filter-value', 'value'),
-              Input("feature_finding_type", "value")])
+              Input("feature_finding_type", "value"),
+              Input("feature_finding_ppm", "value"),
+              Input("feature_finding_noise", "value"),
+              Input("feature_finding_min_peak_rt", "value"),
+              Input("feature_finding_max_peak_rt", "value"),
+              Input("feature_finding_rt_tolerance", "value"),
+              ])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
-                feature_finding_type):
+                feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance):
 
     url_params = {}
     url_params["xicmz"] = xic_mz
@@ -2425,6 +2465,11 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     # Feature Finding Options
     url_params["feature_finding_type"] = feature_finding_type
+    url_params["feature_finding_ppm"] = feature_finding_ppm
+    url_params["feature_finding_noise"] = feature_finding_noise
+    url_params["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
+    url_params["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
+    url_params["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
 
     hash_params = {}
     hash_params["usi"] = usi
