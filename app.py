@@ -1861,19 +1861,20 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
 
     if len(all_usi) > 1 and show_multiple_tic is True:
         all_usi_tic_df = []
+
         for current_usi in all_usi:
             if len(current_usi) < 2:
                 continue
 
             try:
                 tic_df = _perform_tic(current_usi, tic_option=tic_option, polarity_filter=polarity_filter)
-                tic_df["usi"] = current_usi
+                tic_df["USI"] = download._get_usi_display_filename(current_usi)
                 all_usi_tic_df.append(tic_df)
             except:
                 pass
 
         merged_tic_df = pd.concat(all_usi_tic_df)
-        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="usi")
+        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI")
     else:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
