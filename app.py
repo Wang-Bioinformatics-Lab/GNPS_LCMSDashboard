@@ -2432,6 +2432,7 @@ def create_gnps_mzmine2_link(feature_finding_type, feature_finding_ppm, feature_
     gnps_url = "https://proteomics2.ucsd.edu/ProteoSAFe/index.jsp?params="
     parameters = {}
     parameters["workflow"] = "LC_MZMINE2"
+    parameters["desc"] = "MZmine2 Feature Finding - From GNPS LCMS Viewer"
     parameters["MZMINE_BATCHPRESET"] = "Generic_Batch_Base.xml"
     parameters["feature_finding_ppm"] = feature_finding_ppm
     parameters["feature_finding_noise"] = feature_finding_noise
