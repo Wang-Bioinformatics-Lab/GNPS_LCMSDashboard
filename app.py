@@ -678,7 +678,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dcc.Link(dbc.Button("Run Feature Finding at GNPS with Parameters", color="primary", className="mr-1"), href="https://proteomics2.ucsd.edu/ProteoSAFe/index.jsp?params={%22workflow%22:%22LC_MZMINE2%22,%22workflow_version%22:%22current%22}", target="_blank", id="run-gnps-mzmine-link")
+                            dcc.Link(dbc.Button("Run Feature Finding at GNPS with Parameters (Beta)", color="primary", className="mr-1"), href="https://proteomics2.ucsd.edu/ProteoSAFe/index.jsp?params={%22workflow%22:%22LC_MZMINE2%22,%22workflow_version%22:%22current%22}", target="_blank", id="run-gnps-mzmine-link")
                         ],
                         className="mb-3",
                     )
