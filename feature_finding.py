@@ -133,7 +133,6 @@ def _mzmine_feature_finding(filename, parameters, timeout=90):
     batch_text = batch_text.replace("FEATUREFINDING_NOISELEVEL", str(parameters["feature_finding_noise"]))
     batch_text = batch_text.replace("FEATUREFINDING_MINABSOLUTEHEIGHT", str(float(parameters["feature_finding_noise"]) * 3.0 ))
     
-    
     batch_text = batch_text.replace("FEATUREFINDING_MINPEAKDURATION", str(parameters["feature_finding_min_peak_rt"]))
     batch_text = batch_text.replace("FEATUREFINDING_MAXPEAKDURATION", str(parameters["feature_finding_max_peak_rt"]))
 

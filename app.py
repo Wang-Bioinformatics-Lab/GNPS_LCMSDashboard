@@ -670,7 +670,15 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.Button("Update Feature Finding Run", color="primary", className="mr-1", id="run-feature-finding-button"),
+                            dbc.Button("Update Feature Finding Interactively", color="primary", className="mr-1", id="run-feature-finding-button", block=True),
+                        ],
+                        className="mb-3",
+                    )
+                ),
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dcc.Link(dbc.Button("Run Feature Finding at GNPS with Parameters (Super Beta)", color="primary", className="mr-1"), href="https://proteomics2.ucsd.edu/ProteoSAFe/index.jsp?params={%22workflow%22:%22LC_MZMINE2%22,%22workflow_version%22:%22current%22}", target="_blank", id="run-gnps-mzmine-link")
                         ],
                         className="mb-3",
                     )
@@ -2408,6 +2416,35 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
 
     return [map_fig]
 
+
+@app.callback(Output('run-gnps-mzmine-link', 'href'),
+              [
+              Input("feature_finding_type", "value"),
+              Input("feature_finding_ppm", "value"),
+              Input("feature_finding_noise", "value"),
+              Input("feature_finding_min_peak_rt", "value"),
+              Input("feature_finding_max_peak_rt", "value"),
+              Input("feature_finding_rt_tolerance", "value"),
+              ])
+def create_gnps_mzmine2_link(feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance):
+    import urllib.parse
+
+    gnps_url = "https://proteomics2.ucsd.edu/ProteoSAFe/index.jsp?params="
+    parameters = {}
+    parameters["workflow"] = "LC_MZMINE2"
+    parameters["desc"] = "MZmine2 Feature Finding - From GNPS LCMS Viewer"
+    parameters["MZMINE_BATCHPRESET"] = "Generic_Batch_Base.xml"
+    parameters["feature_finding_ppm"] = feature_finding_ppm
+    parameters["feature_finding_noise"] = feature_finding_noise
+    parameters["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
+    parameters["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
+    parameters["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
+
+    gnps_url = gnps_url + urllib.parse.quote(json.dumps(parameters))
+
+    return gnps_url
+
+
 @app.callback(Output('link-button', 'children'),
               [Input('usi', 'value'), 
               Input('usi2', 'value'), 
@@ -2496,7 +2533,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     return provenance_link_object
 
-# Creating TIC plot
+# Creating File Summary
 @app.callback([Output('summary-table', 'children')],
               [Input('usi', 'value'), Input('usi2', 'value')])
 @cache.memoize()
