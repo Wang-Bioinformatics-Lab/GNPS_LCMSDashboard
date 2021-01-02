@@ -665,6 +665,17 @@ FEATURE_FINDING_PANEL = [
                     )
                 ),
             ]),
+
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.Button("Run Feature Finding", color="primary", className="mr-1", id="run-feature-finding-button"),
+                        ],
+                        className="mb-3",
+                    )
+                ),
+            ]),
         ]
     )
 ]
@@ -2266,15 +2277,19 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('overlay-filter-column', 'value'),
               Input('overlay-filter-value', 'value'),
               Input('feature_finding_type', 'value'),
-              Input('feature_finding_ppm', 'value'),
-              Input('feature_finding_noise', 'value'),
-              Input('feature_finding_min_peak_rt', 'value'),
-              Input('feature_finding_max_peak_rt', 'value'),
-              Input('feature_finding_rt_tolerance', 'value'),
+              Input('run-feature-finding-button', 'n_clicks')
+              ],
+              [
+                State('feature_finding_ppm', 'value'),
+                State('feature_finding_noise', 'value'),
+                State('feature_finding_min_peak_rt', 'value'),
+                State('feature_finding_max_peak_rt', 'value'),
+                State('feature_finding_rt_tolerance', 'value'),
               ])
 def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
+                feature_finding_click,
                 feature_finding_ppm,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
