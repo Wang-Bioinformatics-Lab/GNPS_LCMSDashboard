@@ -670,7 +670,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.Button("Run Feature Finding", color="primary", className="mr-1", id="run-feature-finding-button"),
+                            dbc.Button("Update Feature Finding Run", color="primary", className="mr-1", id="run-feature-finding-button"),
                         ],
                         className="mb-3",
                     )
