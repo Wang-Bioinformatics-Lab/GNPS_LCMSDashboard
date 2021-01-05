@@ -2419,6 +2419,8 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
 
 @app.callback(Output('run-gnps-mzmine-link', 'href'),
               [
+              Input("usi", "value"),
+              Input("usi2", "value"),
               Input("feature_finding_type", "value"),
               Input("feature_finding_ppm", "value"),
               Input("feature_finding_noise", "value"),
@@ -2426,13 +2428,38 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
               Input("feature_finding_max_peak_rt", "value"),
               Input("feature_finding_rt_tolerance", "value"),
               ])
-def create_gnps_mzmine2_link(feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance):
+def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance):
     import urllib.parse
+
+    g1_list = []
+    g2_list = []
+
+    usi_list = usi.split("\n")
+    for usi_value in usi_list:
+        try:
+            ccms_path = download._usi_to_ccms_path(usi_value)
+            if ccms_path is not None:
+                g1_list.append(ccms_path)
+        except:
+            pass
+    
+    usi_list2 = usi2.split("\n")
+    for usi_value in usi_list2:
+        try:
+            ccms_path = download._usi_to_ccms_path(usi_value)
+            if ccms_path is not None:
+                g2_list.append(ccms_path)
+        except:
+            pass
 
     gnps_url = "https://proteomics2.ucsd.edu/ProteoSAFe/index.jsp?params="
     parameters = {}
     parameters["workflow"] = "LC_MZMINE2"
     parameters["desc"] = "MZmine2 Feature Finding - From GNPS LCMS Viewer"
+    
+    parameters["spec_on_server"] = ";".join(g1_list)
+    parameters["spec_on_server_group2"] = ";".join(g2_list)
+
     parameters["MZMINE_BATCHPRESET"] = "Generic_Batch_Base.xml"
     parameters["feature_finding_ppm"] = feature_finding_ppm
     parameters["feature_finding_noise"] = feature_finding_noise
