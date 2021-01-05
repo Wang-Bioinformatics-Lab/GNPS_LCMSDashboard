@@ -64,6 +64,8 @@ def _usi_to_local_filename(usi):
         return converted_local_filename.replace(".mzML.mzML", ".mzML")
 
 
+
+
 def _resolve_msv_usi(usi):
     usi_splits = usi.split(':')
 
@@ -175,6 +177,16 @@ def _resolve_pxd_usi(usi):
     return remote_link
 
 def _resolve_usi_remotelink(usi):
+    """
+    Tries to convert usi to a remote URL path to get the file
+
+    Args:
+        usi ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+
     usi_splits = usi.split(":")
     
     if "MSV" in usi_splits[1]:
@@ -189,6 +201,47 @@ def _resolve_usi_remotelink(usi):
         remote_link = _resolve_pxd_usi(usi)
 
     return remote_link
+
+def _usi_to_ccms_path(usi):
+    """
+    Tries to convert usi to a relative path in CCMS. None if not found
+
+    Args:
+        usi ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    usi_splits = usi.split(":")
+
+    if "LOCAL" in usi_splits[1]:
+        return None
+    
+    if "MSV" in usi_splits[1]:
+        msv_ftp = _resolve_msv_usi(usi)
+        msv_ftp = msv_ftp.replace("ftp://massive.ucsd.edu/", "")
+
+        return "f.{}".format(msv_ftp)
+
+    if "GNPS" in usi_splits[1]:
+        if "TASK-" in usi_splits[2]:
+            return usi_splits[2].split("-")[-1]
+        elif "QUICKSTART-" in usi_splits[2]:
+            return None
+        elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
+            return None
+
+    if "MTBLS" in usi_splits[1]:
+        return None
+
+    if "ST" in usi_splits[1]:
+        msv_ftp = _resolve_metabolomicsworkbench_usi(usi)
+        msv_ftp = msv_ftp.replace("ftp://massive.ucsd.edu/", "")
+
+        return "f.{}".format(msv_ftp)
+
+    if "PXD" in usi_splits[1]:
+        return None
 
 def _resolve_exists_local(usi, temp_folder="temp"):
     usi_splits = usi.split(":")
