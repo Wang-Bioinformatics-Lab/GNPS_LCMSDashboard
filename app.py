@@ -192,6 +192,11 @@ DATASELECTION_CARD = [
                     type="default",
                 ),
                 html.Br(),
+                dcc.Loading(
+                    id="network-link-button",
+                    children=[html.Div([html.Div(id="loading-output-232")])],
+                    type="default",
+                ),
                 html.H5(children='LCMS Viewer Options'),
                 dbc.Row([
                     dbc.Col(
@@ -2559,6 +2564,53 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
 
     return provenance_link_object
+
+
+
+@app.callback(Output('network-link-button', 'children'),
+              [Input('usi', 'value'), 
+              Input('usi2', 'value'), 
+              ])
+def create_networking_link(usi, usi2):
+    full_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
+
+    g1_list = []
+    g2_list = []
+
+    usi_list = usi.split("\n")
+    for usi_value in usi_list:
+        try:
+            ccms_path = download._usi_to_ccms_path(usi_value)
+            if ccms_path is not None:
+                g1_list.append(ccms_path)
+        except:
+            pass
+    
+    usi_list2 = usi2.split("\n")
+    for usi_value in usi_list2:
+        try:
+            ccms_path = download._usi_to_ccms_path(usi_value)
+            if ccms_path is not None:
+                g2_list.append(ccms_path)
+        except:
+            pass
+
+    if len(g1_list) > 0 or len(g0_list) > 0:
+        parameters = {}
+        parameters["workflow"] = "METABOLOMICS-SNETS-V2"
+        parameters["spec_on_server"] = ";".join(g1_list)
+        parameters["spec_on_server_group2"] = ";".join(g2_list)
+
+        gnps_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
+        gnps_url = gnps_url + urllib.parse.quote(json.dumps(parameters))
+
+        url_provenance = dbc.Button("Molecular Network {} Files".format(len(g1_list) + len(g2_list)), block=True, color="secondary", className="mr-1")
+        provenance_link_object = dcc.Link(url_provenance, href=gnps_url, target="_blank")
+
+        return [provenance_link_object, html.Br()]
+
+    return dash.no_update
+
 
 # Creating File Summary
 @app.callback([Output('summary-table', 'children')],
