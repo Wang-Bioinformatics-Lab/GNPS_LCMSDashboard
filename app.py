@@ -1169,7 +1169,9 @@ BODY = dbc.Container(
     className="",
 )
 
-app.layout = html.Div(children=[NAVBAR, BODY])
+app.layout = html.Div(children=[
+    NAVBAR, 
+    BODY])
 
 
 
@@ -2713,7 +2715,6 @@ def toggle_collapse_feature_finding(feature_finding_type):
 )
 def toggle_collapse_overlay_options(show):
     return [show]
-
 
 #######################
 # Flask URLS
