@@ -45,6 +45,8 @@ def test_ms2_spectrum():
     remote_link, local_filename = download._resolve_usi(usi)
     peaks, mz, spectrum_details_string = ms2._get_ms2_peaks(usi, local_filename, 1)
 
+    print(spectrum_details_string)
+
     assert(len(peaks) > 10)
 
     # Currently Doesnt work, but will need to. TODO: Fix
