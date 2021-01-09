@@ -1084,7 +1084,7 @@ SPECTRUM_DETAILS_MODAL = [
             ),
         ],
         id="spectrum_details_modal",
-        size="lg",
+        size="xl",
     ),
 ]
 
