@@ -93,7 +93,11 @@ def _get_param_from_url(search, url_hash, param_key, default):
 
     return default
 
-def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=None):
+def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=None, 
+                map_plot_rt_min="",
+                map_plot_rt_max="",
+                map_plot_mz_min="",
+                map_plot_mz_max=""):
     """
     This resolves the map plot selection, given url
 
@@ -168,6 +172,28 @@ def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selectio
     except:
         pass
 
+    # If the entries are set, then we will override the UI map selection
+    try:
+        min_rt = float(map_plot_rt_min)
+        max_rt = float(map_plot_rt_max)
+        min_mz = float(map_plot_mz_min)
+        max_mz = float(map_plot_mz_max)
+
+        # Check if the values one by one, are not default
+        if min_rt > 0:
+            current_map_selection["xaxis.range[0]"] = min_rt
+        
+        if max_rt < 1000000:
+            current_map_selection["xaxis.range[1]"] = max_rt
+
+        if min_mz > 0:
+            current_map_selection["yaxis.range[0]"] = min_mz
+
+        if max_mz < 1000000:
+            current_map_selection["yaxis.range[1]"] = max_mz
+    except:
+        pass
+
     # Getting values for rt and mz
     try:
         min_rt = current_map_selection["xaxis.range[0]"]
@@ -176,9 +202,9 @@ def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selectio
         max_mz = current_map_selection["yaxis.range[1]"]
     except:
         min_rt = 0
-        max_rt = 100000
+        max_rt = 1000000
         min_mz = 0
-        max_mz = 100000
+        max_mz = 1000000
 
     return current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz
 

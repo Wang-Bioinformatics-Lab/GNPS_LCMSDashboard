@@ -1145,6 +1145,7 @@ ADVANCED_VISUALIZATION_MODAL = [
                             style={"margin-left": "4px"}
                     )),
                 ]),
+                dbc.Button("Update Map Plot Ranges", block=True, id="map_plot_update_range_button"),
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_visualization_modal_close", className="ml-auto")
@@ -2407,6 +2408,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               Input('usi', 'value'), 
               Input('map-plot', 'relayoutData'), 
               Input('map_plot_quantization_level', 'value'), 
+              Input('map_plot_update_range_button', 'n_clicks'), 
               Input('show_ms2_markers', 'value'),
               Input('polarity-filtering', 'value'),
               Input('overlay-usi', 'value'),
@@ -2426,9 +2428,14 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 State('feature_finding_min_peak_rt', 'value'),
                 State('feature_finding_max_peak_rt', 'value'),
                 State('feature_finding_rt_tolerance', 'value'),
+                
+                State("map_plot_rt_min", 'value'),
+                State("map_plot_rt_max", 'value'),
+                State("map_plot_mz_min", 'value'),
+                State("map_plot_mz_max", 'value'),
               ])
 def draw_file(url_search, usi, 
-                map_selection, map_plot_quantization_level,
+                map_selection, map_plot_quantization_level, map_plot_update_range_button,
                 show_ms2_markers, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
@@ -2437,7 +2444,11 @@ def draw_file(url_search, usi,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
                 feature_finding_max_peak_rt, 
-                feature_finding_rt_tolerance):
+                feature_finding_rt_tolerance,
+                map_plot_rt_min,
+                map_plot_rt_max,
+                map_plot_mz_min,
+                map_plot_mz_max):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -2449,7 +2460,19 @@ def draw_file(url_search, usi,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
+    # Figuring out the map plot selection
+    if "map_plot_update_range_button" in triggered_id:
+        # We clicked the button, so we should read the values out of the 
+        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, 
+                                                                                                            usi, 
+                                                                                                            local_filename, 
+                                                                                                            ui_map_selection=map_selection,
+                                                                                                            map_plot_rt_min=map_plot_rt_min,
+                                                                                                            map_plot_rt_max=map_plot_rt_max,
+                                                                                                            map_plot_mz_min=map_plot_mz_min,
+                                                                                                            map_plot_mz_max=map_plot_mz_max)
+    else:
+        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
 
     import sys
     print(triggered_id, file=sys.stderr)
@@ -2496,7 +2519,7 @@ def draw_file(url_search, usi,
         pass
 
 
-    return [map_fig, remote_link, json.dumps(map_selection), table_graph, min_rt, max_rt, min_mz, max_mz]
+    return [map_fig, remote_link, json.dumps(current_map_selection), table_graph, min_rt, max_rt, min_mz, max_mz]
 
 
 @app.callback([Output('map-plot2', 'figure')],
