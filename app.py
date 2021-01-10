@@ -122,8 +122,9 @@ cvs = ds.Canvas(plot_width=1, plot_height=1)
 agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-placeholder_ms2_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
+placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
 placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder')
+placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='Spectrum Placeholder')
 
 MAX_XIC_PLOT_LCMS_FILES = 30
 MAX_LCMS_FILES = 500
@@ -605,8 +606,21 @@ DATASLICE_CARD = [
                 type="default",
             ),
             dcc.Loading(
-                id="ms2-plot",
-                children=[html.Div([html.Div(id="loading-output-6")])],
+                id="loading-289",
+                children=[dcc.Graph(
+                    id='ms2-plot',
+                    figure=placeholder_ms2_plot,
+                    config={
+                        'doubleClick': 'reset'
+                    }
+                )],
+                type="default",
+            ),
+            dbc.Button("Spectrum Details", block=True, id="spectrum_details_modal_button"),
+            html.Br(),
+            dcc.Loading(
+                id="ms2-plot-buttons",
+                children=[html.Div([html.Div(id="loading-output-1034")])],
                 type="default",
             ),
         ]
@@ -1011,7 +1025,7 @@ MIDDLE_DASHBOARD = [
             html.Div(id='map-plot-zoom', style={'display': 'none'}),
             dcc.Graph(
                 id='map-plot',
-                figure=placeholder_ms2_plot,
+                figure=placeholder_map_plot,
                 config={
                     'doubleClick': 'reset'
                 }
@@ -1035,7 +1049,7 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
             html.Br(),
             dcc.Graph(
                 id='map-plot2',
-                figure=placeholder_ms2_plot,
+                figure=placeholder_map_plot,
                 config={
                     'doubleClick': 'reset',
                     'modeBarButtonsToRemove': [
@@ -1052,6 +1066,26 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
             )
         ]
     )
+]
+
+SPECTRUM_DETAILS_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Spectrum Details as YAML"),
+            dbc.ModalBody([
+                dcc.Loading(
+                    id="spectrum_details_area",
+                    children=[html.Div([html.Div(id="loading-output-1035")])],
+                    type="default",
+                ),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="spectrum_details_modal_close", className="ml-auto")
+            ),
+        ],
+        id="spectrum_details_modal",
+        size="xl",
+    ),
 ]
 
 
@@ -1163,6 +1197,10 @@ BODY = dbc.Container(
             ),
         ], style={"marginTop": 30}),
         html.Br(),
+
+        # Adding modals
+        dbc.Row(SPECTRUM_DETAILS_MODAL),
+        
     ],
     fluid=True,
     className="",
@@ -1263,7 +1301,11 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
 
 
 # This helps to update the ms2/ms1 plot
-@app.callback([Output('debug-output', 'children'), Output('ms2-plot', 'children')],
+@app.callback([Output('debug-output', 'children'), 
+                Output('ms2-plot', 'figure'), 
+                Output('ms2-plot', 'config'), 
+                Output('ms2-plot-buttons', 'children'),
+                Output('spectrum_details_area', 'children')],
               [Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")], [State('xic_mz', 'value')])
 def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     usi_splits = usi.split(":")
@@ -1283,10 +1325,15 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
     # Getting Spectrum Peaks
     remote_link, local_filename = _resolve_usi(usi)
-    peaks, precursor_mz = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
+    peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
     usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
+    spectrum_type = "MS"
+    button_elements = []
+
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
+        spectrum_type = "MS2"
+
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
         neg_ints = [intensity * -1 for intensity in ints]
@@ -1324,9 +1371,12 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
 
-        return ["MS2", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button, html.Br(), masst_button]]
+        button_elements = [USI_button, html.Br(), masst_button]
+
 
     if "MS1" in ms2_identifier:
+        spectrum_type = "MS1"
+
         mzs = [peak[0] for peak in peaks]
         ints = [peak[1] for peak in peaks]
         neg_ints = [intensity * -1 for intensity in ints]
@@ -1356,7 +1406,9 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
 
-        return ["MS1", [dcc.Graph(figure=interactive_fig, config=graph_config), USI_button]]
+        button_elements = [USI_button]
+
+    return [spectrum_type, interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string)]
 
 @app.callback([ Output("xic_formula", "value"),
                 Output("xic_peptide", "value"),
@@ -2712,6 +2764,18 @@ def toggle_collapse_feature_finding(feature_finding_type):
 )
 def toggle_collapse_overlay_options(show):
     return [show]
+
+# Helping to toggle the modals
+def toggle_modal(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
+
+app.callback(
+    Output("spectrum_details_modal", "is_open"),
+    [Input("spectrum_details_modal_button", "n_clicks"), Input("spectrum_details_modal_close", "n_clicks")],
+    [State("spectrum_details_modal", "is_open")],
+)(toggle_modal)
 
 
 
