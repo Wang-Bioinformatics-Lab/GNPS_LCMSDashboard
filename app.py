@@ -1119,7 +1119,32 @@ ADVANCED_VISUALIZATION_MODAL = [
                             className="mb-3",
                             style={"margin-left": "4px"}
                     )),
-                ])
+                ]),
+                html.Hr(),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("RT Range", addon_type="prepend"),
+                                dbc.Input(id='map_plot_rt_min', placeholder="Enter Min RT", value=""),
+                                dbc.Input(id='map_plot_rt_max', placeholder="Enter Max RT", value=""),
+                            ],
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("m/z Range", addon_type="prepend"),
+                                dbc.Input(id='map_plot_mz_min', placeholder="Enter Min m/z", value=""),
+                                dbc.Input(id='map_plot_mz_max', placeholder="Enter Max m/z", value=""),
+                            ],
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_visualization_modal_close", className="ml-auto")
@@ -2416,24 +2441,12 @@ def draw_file(url_search, usi,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename)
+    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
 
     import sys
     print(triggered_id, file=sys.stderr)
     print(url_search, file=sys.stderr)
-    print("MAP SELECTION XXXXXXXXXX", map_selection, current_map_selection, highlight_box, triggered_id, usi, file=sys.stderr)
 
-    # We have to do a bit of convoluted object, if {'autosize': True}, that means loading from the URL
-    try:
-        # Force an override if user input is detected in map_selection
-        if "xaxis.autorange" in map_selection:
-            current_map_selection = map_selection
-        if "xaxis.range[0]" in map_selection:
-            current_map_selection = map_selection
-        if "autosize" in map_selection:
-            pass
-    except:
-        pass
 
     # Feature Finding parameters
     table_graph = dash.no_update
@@ -2504,18 +2517,7 @@ def draw_file2(url_search, usi,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename)
-    
-    # We have to do a bit of convoluted object, if {'autosize': True}, that means the original load
-    try:
-        if "xaxis.autorange" in map_selection:
-            current_map_selection = map_selection
-        if "xaxis.range[0]" in map_selection:
-            current_map_selection = map_selection
-        if "autosize" in map_selection:
-            pass
-    except:
-        pass
+    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
 
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)

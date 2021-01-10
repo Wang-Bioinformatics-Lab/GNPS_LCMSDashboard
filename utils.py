@@ -93,7 +93,22 @@ def _get_param_from_url(search, url_hash, param_key, default):
 
     return default
 
-def _resolve_map_plot_selection(url_search, usi, local_filename):
+def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=None):
+    """
+    This resolves the map plot selection, given url
+
+    Args:
+        url_search ([type]): [description]
+        usi ([type]): [description]
+        local_filename ([type]): [description]
+
+    Raises:
+        Exception: [description]
+
+    Returns:
+        [type]: [description]
+    """
+
     current_map_selection = {}
     highlight_box = None
 
@@ -138,6 +153,18 @@ def _resolve_map_plot_selection(url_search, usi, local_filename):
             highlight_box["right"] = rt + 0.01
             highlight_box["top"] = mz + 0.1
             highlight_box["bottom"] = mz - 0.1
+    except:
+        pass
+
+    # We have to do a bit of convoluted object, if {'autosize': True}, that means loading from the URL
+    try:
+        # Force an override if user input is detected in map_selection
+        if "xaxis.autorange" in ui_map_selection:
+            current_map_selection = ui_map_selection
+        if "xaxis.range[0]" in ui_map_selection:
+            current_map_selection = ui_map_selection
+        if "autosize" in ui_map_selection:
+            pass
     except:
         pass
 
