@@ -1095,6 +1095,31 @@ ADVANCED_VISUALIZATION_MODAL = [
         [
             dbc.ModalHeader("Advanced Visualization Modal"),
             dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("LCMS Quantization Map Level", width=4.8, style={"width":"250px"}),
+                                dcc.Dropdown(
+                                    id='map_plot_quantization_level',
+                                    options=[
+                                        {'label': 'Low', 'value': 'Low'},
+                                        {'label': 'Medium', 'value': 'Medium'},
+                                        {'label': 'High', 'value': 'High'},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="Medium",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ])
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_visualization_modal_close", className="ml-auto")
@@ -1757,14 +1782,14 @@ def determine_xic_target(search, clickData, existing_xic):
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, map_plot_quantization_level="Medium"):
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     print("BEFORE AGGREGATE")
 
     if _is_worker_up():
         print("WORKER AGGREGATE")
-        result = tasks.task_lcms_aggregate.delay(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+        result = tasks.task_lcms_aggregate.delay(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
 
         # Waiting
         while(1):
@@ -1774,7 +1799,7 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = result.get()
     else:
         print("CALL AGGREGATE")
-        agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+        agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
 
     lcms_fig = lcms_map._create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
 
@@ -2348,6 +2373,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               [Input('url', 'search'), 
               Input('usi', 'value'), 
               Input('map-plot', 'relayoutData'), 
+              Input('map_plot_quantization_level', 'value'), 
               Input('show_ms2_markers', 'value'),
               Input('polarity-filtering', 'value'),
               Input('overlay-usi', 'value'),
@@ -2368,7 +2394,9 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 State('feature_finding_max_peak_rt', 'value'),
                 State('feature_finding_rt_tolerance', 'value'),
               ])
-def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, 
+def draw_file(url_search, usi, 
+                map_selection, map_plot_quantization_level,
+                show_ms2_markers, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_click,
@@ -2423,7 +2451,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
 
         
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
 
     # Adding on Feature Finding data
     map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
@@ -2454,10 +2482,14 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
               [Input('url', 'search'), 
               Input('usi2', 'value'), 
               Input('map-plot', 'relayoutData'), 
+              Input('map_plot_quantization_level', 'value'), 
               Input('show_ms2_markers', 'value'),
               Input("show_lcms_2nd_map", "value"),
               Input('polarity-filtering2', 'value')])
-def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_map, polarity_filter):
+def draw_file2(url_search, usi, 
+                map_selection, map_plot_quantization_level, 
+                show_ms2_markers, show_lcms_2nd_map, polarity_filter):
+
     if show_lcms_2nd_map is False:
         return [dash.no_update]
 
@@ -2486,7 +2518,7 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
         pass
 
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
 
     return [map_fig]
 
