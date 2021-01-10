@@ -2474,10 +2474,7 @@ def draw_file(url_search, usi,
     else:
         current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
 
-    import sys
-    print(triggered_id, file=sys.stderr)
-    print(url_search, file=sys.stderr)
-
+    print("ZZZZZZZZZZZ", min_rt, max_rt, min_mz, max_mz)
 
     # Feature Finding parameters
     table_graph = dash.no_update
