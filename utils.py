@@ -202,8 +202,6 @@ def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selectio
     except:
         pass
 
-    print("AAAAAAAAA", current_map_selection)
-
     # Getting values for rt and mz
     try:
         min_rt = current_map_selection.get("xaxis.range[0]", 0)
