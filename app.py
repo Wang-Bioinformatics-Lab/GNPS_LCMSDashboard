@@ -584,6 +584,7 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         )),
                 ]),
+                dbc.Button("Advanced Visualization Options", block=True, id="advanced_visualization_modal_button"),
             ], className="col-sm")
         ])
     )
@@ -1089,6 +1090,21 @@ SPECTRUM_DETAILS_MODAL = [
 ]
 
 
+ADVANCED_VISUALIZATION_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Advanced Visualization Modal"),
+            dbc.ModalBody([
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_visualization_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_visualization_modal",
+        size="lg",
+    ),
+]
+
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
@@ -1200,6 +1216,7 @@ BODY = dbc.Container(
 
         # Adding modals
         dbc.Row(SPECTRUM_DETAILS_MODAL),
+        dbc.Row(ADVANCED_VISUALIZATION_MODAL),
         
     ],
     fluid=True,
@@ -2777,6 +2794,12 @@ app.callback(
     [State("spectrum_details_modal", "is_open")],
 )(toggle_modal)
 
+
+app.callback(
+    Output("advanced_visualization_modal", "is_open"),
+    [Input("advanced_visualization_modal_button", "n_clicks"), Input("advanced_visualization_modal_close", "n_clicks")],
+    [State("advanced_visualization_modal", "is_open")],
+)(toggle_modal)
 
 
 
