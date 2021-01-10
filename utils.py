@@ -168,7 +168,19 @@ def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selectio
     except:
         pass
 
-    return current_map_selection, highlight_box
+    # Getting values for rt and mz
+    try:
+        min_rt = current_map_selection["xaxis.range[0]"]
+        max_rt = current_map_selection["xaxis.range[1]"]
+        min_mz = current_map_selection["yaxis.range[0]"]
+        max_mz = current_map_selection["yaxis.range[1]"]
+    except:
+        min_rt = 0
+        max_rt = 100000
+        min_mz = 0
+        max_mz = 100000
+
+    return current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz
 
 
 def _determine_rendering_bounds(map_selection):

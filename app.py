@@ -2441,7 +2441,7 @@ def draw_file(url_search, usi,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
+    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
 
     import sys
     print(triggered_id, file=sys.stderr)
@@ -2517,7 +2517,7 @@ def draw_file2(url_search, usi,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
+    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
 
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
