@@ -2394,7 +2394,15 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 # https://github.com/plotly/dash-datashader
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
-@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children'), Output('map-plot-zoom', 'children'), Output("feature-finding-table", 'children')],
+@app.callback([Output('map-plot', 'figure'), 
+                Output('download-link', 'children'), 
+                Output('map-plot-zoom', 'children'), 
+                Output("feature-finding-table", 'children'),
+                Output("map_plot_rt_min", 'value'),
+                Output("map_plot_rt_max", 'value'),
+                Output("map_plot_mz_min", 'value'),
+                Output("map_plot_mz_max", 'value'),
+                ],
               [Input('url', 'search'), 
               Input('usi', 'value'), 
               Input('map-plot', 'relayoutData'), 
@@ -2488,7 +2496,7 @@ def draw_file(url_search, usi,
         pass
 
 
-    return [map_fig, remote_link, json.dumps(map_selection), table_graph]
+    return [map_fig, remote_link, json.dumps(map_selection), table_graph, min_rt, max_rt, min_mz, max_mz]
 
 
 @app.callback([Output('map-plot2', 'figure')],
