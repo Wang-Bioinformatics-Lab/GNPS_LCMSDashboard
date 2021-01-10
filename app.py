@@ -584,6 +584,7 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         )),
                 ]),
+                dbc.Button("Advanced Visualization Options", block=True, id="advanced_visualization_modal_button"),
             ], className="col-sm")
         ])
     )
@@ -1089,6 +1090,72 @@ SPECTRUM_DETAILS_MODAL = [
 ]
 
 
+ADVANCED_VISUALIZATION_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Advanced Visualization Modal"),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("LCMS Quantization Map Level", width=4.8, style={"width":"250px"}),
+                                dcc.Dropdown(
+                                    id='map_plot_quantization_level',
+                                    options=[
+                                        {'label': 'Low', 'value': 'Low'},
+                                        {'label': 'Medium', 'value': 'Medium'},
+                                        {'label': 'High', 'value': 'High'},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="Medium",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
+                html.Hr(),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("RT Range", addon_type="prepend"),
+                                dbc.Input(id='map_plot_rt_min', placeholder="Enter Min RT", value=""),
+                                dbc.Input(id='map_plot_rt_max', placeholder="Enter Max RT", value=""),
+                            ],
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("m/z Range", addon_type="prepend"),
+                                dbc.Input(id='map_plot_mz_min', placeholder="Enter Min m/z", value=""),
+                                dbc.Input(id='map_plot_mz_max', placeholder="Enter Max m/z", value=""),
+                            ],
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
+                dbc.Button("Update Map Plot Ranges", block=True, id="map_plot_update_range_button"),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_visualization_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_visualization_modal",
+        size="lg",
+    ),
+]
+
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
@@ -1200,6 +1267,7 @@ BODY = dbc.Container(
 
         # Adding modals
         dbc.Row(SPECTRUM_DETAILS_MODAL),
+        dbc.Row(ADVANCED_VISUALIZATION_MODAL),
         
     ],
     fluid=True,
@@ -1740,14 +1808,14 @@ def determine_xic_target(search, clickData, existing_xic):
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, map_plot_quantization_level="Medium"):
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     print("BEFORE AGGREGATE")
 
     if _is_worker_up():
         print("WORKER AGGREGATE")
-        result = tasks.task_lcms_aggregate.delay(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+        result = tasks.task_lcms_aggregate.delay(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
 
         # Waiting
         while(1):
@@ -1757,7 +1825,7 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = result.get()
     else:
         print("CALL AGGREGATE")
-        agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+        agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
 
     lcms_fig = lcms_map._create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
 
@@ -2327,10 +2395,20 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 # https://github.com/plotly/dash-datashader
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
-@app.callback([Output('map-plot', 'figure'), Output('download-link', 'children'), Output('map-plot-zoom', 'children'), Output("feature-finding-table", 'children')],
+@app.callback([Output('map-plot', 'figure'), 
+                Output('download-link', 'children'), 
+                Output('map-plot-zoom', 'children'), 
+                Output("feature-finding-table", 'children'),
+                Output("map_plot_rt_min", 'value'),
+                Output("map_plot_rt_max", 'value'),
+                Output("map_plot_mz_min", 'value'),
+                Output("map_plot_mz_max", 'value'),
+                ],
               [Input('url', 'search'), 
               Input('usi', 'value'), 
               Input('map-plot', 'relayoutData'), 
+              Input('map_plot_quantization_level', 'value'), 
+              Input('map_plot_update_range_button', 'n_clicks'), 
               Input('show_ms2_markers', 'value'),
               Input('polarity-filtering', 'value'),
               Input('overlay-usi', 'value'),
@@ -2350,8 +2428,15 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 State('feature_finding_min_peak_rt', 'value'),
                 State('feature_finding_max_peak_rt', 'value'),
                 State('feature_finding_rt_tolerance', 'value'),
+                
+                State("map_plot_rt_min", 'value'),
+                State("map_plot_rt_max", 'value'),
+                State("map_plot_mz_min", 'value'),
+                State("map_plot_mz_max", 'value'),
               ])
-def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter, 
+def draw_file(url_search, usi, 
+                map_selection, map_plot_quantization_level, map_plot_update_range_button,
+                show_ms2_markers, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_click,
@@ -2359,7 +2444,11 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
                 feature_finding_max_peak_rt, 
-                feature_finding_rt_tolerance):
+                feature_finding_rt_tolerance,
+                map_plot_rt_min,
+                map_plot_rt_max,
+                map_plot_mz_min,
+                map_plot_mz_max):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -2371,24 +2460,19 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename)
-
-    import sys
-    print(triggered_id, file=sys.stderr)
-    print(url_search, file=sys.stderr)
-    print("MAP SELECTION XXXXXXXXXX", map_selection, current_map_selection, highlight_box, triggered_id, usi, file=sys.stderr)
-
-    # We have to do a bit of convoluted object, if {'autosize': True}, that means loading from the URL
-    try:
-        # Force an override if user input is detected in map_selection
-        if "xaxis.autorange" in map_selection:
-            current_map_selection = map_selection
-        if "xaxis.range[0]" in map_selection:
-            current_map_selection = map_selection
-        if "autosize" in map_selection:
-            pass
-    except:
-        pass
+    # Figuring out the map plot selection
+    if "map_plot_update_range_button" in triggered_id:
+        # We clicked the button, so we should read the values out of the 
+        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, 
+                                                                                                            usi, 
+                                                                                                            local_filename, 
+                                                                                                            ui_map_selection=map_selection,
+                                                                                                            map_plot_rt_min=map_plot_rt_min,
+                                                                                                            map_plot_rt_max=map_plot_rt_max,
+                                                                                                            map_plot_mz_min=map_plot_mz_min,
+                                                                                                            map_plot_mz_max=map_plot_mz_max)
+    else:
+        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
 
     # Feature Finding parameters
     table_graph = dash.no_update
@@ -2406,7 +2490,7 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
 
         
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
 
     # Adding on Feature Finding data
     map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
@@ -2430,17 +2514,21 @@ def draw_file(url_search, usi, map_selection, show_ms2_markers, polarity_filter,
         pass
 
 
-    return [map_fig, remote_link, json.dumps(map_selection), table_graph]
+    return [map_fig, remote_link, json.dumps(current_map_selection), table_graph, min_rt, max_rt, min_mz, max_mz]
 
 
 @app.callback([Output('map-plot2', 'figure')],
               [Input('url', 'search'), 
               Input('usi2', 'value'), 
               Input('map-plot', 'relayoutData'), 
+              Input('map_plot_quantization_level', 'value'), 
               Input('show_ms2_markers', 'value'),
               Input("show_lcms_2nd_map", "value"),
               Input('polarity-filtering2', 'value')])
-def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_map, polarity_filter):
+def draw_file2(url_search, usi, 
+                map_selection, map_plot_quantization_level, 
+                show_ms2_markers, show_lcms_2nd_map, polarity_filter):
+
     if show_lcms_2nd_map is False:
         return [dash.no_update]
 
@@ -2455,21 +2543,10 @@ def draw_file2(url_search, usi, map_selection, show_ms2_markers, show_lcms_2nd_m
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box = _resolve_map_plot_selection(url_search, usi, local_filename)
-    
-    # We have to do a bit of convoluted object, if {'autosize': True}, that means the original load
-    try:
-        if "xaxis.autorange" in map_selection:
-            current_map_selection = map_selection
-        if "xaxis.range[0]" in map_selection:
-            current_map_selection = map_selection
-        if "autosize" in map_selection:
-            pass
-    except:
-        pass
+    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
 
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
 
     return [map_fig]
 
@@ -2777,6 +2854,12 @@ app.callback(
     [State("spectrum_details_modal", "is_open")],
 )(toggle_modal)
 
+
+app.callback(
+    Output("advanced_visualization_modal", "is_open"),
+    [Input("advanced_visualization_modal_button", "n_clicks"), Input("advanced_visualization_modal_close", "n_clicks")],
+    [State("advanced_visualization_modal", "is_open")],
+)(toggle_modal)
 
 
 

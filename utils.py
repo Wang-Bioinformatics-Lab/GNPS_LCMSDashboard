@@ -93,7 +93,26 @@ def _get_param_from_url(search, url_hash, param_key, default):
 
     return default
 
-def _resolve_map_plot_selection(url_search, usi, local_filename):
+def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=None, 
+                map_plot_rt_min="",
+                map_plot_rt_max="",
+                map_plot_mz_min="",
+                map_plot_mz_max=""):
+    """
+    This resolves the map plot selection, given url
+
+    Args:
+        url_search ([type]): [description]
+        usi ([type]): [description]
+        local_filename ([type]): [description]
+
+    Raises:
+        Exception: [description]
+
+    Returns:
+        [type]: [description]
+    """
+
     current_map_selection = {}
     highlight_box = None
 
@@ -141,7 +160,61 @@ def _resolve_map_plot_selection(url_search, usi, local_filename):
     except:
         pass
 
-    return current_map_selection, highlight_box
+    # We have to do a bit of convoluted object, if {'autosize': True}, that means loading from the URL
+    try:
+        # Force an override if user input is detected in map_selection
+        if "xaxis.autorange" in ui_map_selection:
+            current_map_selection = ui_map_selection
+        if "xaxis.range[0]" in ui_map_selection:
+            current_map_selection = ui_map_selection
+        if "autosize" in ui_map_selection:
+            pass
+    except:
+        pass
+
+    # If the entries are set, then we will override the UI map selection
+    try:
+        min_rt = float(map_plot_rt_min)
+        # Check if the values one by one, are not default
+        if min_rt > 0:
+            current_map_selection["xaxis.range[0]"] = min_rt
+    except:
+        pass
+    try:
+        max_rt = float(map_plot_rt_max)
+        # Check if the values one by one, are not default
+        if max_rt < 1000000:
+            current_map_selection["xaxis.range[1]"] = max_rt
+    except:
+        pass
+    try:
+        min_mz = float(map_plot_mz_min)
+        # Check if the values one by one, are not default
+        if min_mz > 0:
+            current_map_selection["yaxis.range[0]"] = min_mz
+    except:
+        pass
+    try:
+        max_mz = float(map_plot_mz_max)
+        # Check if the values one by one, are not default
+        if max_mz < 1000000:
+            current_map_selection["yaxis.range[1]"] = max_mz
+    except:
+        pass
+
+    # Getting values for rt and mz
+    try:
+        min_rt = current_map_selection.get("xaxis.range[0]", 0)
+        max_rt = current_map_selection.get("xaxis.range[1]", 1000000)
+        min_mz = current_map_selection.get("yaxis.range[0]", 0)
+        max_mz = current_map_selection.get("yaxis.range[1]", 1000000)
+    except:
+        min_rt = 0
+        max_rt = 1000000
+        min_mz = 0
+        max_mz = 1000000
+
+    return current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz
 
 
 def _determine_rendering_bounds(map_selection):
