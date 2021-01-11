@@ -138,6 +138,8 @@ NAVBAR = dbc.Navbar(
         dbc.Nav(
             [
                 dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.24", href="/")),
+                dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
+                
             ],
         navbar=True)
     ],
