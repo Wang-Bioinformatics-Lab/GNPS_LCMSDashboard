@@ -1378,7 +1378,9 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
                 Output('spectrum_details_area', 'children')],
               [Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")], [State('xic_mz', 'value')])
 def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
-    usi_splits = usi.split(":")
+    usi_first = usi.split("\n")[0]
+
+    usi_splits = usi_first.split(":")
     dataset = usi_splits[1]
     filename = usi_splits[2]
     scan_number = str(ms2_identifier.split(":")[-1])
@@ -1394,7 +1396,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     }
 
     # Getting Spectrum Peaks
-    remote_link, local_filename = _resolve_usi(usi)
+    remote_link, local_filename = _resolve_usi(usi_first)
     peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
     usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
 
@@ -2015,6 +2017,7 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
     else:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
+
 
     # For Drawing and Exporting
     graph_config = {
@@ -2690,7 +2693,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     hash_params["usi"] = usi
     hash_params["usi2"] = usi2
 
-    full_url = "/?{}#{}".format(urllib.parse.urlencode(url_params), json.dumps(hash_params))
+    full_url = "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
 
