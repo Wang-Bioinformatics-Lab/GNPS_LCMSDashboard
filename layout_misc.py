@@ -51,6 +51,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Agilent LCMS CDF", href="/?usi=mzspec:MSV000086521:raw/ORSL13CM.CDF"),
             html.Br(),
+            html.A("Shimadzu LCMS", href="/?usi=mzspec%3AMSV000081501%3Accms_peak%2FAA+BPM+D7+1_Seg1Ev1.mzML"),
+            html.Br(),
             html.Br(),
 
             html.H5("Basic Examples - LC/MS Proteomics"),
