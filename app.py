@@ -59,7 +59,7 @@ from formula_utils import get_adduct_mass
 import xic
 
 # Importing layout for HTML
-from layout_misc import EXAMPLE_DASHBOARD
+from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_PANEL
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -1245,6 +1245,8 @@ BODY = dbc.Container(
                         ),
                         html.Br(),
                         dbc.Card(EXAMPLE_DASHBOARD),
+                        html.Br(),
+                        dbc.Card(SYCHRONIZATION_PANEL)
                     ],
                         #className="w-50"
                     ),

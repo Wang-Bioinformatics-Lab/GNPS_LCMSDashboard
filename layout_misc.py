@@ -104,3 +104,33 @@ EXAMPLE_DASHBOARD = [
         ]
     )
 ]
+
+
+SYCHRONIZATION_PANEL = [
+    dbc.CardHeader(html.H5("Sychronization Options")),
+    dbc.CardBody(
+        [
+            dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("Session ID", addon_type="prepend"),
+                                dbc.Input(id='sychronization_session_id', placeholder="Enter Session ID"),
+                            ],
+                            className="mb-3",
+                        ),
+                    ),
+                ]
+            ),
+            dbc.Row([
+                    dbc.Col(
+                        dbc.Button("Save Session", block=True, id="sychronization_save_session_button"),
+                    ),
+                    dbc.Col(
+                        dbc.Button("Load Session", block=True, id="sychronization_load_session_button"),
+                    ),
+                ]
+            ),
+        ]
+    )
+]
