@@ -1561,12 +1561,12 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
     xic_tolerance = _get_param_from_url(search, "", "xic_tolerance", dash.no_update, session_dict=session_dict)
     xic_ppm_tolerance = _get_param_from_url(search, "", "xic_ppm_tolerance", dash.no_update, session_dict=session_dict)
     xic_tolerance_unit = _get_param_from_url(search, "", "xic_tolerance_unit", dash.no_update, session_dict=session_dict)
-    xic_norm = False
+    xic_norm = _get_param_from_url(search, "", "xic_norm", dash.no_update, session_dict=session_dict)
     xic_integration_type = _get_param_from_url(search, "", "xic_integration_type", dash.no_update, session_dict=session_dict)
-    show_ms2_markers = True
+    show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", dash.no_update, session_dict=session_dict)
     xic_file_grouping = _get_param_from_url(search, "", "xic_file_grouping", dash.no_update, session_dict=session_dict)
     xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict)
-    show_lcms_2nd_map = False
+    show_lcms_2nd_map = _get_param_from_url(search, "", "show_lcms_2nd_map", dash.no_update, session_dict=session_dict)
     tic_option = _get_param_from_url(search, "", "tic_option", dash.no_update, session_dict=session_dict)
     polarity_filtering = _get_param_from_url(search, "", "polarity_filtering", dash.no_update, session_dict=session_dict)
     polarity_filtering2 = _get_param_from_url(search, "", "polarity_filtering2", dash.no_update, session_dict=session_dict)
@@ -1590,9 +1590,8 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
     # Sychronization
     sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", dash.no_update, session_dict=session_dict)
     
-
+    # Formatting the types
     try:
-        xic_norm = str(urllib.parse.parse_qs(search[1:])["xic_norm"][0])
         if xic_norm == "True":
             xic_norm = True
         else:
@@ -1601,7 +1600,6 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
         pass
 
     try:
-        show_ms2_markers = str(urllib.parse.parse_qs(search[1:])["show_ms2_markers"][0])
         if show_ms2_markers == "False":
             show_ms2_markers = False
         else:
@@ -1610,7 +1608,6 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
         pass
 
     try:
-        show_lcms_2nd_map = str(urllib.parse.parse_qs(search[1:])["show_lcms_2nd_map"][0])
         if show_lcms_2nd_map == "False":
             show_lcms_2nd_map = False
         else:
