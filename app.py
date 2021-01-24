@@ -1373,7 +1373,8 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
     if clicked_target["curveNumber"] == 0:
         rt_target = clicked_target["x"]
 
-        remote_link, local_filename = _resolve_usi(usi)
+        usi_first = usi.split("\n")[0]
+        remote_link, local_filename = _resolve_usi(usi_first)
 
         # Understand parameters
         min_rt_delta = 1000
@@ -2733,7 +2734,7 @@ def create_networking_link(usi, usi2):
         gnps_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
         gnps_url = gnps_url + urllib.parse.quote(json.dumps(parameters))
 
-        url_provenance = dbc.Button("Molecular Network {} Files".format(len(g1_list) + len(g2_list)), block=True, color="secondary", className="mr-1")
+        url_provenance = dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), block=True, color="secondary", className="mr-1")
         provenance_link_object = dcc.Link(url_provenance, href=gnps_url, target="_blank")
 
         return [provenance_link_object, html.Br()]
