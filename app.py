@@ -1327,12 +1327,20 @@ def _sychronize_load_state(session_id, redis_client):
 
 # This helps to update the ms2/ms1 plot
 @app.callback([Output("ms2_identifier", "value")],
-              [Input('url', 'search'), Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData'), Input('tic-plot', 'clickData')])
-def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
+              [
+                  Input('url', 'search'), 
+                  Input('usi', 'value'), 
+                  Input('map-plot', 'clickData'), 
+                  Input('xic-plot', 'clickData'), 
+                  Input('tic-plot', 'clickData'),
+                  Input('sychronization_load_session_button', 'n_clicks')
+              ],
+              [
+                  State('sychronization_session_id', 'value')
+              ])
+def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_session_id):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-
-    print(triggered_id, ticclickData)
 
     clicked_target = None
     if "map-plot" in triggered_id:
@@ -1342,9 +1350,16 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
     elif "tic-plot" in triggered_id:
         clicked_target = ticclickData["points"][0]
 
-    # nothing was clicked, so read from URL
+    # nothing was clicked, so read from URL or session
     if clicked_target is None:
-        return [str(urllib.parse.parse_qs(url_search[1:])["ms2_identifier"][0])]
+        session_dict = {}
+        if "sychronization_load_session_button" in triggered_id:
+            try:
+                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            except:
+                pass
+
+        return [_get_param_from_url(url_search, "", "ms2_identifier", dash.no_update, session_dict=session_dict)]
     
     # This is an MS2
     if clicked_target["curveNumber"] == 1:
