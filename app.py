@@ -214,7 +214,7 @@ DATASELECTION_CARD = [
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='show_ms2_markers',
-                                        value=False,
+                                        value=True,
                                         size=50,
                                         style={
                                             "marginTop": "4px",
@@ -1561,12 +1561,12 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
     xic_tolerance = _get_param_from_url(search, "", "xic_tolerance", dash.no_update, session_dict=session_dict)
     xic_ppm_tolerance = _get_param_from_url(search, "", "xic_ppm_tolerance", dash.no_update, session_dict=session_dict)
     xic_tolerance_unit = _get_param_from_url(search, "", "xic_tolerance_unit", dash.no_update, session_dict=session_dict)
-    xic_norm = _get_param_from_url(search, "", "xic_norm", "False", session_dict=session_dict)
+    xic_norm = _get_param_from_url(search, "", "xic_norm", dash.no_update, session_dict=session_dict)
     xic_integration_type = _get_param_from_url(search, "", "xic_integration_type", dash.no_update, session_dict=session_dict)
-    show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", "True", session_dict=session_dict)
+    show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", dash.no_update, session_dict=session_dict)
     xic_file_grouping = _get_param_from_url(search, "", "xic_file_grouping", dash.no_update, session_dict=session_dict)
     xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict)
-    show_lcms_2nd_map = _get_param_from_url(search, "", "show_lcms_2nd_map", "False", session_dict=session_dict)
+    show_lcms_2nd_map = _get_param_from_url(search, "", "show_lcms_2nd_map", dash.no_update, session_dict=session_dict)
     tic_option = _get_param_from_url(search, "", "tic_option", dash.no_update, session_dict=session_dict)
     polarity_filtering = _get_param_from_url(search, "", "polarity_filtering", dash.no_update, session_dict=session_dict)
     polarity_filtering2 = _get_param_from_url(search, "", "polarity_filtering2", dash.no_update, session_dict=session_dict)
@@ -1594,24 +1594,24 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
     try:
         if xic_norm == "True":
             xic_norm = True
-        else:
+        if xic_norm == "False":
             xic_norm = False
     except:
         pass
 
     try:
+        if show_ms2_markers == "True":
+            show_ms2_markers = True
         if show_ms2_markers == "False":
-            show_ms2_markers = False
-        else:
             show_ms2_markers = True
     except:
         pass
 
     try:
+        if show_lcms_2nd_map == "True":
+            show_lcms_2nd_map = True
         if show_lcms_2nd_map == "False":
             show_lcms_2nd_map = False
-        else:
-            show_lcms_2nd_map = True
     except:
         pass
     
@@ -2349,7 +2349,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 # https://github.com/plotly/dash-datashader
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
-@app.callback([Output('map-plot', 'figure'), 
+@app.callback([
+                Output('map-plot', 'figure'), 
                 Output('download-link', 'children'), 
                 Output('map-plot-zoom', 'children'), 
                 Output("feature-finding-table", 'children'),
@@ -2358,23 +2359,25 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 Output("map_plot_mz_min", 'value'),
                 Output("map_plot_mz_max", 'value'),
                 ],
-              [Input('url', 'search'), 
-              Input('usi', 'value'), 
-              Input('map-plot', 'relayoutData'), 
-              Input('map_plot_quantization_level', 'value'), 
-              Input('map_plot_update_range_button', 'n_clicks'), 
-              Input('show_ms2_markers', 'value'),
-              Input('polarity-filtering', 'value'),
-              Input('overlay-usi', 'value'),
-              Input('overlay-mz', 'value'),
-              Input('overlay-rt', 'value'),
-              Input('overlay-size', 'value'),
-              Input('overlay-color', 'value'),
-              Input('overlay-hover', 'value'),
-              Input('overlay-filter-column', 'value'),
-              Input('overlay-filter-value', 'value'),
-              Input('feature_finding_type', 'value'),
-              Input('run-feature-finding-button', 'n_clicks')
+              [
+                Input('url', 'search'), 
+                Input('usi', 'value'), 
+                Input('map-plot', 'relayoutData'), 
+                Input('map_plot_quantization_level', 'value'), 
+                Input('map_plot_update_range_button', 'n_clicks'), 
+                Input('show_ms2_markers', 'value'),
+                Input('polarity-filtering', 'value'),
+                Input('overlay-usi', 'value'),
+                Input('overlay-mz', 'value'),
+                Input('overlay-rt', 'value'),
+                Input('overlay-size', 'value'),
+                Input('overlay-color', 'value'),
+                Input('overlay-hover', 'value'),
+                Input('overlay-filter-column', 'value'),
+                Input('overlay-filter-value', 'value'),
+                Input('feature_finding_type', 'value'),
+                Input('run-feature-finding-button', 'n_clicks'),
+                Input('sychronization_load_session_button', 'n_clicks')
               ],
               [
                 State('feature_finding_ppm', 'value'),
@@ -2387,6 +2390,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 State("map_plot_rt_max", 'value'),
                 State("map_plot_mz_min", 'value'),
                 State("map_plot_mz_max", 'value'),
+
+                State('sychronization_session_id', 'value'),
               ])
 def draw_file(url_search, usi, 
                 map_selection, map_plot_quantization_level, map_plot_update_range_button,
@@ -2394,6 +2399,7 @@ def draw_file(url_search, usi,
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_click,
+                sychronization_load_session_button_clicks,
                 feature_finding_ppm,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
@@ -2402,7 +2408,8 @@ def draw_file(url_search, usi,
                 map_plot_rt_min,
                 map_plot_rt_max,
                 map_plot_mz_min,
-                map_plot_mz_max):
+                map_plot_mz_max,
+                sychronization_session_id):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -2426,7 +2433,14 @@ def draw_file(url_search, usi,
                                                                                                             map_plot_mz_min=map_plot_mz_min,
                                                                                                             map_plot_mz_max=map_plot_mz_max)
     else:
-        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
+        session_dict = {}
+        if "sychronization_load_session_button" in triggered_id:
+            try:
+                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            except:
+                pass
+
+        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection, session_dict=session_dict)
 
     # Feature Finding parameters
     table_graph = dash.no_update
@@ -2472,16 +2486,23 @@ def draw_file(url_search, usi,
 
 
 @app.callback([Output('map-plot2', 'figure')],
-              [Input('url', 'search'), 
-              Input('usi2', 'value'), 
-              Input('map-plot', 'relayoutData'), 
-              Input('map_plot_quantization_level', 'value'), 
-              Input('show_ms2_markers', 'value'),
-              Input("show_lcms_2nd_map", "value"),
-              Input('polarity-filtering2', 'value')])
+              [
+                Input('url', 'search'), 
+                Input('usi2', 'value'), 
+                Input('map-plot', 'relayoutData'), 
+                Input('map_plot_quantization_level', 'value'), 
+                Input('show_ms2_markers', 'value'),
+                Input("show_lcms_2nd_map", "value"),
+                Input('polarity-filtering2', 'value'),
+                Input('sychronization_load_session_button', 'n_clicks')
+              ],
+              [
+                  State('sychronization_session_id', 'value'),
+              ])
 def draw_file2(url_search, usi, 
                 map_selection, map_plot_quantization_level, 
-                show_ms2_markers, show_lcms_2nd_map, polarity_filter):
+                show_ms2_markers, show_lcms_2nd_map, polarity_filter,
+                sychronization_load_session_button_clicks, sychronization_session_id):
 
     if show_lcms_2nd_map is False:
         return [dash.no_update]
@@ -2497,7 +2518,14 @@ def draw_file2(url_search, usi,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
+    session_dict = {}
+    if "sychronization_load_session_button" in triggered_id:
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            pass
+
+    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection, session_dict=session_dict)
 
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)

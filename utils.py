@@ -103,11 +103,13 @@ def _get_param_from_url(search, url_hash, param_key, default, session_dict={}):
 
     return default
 
-def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=None, 
+def _resolve_map_plot_selection(url_search, usi, local_filename, 
+                ui_map_selection=None, 
                 map_plot_rt_min="",
                 map_plot_rt_max="",
                 map_plot_mz_min="",
-                map_plot_mz_max=""):
+                map_plot_mz_max="",
+                session_dict={}):
     """
     This resolves the map plot selection, given url
 
@@ -128,7 +130,7 @@ def _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selectio
 
     # Lets start off with taking the url bounds
     try:
-        current_map_selection = json.loads(_get_param_from_url(url_search, "", "map_plot_zoom", "{}"))
+        current_map_selection = json.loads(_get_param_from_url(url_search, "", "map_plot_zoom", "{}", session_dict=session_dict))
     except:
         pass
 
