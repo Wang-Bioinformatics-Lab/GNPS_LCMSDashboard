@@ -1653,8 +1653,10 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
             raise Exception
 
         extension = os.path.splitext(filename)[1]
+        original_filename = os.path.splitext(filename)[0]
+        safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
         if extension == ".mzML":
-            temp_filename = os.path.join("temp", "{}.mzML".format(str(uuid.uuid4())))
+            temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
             data = filecontent.encode("utf8").split(b";base64,")[1]
 
             with open(temp_filename, "wb") as temp_file:
@@ -1665,8 +1667,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
             return [usi, usi2, "FILE Uploaded {}".format(filename)]
 
         if extension == ".mzXML":
-            mangled_name = str(uuid.uuid4())
-            temp_filename = os.path.join("temp", "{}.mzXML".format(mangled_name))
+            temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
             data = filecontent.encode("utf8").split(b";base64,")[1]
 
             with open(temp_filename, "wb") as temp_file:
@@ -1677,8 +1678,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
             return [usi, usi2, "FILE Uploaded {}".format(filename)]
 
         if extension.lower() == ".cdf":
-            mangled_name = str(uuid.uuid4())
-            temp_filename = os.path.join("temp", "{}.cdf".format(mangled_name))
+            temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
             data = filecontent.encode("utf8").split(b";base64,")[1]
 
             with open(temp_filename, "wb") as temp_file:
