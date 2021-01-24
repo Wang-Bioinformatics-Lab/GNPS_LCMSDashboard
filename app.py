@@ -40,6 +40,7 @@ import json
 from collections import defaultdict
 import uuid
 import base64
+import redis
 from molmass import Formula
 from pyteomics import mass
 
@@ -59,7 +60,7 @@ from formula_utils import get_adduct_mass
 import xic
 
 # Importing layout for HTML
-from layout_misc import EXAMPLE_DASHBOARD
+from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -75,6 +76,8 @@ if __name__ == "__main__":
         'CACHE_DEFAULT_TIMEOUT': 0,
         'CACHE_THRESHOLD': 1000000
     })
+
+    redis_client = None
 else:
     WORKER_UP = True
     cache = Cache(app.server, config={
@@ -84,6 +87,8 @@ else:
         'CACHE_DEFAULT_TIMEOUT': 0,
         'CACHE_THRESHOLD': 1000000
     })
+
+    redis_client = redis.Redis(host='redis', port=6379, db=0)
 
 server = app.server
 
@@ -209,7 +214,7 @@ DATASELECTION_CARD = [
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='show_ms2_markers',
-                                        value=False,
+                                        value=True,
                                         size=50,
                                         style={
                                             "marginTop": "4px",
@@ -340,7 +345,7 @@ DATASELECTION_CARD = [
                         dbc.InputGroup(
                             [
                                 dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
-                                dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC"),
+                                dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC", value=""),
                             ],
                             className="mb-3",
                         ),
@@ -349,7 +354,7 @@ DATASELECTION_CARD = [
                         dbc.InputGroup(
                             [
                                 dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
-                                dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC"),
+                                dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC", value=""),
                             ],
                             className="mb-3",
                         ),
@@ -358,7 +363,7 @@ DATASELECTION_CARD = [
                         dbc.InputGroup(
                             [
                                 dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
-                                dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC"),
+                                dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC", value=""),
                             ],
                             className="mb-3",
                         ),
@@ -587,6 +592,8 @@ DATASELECTION_CARD = [
                         )),
                 ]),
                 dbc.Button("Advanced Visualization Options", block=True, id="advanced_visualization_modal_button"),
+                html.Br(),
+                dbc.Button("Sychronization Options", block=True, id="sychronization_options_modal_button"),
             ], className="col-sm")
         ])
     )
@@ -1071,25 +1078,7 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
     )
 ]
 
-SPECTRUM_DETAILS_MODAL = [
-    dbc.Modal(
-        [
-            dbc.ModalHeader("Spectrum Details as YAML"),
-            dbc.ModalBody([
-                dcc.Loading(
-                    id="spectrum_details_area",
-                    children=[html.Div([html.Div(id="loading-output-1035")])],
-                    type="default",
-                ),
-            ]),
-            dbc.ModalFooter(
-                dbc.Button("Close", id="spectrum_details_modal_close", className="ml-auto")
-            ),
-        ],
-        id="spectrum_details_modal",
-        size="xl",
-    ),
-]
+
 
 
 ADVANCED_VISUALIZATION_MODAL = [
@@ -1245,6 +1234,8 @@ BODY = dbc.Container(
                         ),
                         html.Br(),
                         dbc.Card(EXAMPLE_DASHBOARD),
+                        html.Br(),
+                        dbc.Card(SYCHRONIZATION_MODAL)
                     ],
                         #className="w-50"
                     ),
@@ -1316,14 +1307,40 @@ def _resolve_usi(usi, temp_folder="temp"):
             return tasks._download_convert_file(usi, temp_folder=temp_folder)
 
 
+def _sychronize_save_state(session_id, parameter_dict, redis_client):
+    try:
+        redis_client.set(session_id, json.dumps(parameter_dict))
+    except:
+        pass
+    
+def _sychronize_load_state(session_id, redis_client):
+    session_state = {}
+
+    try:
+        session_state = json.loads(redis_client.get(session_id))
+    except:
+        pass
+    
+    return session_state
+        
+    
+
 # This helps to update the ms2/ms1 plot
 @app.callback([Output("ms2_identifier", "value")],
-              [Input('url', 'search'), Input('usi', 'value'), Input('map-plot', 'clickData'), Input('xic-plot', 'clickData'), Input('tic-plot', 'clickData')])
-def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
+              [
+                  Input('url', 'search'), 
+                  Input('usi', 'value'), 
+                  Input('map-plot', 'clickData'), 
+                  Input('xic-plot', 'clickData'), 
+                  Input('tic-plot', 'clickData'),
+                  Input('sychronization_load_session_button', 'n_clicks')
+              ],
+              [
+                  State('sychronization_session_id', 'value')
+              ])
+def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_session_id):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-
-    print(triggered_id, ticclickData)
 
     clicked_target = None
     if "map-plot" in triggered_id:
@@ -1333,9 +1350,16 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData):
     elif "tic-plot" in triggered_id:
         clicked_target = ticclickData["points"][0]
 
-    # nothing was clicked, so read from URL
+    # nothing was clicked, so read from URL or session
     if clicked_target is None:
-        return [str(urllib.parse.parse_qs(url_search[1:])["ms2_identifier"][0])]
+        session_dict = {}
+        if "sychronization_load_session_button" in triggered_id:
+            try:
+                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            except:
+                pass
+
+        return [_get_param_from_url(url_search, "", "ms2_identifier", dash.no_update, session_dict=session_dict)]
     
     # This is an MS2
     if clicked_target["curveNumber"] == 1:
@@ -1510,189 +1534,84 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("feature_finding_min_peak_rt", "value"),
                 Output("feature_finding_max_peak_rt", "value"),
                 Output("feature_finding_rt_tolerance", "value"),
+                Output("sychronization_session_id", "value"),
                 ],
-              [Input('url', 'search')])
-def determine_url_only_parameters(search):
-    xic_formula = ""
-    xic_peptide = ""
-    xic_tolerance = "0.5"
-    xic_ppm_tolerance = "10"
-    xic_tolerance_unit = "Da"
-    xic_norm = False
-    xic_integration_type = "AUC"
-    show_ms2_markers = True
-    xic_file_grouping = "FILE"
-    xic_rt_window = ""
-    show_lcms_2nd_map = False
-    tic_option = "TIC"
-    polarity_filtering = "None"
-    polarity_filtering2 = "None"
-    overlay_usi = dash.no_update
-    overlay_mz = dash.no_update
-    overlay_rt = dash.no_update
-    overlay_color = dash.no_update
-    overlay_size = dash.no_update
-    overlay_hover = dash.no_update
-    overlay_filter_column = dash.no_update
-    overlay_filter_value = dash.no_update
+              [
+                  Input('url', 'search'), 
+                  Input('sychronization_load_session_button', 'n_clicks')
+              ],
+              [
+                  State('sychronization_session_id', 'value')
+              ]
+              )
+def determine_url_only_parameters(search, sychronization_load_session_button_click, sychronization_session_id):
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    session_dict = {}
+    if "sychronization_load_session_button" in triggered_id:
+        print("LOADING", sychronization_session_id, file=sys.stderr)
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            print(session_dict, file=sys.stderr)
+        except:
+            pass
+
+    xic_formula = _get_param_from_url(search, "", "xic_formula", dash.no_update, session_dict=session_dict)
+    xic_peptide = _get_param_from_url(search, "", "xic_peptide", dash.no_update, session_dict=session_dict)
+    xic_tolerance = _get_param_from_url(search, "", "xic_tolerance", dash.no_update, session_dict=session_dict)
+    xic_ppm_tolerance = _get_param_from_url(search, "", "xic_ppm_tolerance", dash.no_update, session_dict=session_dict)
+    xic_tolerance_unit = _get_param_from_url(search, "", "xic_tolerance_unit", dash.no_update, session_dict=session_dict)
+    xic_norm = _get_param_from_url(search, "", "xic_norm", dash.no_update, session_dict=session_dict)
+    xic_integration_type = _get_param_from_url(search, "", "xic_integration_type", dash.no_update, session_dict=session_dict)
+    show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", dash.no_update, session_dict=session_dict)
+    xic_file_grouping = _get_param_from_url(search, "", "xic_file_grouping", dash.no_update, session_dict=session_dict)
+    xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict)
+    show_lcms_2nd_map = _get_param_from_url(search, "", "show_lcms_2nd_map", dash.no_update, session_dict=session_dict)
+    tic_option = _get_param_from_url(search, "", "tic_option", dash.no_update, session_dict=session_dict)
+    polarity_filtering = _get_param_from_url(search, "", "polarity_filtering", dash.no_update, session_dict=session_dict)
+    polarity_filtering2 = _get_param_from_url(search, "", "polarity_filtering2", dash.no_update, session_dict=session_dict)
+    overlay_usi = _get_param_from_url(search, "", "overlay_usi", dash.no_update, session_dict=session_dict)
+    overlay_mz = _get_param_from_url(search, "", "overlay_mz", dash.no_update, session_dict=session_dict)
+    overlay_rt = _get_param_from_url(search, "", "overlay_rt", dash.no_update, session_dict=session_dict)
+    overlay_color = _get_param_from_url(search, "", "overlay_color", dash.no_update, session_dict=session_dict)
+    overlay_size = _get_param_from_url(search, "", "overlay_size", dash.no_update, session_dict=session_dict)
+    overlay_hover = _get_param_from_url(search, "", "overlay_hover", dash.no_update, session_dict=session_dict)
+    overlay_filter_column = _get_param_from_url(search, "", "overlay_filter_column", dash.no_update, session_dict=session_dict)
+    overlay_filter_value = _get_param_from_url(search, "", "overlay_filter_value", dash.no_update, session_dict=session_dict)
 
     # Feature Finding
-    feature_finding_type = dash.no_update
-    feature_finding_ppm = dash.no_update
-    feature_finding_noise = dash.no_update
-    feature_finding_min_peak_rt = dash.no_update
-    feature_finding_max_peak_rt = dash.no_update
-    feature_finding_rt_tolerance = dash.no_update
+    feature_finding_type = _get_param_from_url(search, "", "feature_finding_type", dash.no_update, session_dict=session_dict)
+    feature_finding_ppm = _get_param_from_url(search, "", "feature_finding_ppm", dash.no_update, session_dict=session_dict)
+    feature_finding_noise = _get_param_from_url(search, "", "feature_finding_noise", dash.no_update, session_dict=session_dict)
+    feature_finding_min_peak_rt = _get_param_from_url(search, "", "feature_finding_min_peak_rt", dash.no_update, session_dict=session_dict)
+    feature_finding_max_peak_rt = _get_param_from_url(search, "", "feature_finding_max_peak_rt", dash.no_update, session_dict=session_dict)
+    feature_finding_rt_tolerance = _get_param_from_url(search, "", "feature_finding_rt_tolerance", dash.no_update, session_dict=session_dict)
 
+    # Sychronization
+    sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", dash.no_update, session_dict=session_dict)
+    
+    # Formatting the types
     try:
-        xic_formula = str(urllib.parse.parse_qs(search[1:])["xic_formula"][0])
-    except:
-        pass
-
-    try:
-        xic_peptide = str(urllib.parse.parse_qs(search[1:])["xic_peptide"][0])
-    except:
-        pass
-        
-    try:
-        xic_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_tolerance"][0])
-    except:
-        pass
-
-    try:
-        xic_ppm_tolerance = str(urllib.parse.parse_qs(search[1:])["xic_ppm_tolerance"][0])
-    except:
-        pass
-
-    try:
-        xic_tolerance_unit = str(urllib.parse.parse_qs(search[1:])["xic_tolerance_unit"][0])
-    except:
-        pass
-
-    try:
-        xic_integration_type = str(urllib.parse.parse_qs(search[1:])["xic_integration_type"][0])
-    except:
-        pass
-
-    try:
-        xic_norm = str(urllib.parse.parse_qs(search[1:])["xic_norm"][0])
         if xic_norm == "True":
             xic_norm = True
-        else:
+        if xic_norm == "False":
             xic_norm = False
     except:
         pass
 
     try:
-        show_ms2_markers = str(urllib.parse.parse_qs(search[1:])["show_ms2_markers"][0])
+        if show_ms2_markers == "True":
+            show_ms2_markers = True
         if show_ms2_markers == "False":
-            show_ms2_markers = False
-        else:
             show_ms2_markers = True
     except:
         pass
 
     try:
-        xic_file_grouping = str(urllib.parse.parse_qs(search[1:])["xic_file_grouping"][0])
-    except:
-        pass
-
-    try:
-        xic_rt_window = str(urllib.parse.parse_qs(search[1:])["xic_rt_window"][0])
-    except:
-        pass
-
-    try:
-        show_lcms_2nd_map = str(urllib.parse.parse_qs(search[1:])["show_lcms_2nd_map"][0])
+        if show_lcms_2nd_map == "True":
+            show_lcms_2nd_map = True
         if show_lcms_2nd_map == "False":
             show_lcms_2nd_map = False
-        else:
-            show_lcms_2nd_map = True
-    except:
-        pass
-
-    try:
-        tic_option = str(urllib.parse.parse_qs(search[1:])["tic_option"][0])
-    except:
-        pass
-
-    try:
-        polarity_filtering = str(urllib.parse.parse_qs(search[1:])["polarity_filtering"][0])
-    except:
-        pass
-    
-    try:
-        polarity_filtering2 = str(urllib.parse.parse_qs(search[1:])["polarity_filtering2"][0])
-    except:
-        pass
-
-    try:
-        overlay_usi = str(urllib.parse.parse_qs(search[1:])["overlay_usi"][0])
-    except:
-        pass
-
-    try:
-        overlay_mz = str(urllib.parse.parse_qs(search[1:])["overlay_mz"][0])
-    except:
-        pass
-
-    try:
-        overlay_rt = str(urllib.parse.parse_qs(search[1:])["overlay_rt"][0])
-    except:
-        pass
-
-    try:
-        overlay_color = str(urllib.parse.parse_qs(search[1:])["overlay_color"][0])
-    except:
-        pass
-
-    try:
-        overlay_size = str(urllib.parse.parse_qs(search[1:])["overlay_size"][0])
-    except:
-        pass
-
-    try:
-        overlay_hover = str(urllib.parse.parse_qs(search[1:])["overlay_hover"][0])
-    except:
-        pass
-
-    try:
-        overlay_filter_column = str(urllib.parse.parse_qs(search[1:])["overlay_filter_column"][0])
-    except:
-        pass
-
-    try:
-        overlay_filter_value = str(urllib.parse.parse_qs(search[1:])["overlay_filter_value"][0])
-    except:
-        pass
-
-    try:
-        feature_finding_type = str(urllib.parse.parse_qs(search[1:])["feature_finding_type"][0])
-    except:
-        pass
-
-    try:
-        feature_finding_ppm = str(urllib.parse.parse_qs(search[1:])["feature_finding_ppm"][0])
-    except:
-        pass
-
-    try:
-        feature_finding_noise = str(urllib.parse.parse_qs(search[1:])["feature_finding_noise"][0])
-    except:
-        pass
-
-    try:
-        feature_finding_min_peak_rt = str(urllib.parse.parse_qs(search[1:])["feature_finding_min_peak_rt"][0])
-    except:
-        pass
-
-    try:
-        feature_finding_max_peak_rt = str(urllib.parse.parse_qs(search[1:])["feature_finding_max_peak_rt"][0])
-    except:
-        pass
-    
-    try:
-        feature_finding_rt_tolerance = str(urllib.parse.parse_qs(search[1:])["feature_finding_rt_tolerance"][0])
     except:
         pass
     
@@ -1708,15 +1627,23 @@ def determine_url_only_parameters(search):
             tic_option, polarity_filtering, 
             polarity_filtering2, 
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
-            feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance]
+            feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
+            sychronization_session_id]
 
 
 # Handling file upload
 @app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
-              [Input('url', 'search'), Input('url', 'hash'), Input('upload-data', 'contents')],
-              [State('upload-data', 'filename'),
-               State('upload-data', 'last_modified')])
-def update_usi(search, url_hash, filecontent, filename, filedate):
+              [Input('url', 'search'), 
+              Input('url', 'hash'), 
+              Input('upload-data', 'contents'),
+              Input('sychronization_load_session_button', 'n_clicks')
+              ],
+              [
+                  State('upload-data', 'filename'),
+                  State('upload-data', 'last_modified'),
+                  State('sychronization_session_id', 'value')
+              ])
+def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, filename, filedate, sychronization_session_id):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
@@ -1760,17 +1687,34 @@ def update_usi(search, url_hash, filecontent, filename, filedate):
 
             return [usi, usi2, "FILE Uploaded {}".format(filename)]
 
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    session_dict = {}
+    if "sychronization_load_session_button" in triggered_id:
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            pass
+
     # Resolving USI
-    usi = _get_param_from_url(search, url_hash, "usi", usi)
-    usi2 = _get_param_from_url(search, url_hash, "usi2", usi2)
+    usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict)
+    usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict)
 
     return [usi, usi2, "Using URL USI"]
     
 
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
-              [Input('url', 'search'), Input('map-plot', 'clickData')], [State('xic_mz', 'value')])
-def determine_xic_target(search, clickData, existing_xic):
+              [
+                Input('url', 'search'), 
+                Input('map-plot', 'clickData'),
+                Input('sychronization_load_session_button', 'n_clicks')
+              ], 
+              [
+                  State('xic_mz', 'value'),
+                  State('sychronization_session_id', 'value')
+              ])
+def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, existing_xic, sychronization_session_id):
     try:
         if existing_xic is None:
             existing_xic = ""
@@ -1802,13 +1746,18 @@ def determine_xic_target(search, clickData, existing_xic):
     except:
         pass
 
-    # Reading from the URL    
-    try:
-        return str(urllib.parse.parse_qs(search[1:])["xicmz"][0])
-    except:
-        pass
-    
-    return ""
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    session_dict = {}
+    if "sychronization_load_session_button" in triggered_id:
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            pass
+
+    xicmz = _get_param_from_url(search, "", "xicmz", dash.no_update, session_dict=session_dict)
+
+    return xicmz
 
 
 @cache.memoize()
@@ -2400,7 +2349,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 # https://github.com/plotly/dash-datashader
 # https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
-@app.callback([Output('map-plot', 'figure'), 
+@app.callback([
+                Output('map-plot', 'figure'), 
                 Output('download-link', 'children'), 
                 Output('map-plot-zoom', 'children'), 
                 Output("feature-finding-table", 'children'),
@@ -2409,23 +2359,25 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 Output("map_plot_mz_min", 'value'),
                 Output("map_plot_mz_max", 'value'),
                 ],
-              [Input('url', 'search'), 
-              Input('usi', 'value'), 
-              Input('map-plot', 'relayoutData'), 
-              Input('map_plot_quantization_level', 'value'), 
-              Input('map_plot_update_range_button', 'n_clicks'), 
-              Input('show_ms2_markers', 'value'),
-              Input('polarity-filtering', 'value'),
-              Input('overlay-usi', 'value'),
-              Input('overlay-mz', 'value'),
-              Input('overlay-rt', 'value'),
-              Input('overlay-size', 'value'),
-              Input('overlay-color', 'value'),
-              Input('overlay-hover', 'value'),
-              Input('overlay-filter-column', 'value'),
-              Input('overlay-filter-value', 'value'),
-              Input('feature_finding_type', 'value'),
-              Input('run-feature-finding-button', 'n_clicks')
+              [
+                Input('url', 'search'), 
+                Input('usi', 'value'), 
+                Input('map-plot', 'relayoutData'), 
+                Input('map_plot_quantization_level', 'value'), 
+                Input('map_plot_update_range_button', 'n_clicks'), 
+                Input('show_ms2_markers', 'value'),
+                Input('polarity-filtering', 'value'),
+                Input('overlay-usi', 'value'),
+                Input('overlay-mz', 'value'),
+                Input('overlay-rt', 'value'),
+                Input('overlay-size', 'value'),
+                Input('overlay-color', 'value'),
+                Input('overlay-hover', 'value'),
+                Input('overlay-filter-column', 'value'),
+                Input('overlay-filter-value', 'value'),
+                Input('feature_finding_type', 'value'),
+                Input('run-feature-finding-button', 'n_clicks'),
+                Input('sychronization_load_session_button', 'n_clicks')
               ],
               [
                 State('feature_finding_ppm', 'value'),
@@ -2438,6 +2390,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 State("map_plot_rt_max", 'value'),
                 State("map_plot_mz_min", 'value'),
                 State("map_plot_mz_max", 'value'),
+
+                State('sychronization_session_id', 'value'),
               ])
 def draw_file(url_search, usi, 
                 map_selection, map_plot_quantization_level, map_plot_update_range_button,
@@ -2445,6 +2399,7 @@ def draw_file(url_search, usi,
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_click,
+                sychronization_load_session_button_clicks,
                 feature_finding_ppm,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
@@ -2453,7 +2408,8 @@ def draw_file(url_search, usi,
                 map_plot_rt_min,
                 map_plot_rt_max,
                 map_plot_mz_min,
-                map_plot_mz_max):
+                map_plot_mz_max,
+                sychronization_session_id):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
@@ -2477,7 +2433,14 @@ def draw_file(url_search, usi,
                                                                                                             map_plot_mz_min=map_plot_mz_min,
                                                                                                             map_plot_mz_max=map_plot_mz_max)
     else:
-        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
+        session_dict = {}
+        if "sychronization_load_session_button" in triggered_id:
+            try:
+                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            except:
+                pass
+
+        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection, session_dict=session_dict)
 
     # Feature Finding parameters
     table_graph = dash.no_update
@@ -2523,16 +2486,23 @@ def draw_file(url_search, usi,
 
 
 @app.callback([Output('map-plot2', 'figure')],
-              [Input('url', 'search'), 
-              Input('usi2', 'value'), 
-              Input('map-plot', 'relayoutData'), 
-              Input('map_plot_quantization_level', 'value'), 
-              Input('show_ms2_markers', 'value'),
-              Input("show_lcms_2nd_map", "value"),
-              Input('polarity-filtering2', 'value')])
+              [
+                Input('url', 'search'), 
+                Input('usi2', 'value'), 
+                Input('map-plot', 'relayoutData'), 
+                Input('map_plot_quantization_level', 'value'), 
+                Input('show_ms2_markers', 'value'),
+                Input("show_lcms_2nd_map", "value"),
+                Input('polarity-filtering2', 'value'),
+                Input('sychronization_load_session_button', 'n_clicks')
+              ],
+              [
+                  State('sychronization_session_id', 'value'),
+              ])
 def draw_file2(url_search, usi, 
                 map_selection, map_plot_quantization_level, 
-                show_ms2_markers, show_lcms_2nd_map, polarity_filter):
+                show_ms2_markers, show_lcms_2nd_map, polarity_filter,
+                sychronization_load_session_button_clicks, sychronization_session_id):
 
     if show_lcms_2nd_map is False:
         return [dash.no_update]
@@ -2548,7 +2518,14 @@ def draw_file2(url_search, usi,
     else:
         show_ms2_markers = False
 
-    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection)
+    session_dict = {}
+    if "sychronization_load_session_button" in triggered_id:
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            pass
+
+    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection, session_dict=session_dict)
 
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
@@ -2645,12 +2622,17 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
               Input("feature_finding_min_peak_rt", "value"),
               Input("feature_finding_max_peak_rt", "value"),
               Input("feature_finding_rt_tolerance", "value"),
+              Input("sychronization_save_session_button", "n_clicks")
+              ],
+              [
+                  State("sychronization_session_id", "value"),
               ])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
-                feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance):
+                feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
+                sychronization_save_session_button_clicks, sychronization_session_id):
 
     url_params = {}
     url_params["xicmz"] = xic_mz
@@ -2689,6 +2671,9 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
     url_params["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
 
+    # Sychronization Options
+    url_params["sychronization_session_id"] = sychronization_session_id
+
     hash_params = {}
     hash_params["usi"] = usi
     hash_params["usi2"] = usi2
@@ -2696,6 +2681,16 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     full_url = "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
+
+    # Determining Savings
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if "sychronization_save_session_button" in triggered_id:
+        if len(sychronization_session_id) > 0:
+            # Lets save this to redis
+            url_params["usi"] = usi
+            url_params["usi2"] = usi2
+            _sychronize_save_state(sychronization_session_id, url_params, redis_client)
+            print("Saving", url_params)
 
     return provenance_link_object
 
@@ -2874,6 +2869,13 @@ app.callback(
     [Input("advanced_visualization_modal_button", "n_clicks"), Input("advanced_visualization_modal_close", "n_clicks")],
     [State("advanced_visualization_modal", "is_open")],
 )(toggle_modal)
+
+app.callback(
+    Output("sychronization_options_modal", "is_open"),
+    [Input("sychronization_options_modal_button", "n_clicks"), Input("sychronization_options_modal_close", "n_clicks")],
+    [State("sychronization_options_modal", "is_open")],
+)(toggle_modal)
+
 
 
 
