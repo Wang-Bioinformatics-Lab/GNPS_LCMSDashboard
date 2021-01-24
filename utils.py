@@ -25,6 +25,8 @@ MS_precisions = {
 
 import subprocess, io
 
+
+
 def _calculate_file_stats(usi, local_filename):
     run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
     number_scans = run.get_spectrum_count()
@@ -79,7 +81,11 @@ def _get_scan_polarity(spec):
     return polarity
 
 # Given URL, will try to parse and get key
-def _get_param_from_url(search, url_hash, param_key, default):
+def _get_param_from_url(search, url_hash, param_key, default, session_dict={}):
+    try:
+        return session_dict[param_key]
+    except:
+        pass
 
     try:
         params_dict = urllib.parse.parse_qs(search[1:])

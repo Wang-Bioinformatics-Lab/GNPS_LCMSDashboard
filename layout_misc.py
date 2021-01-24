@@ -106,31 +106,60 @@ EXAMPLE_DASHBOARD = [
 ]
 
 
-SYCHRONIZATION_PANEL = [
-    dbc.CardHeader(html.H5("Sychronization Options")),
-    dbc.CardBody(
+SYCHRONIZATION_MODAL = [
+    dbc.Modal(
         [
-            dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("Session ID", addon_type="prepend"),
-                                dbc.Input(id='sychronization_session_id', placeholder="Enter Session ID"),
-                            ],
-                            className="mb-3",
+            dbc.ModalHeader("Sychronization Options"),
+            dbc.ModalBody([
+                dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("Session ID", addon_type="prepend"),
+                                    dbc.Input(id='sychronization_session_id', placeholder="Enter Session ID", value=""),
+                                ],
+                                className="mb-3",
+                            ),
                         ),
-                    ),
-                ]
+                    ]
+                ),
+                dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Save Session", block=True, id="sychronization_save_session_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Load Session", block=True, id="sychronization_load_session_button"),
+                        ),
+                    ]
+                ),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="sychronization_options_modal_close", className="ml-auto")
             ),
-            dbc.Row([
-                    dbc.Col(
-                        dbc.Button("Save Session", block=True, id="sychronization_save_session_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Load Session", block=True, id="sychronization_load_session_button"),
-                    ),
-                ]
-            ),
-        ]
+        ],
+        id="sychronization_options_modal",
+        size="xl",
     )
+]
+
+
+
+SPECTRUM_DETAILS_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Spectrum Details as YAML"),
+            dbc.ModalBody([
+                dcc.Loading(
+                    id="spectrum_details_area",
+                    children=[html.Div([html.Div(id="loading-output-1035")])],
+                    type="default",
+                ),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="spectrum_details_modal_close", className="ml-auto")
+            ),
+        ],
+        id="spectrum_details_modal",
+        size="xl",
+    ),
 ]
