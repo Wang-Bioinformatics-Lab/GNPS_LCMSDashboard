@@ -1150,6 +1150,11 @@ ADVANCED_VISUALIZATION_MODAL = [
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
+        dcc.Interval(
+            id='sychronization_interval',
+            interval=1000000000*1000, # in milliseconds
+            n_intervals=0
+        ),
         dbc.Row([
             dbc.Col(
                 dbc.Card(TOP_DASHBOARD), 
@@ -1326,7 +1331,9 @@ def _sychronize_load_state(session_id, redis_client):
     
 
 # This helps to update the ms2/ms1 plot
-@app.callback([Output("ms2_identifier", "value")],
+@app.callback([
+                  Output("ms2_identifier", "value")
+              ],
               [
                   Input('url', 'search'), 
                   Input('usi', 'value'), 
@@ -1539,23 +1546,29 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 ],
               [
                   Input('url', 'search'), 
-                  Input('sychronization_load_session_button', 'n_clicks')
+                  Input('sychronization_load_session_button', 'n_clicks'),
+                  Input('sychronization_interval', 'n_intervals'),
               ],
               [
                   State('sychronization_session_id', 'value')
               ]
               )
-def determine_url_only_parameters(search, sychronization_load_session_button_click, sychronization_session_id):
+def determine_url_only_parameters(search, sychronization_load_session_button_click, sychronization_interval, sychronization_session_id):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
+    print("XXXXXXXXXX", triggered_id)
+
     session_dict = {}
-    if "sychronization_load_session_button" in triggered_id:
-        print("LOADING", sychronization_session_id, file=sys.stderr)
-        try:
-            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
-            print(session_dict, file=sys.stderr)
-        except:
-            pass
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
+        if len(sychronization_session_id) > 0:
+            print("LOADING", sychronization_session_id, file=sys.stderr)
+            try:
+                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+                print(session_dict, file=sys.stderr)
+            except:
+                pass
+                
+    print(session_dict, sychronization_session_id)
 
     xic_formula = _get_param_from_url(search, "", "xic_formula", dash.no_update, session_dict=session_dict)
     xic_peptide = _get_param_from_url(search, "", "xic_peptide", dash.no_update, session_dict=session_dict)
@@ -2627,13 +2640,14 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
               ],
               [
                   State("sychronization_session_id", "value"),
+                  State('synchronization_type', 'value')
               ])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
-                sychronization_save_session_button_clicks, sychronization_session_id):
+                sychronization_save_session_button_clicks, sychronization_session_id, synchronization_type):
 
     url_params = {}
     url_params["xicmz"] = xic_mz
@@ -2685,7 +2699,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     # Determining Savings
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if "sychronization_save_session_button" in triggered_id:
+    if "sychronization_save_session_button" in triggered_id or synchronization_type == "LEADER":
         if len(sychronization_session_id) > 0:
             # Lets save this to redis
             url_params["usi"] = usi
@@ -2796,6 +2810,15 @@ def get_overlay_options(overlay_usi):
         options.append({"label": column, "value": column})
 
     return [options, options, options]
+
+
+
+@app.callback([Output('sychronization_interval', 'interval')],
+              [Input('synchronization_type', 'value')])
+def set_update_interval(synchronization_type):
+    if synchronization_type == "FOLLOWER":
+        return [5 * 1000]
+    return [10000000 * 1000]
 
 ###########################################
 # Hiding Panels

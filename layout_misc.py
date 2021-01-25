@@ -132,6 +132,22 @@ SYCHRONIZATION_MODAL = [
                         ),
                     ]
                 ),
+                html.Hr(),
+                html.H5("Teaching Sychronization (Beta)"),
+                dcc.Dropdown(
+                    id='synchronization_type',
+                    options=[
+                        {'label': 'MANUAL(Default)', 'value': 'MANUAL'},
+                        {'label': 'LEADER', 'value': 'LEADER'},
+                        {'label': 'FOLLOWER', 'value': 'FOLLOWER'},
+                    ],
+                    searchable=False,
+                    clearable=False,
+                    value="MANUAL",
+                    style={
+                        "width":"60%"
+                    }
+                )  
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="sychronization_options_modal_close", className="ml-auto")
