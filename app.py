@@ -1340,12 +1340,13 @@ def _sychronize_load_state(session_id, redis_client):
                   Input('map-plot', 'clickData'), 
                   Input('xic-plot', 'clickData'), 
                   Input('tic-plot', 'clickData'),
-                  Input('sychronization_load_session_button', 'n_clicks')
+                  Input('sychronization_load_session_button', 'n_clicks'),
+                  Input('sychronization_interval', 'n_intervals'),
               ],
               [
                   State('sychronization_session_id', 'value')
               ])
-def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_session_id):
+def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_interval, sychronization_session_id):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -1360,7 +1361,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
     # nothing was clicked, so read from URL or session
     if clicked_target is None:
         session_dict = {}
-        if "sychronization_load_session_button" in triggered_id:
+        if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
             try:
                 session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
             except:
@@ -1556,8 +1557,6 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 def determine_url_only_parameters(search, sychronization_load_session_button_click, sychronization_interval, sychronization_session_id):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    print("XXXXXXXXXX", triggered_id)
-
     session_dict = {}
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         if len(sychronization_session_id) > 0:
@@ -1567,8 +1566,6 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
                 print(session_dict, file=sys.stderr)
             except:
                 pass
-                
-    print(session_dict, sychronization_session_id)
 
     xic_formula = _get_param_from_url(search, "", "xic_formula", dash.no_update, session_dict=session_dict)
     xic_peptide = _get_param_from_url(search, "", "xic_peptide", dash.no_update, session_dict=session_dict)
@@ -1650,14 +1647,15 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
               [Input('url', 'search'), 
               Input('url', 'hash'), 
               Input('upload-data', 'contents'),
-              Input('sychronization_load_session_button', 'n_clicks')
+              Input('sychronization_load_session_button', 'n_clicks'),
+              Input('sychronization_interval', 'n_intervals'),
               ],
               [
                   State('upload-data', 'filename'),
                   State('upload-data', 'last_modified'),
                   State('sychronization_session_id', 'value')
               ])
-def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, filename, filedate, sychronization_session_id):
+def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, filename, filedate, sychronization_session_id):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
@@ -1704,7 +1702,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     session_dict = {}
-    if "sychronization_load_session_button" in triggered_id:
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         try:
             session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
         except:
@@ -1722,13 +1720,14 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
               [
                 Input('url', 'search'), 
                 Input('map-plot', 'clickData'),
-                Input('sychronization_load_session_button', 'n_clicks')
+                Input('sychronization_load_session_button', 'n_clicks'),
+                Input('sychronization_interval', 'n_intervals'),
               ], 
               [
                   State('xic_mz', 'value'),
                   State('sychronization_session_id', 'value')
               ])
-def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, existing_xic, sychronization_session_id):
+def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, existing_xic, sychronization_session_id):
     try:
         if existing_xic is None:
             existing_xic = ""
@@ -1763,7 +1762,7 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     session_dict = {}
-    if "sychronization_load_session_button" in triggered_id:
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         try:
             session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
         except:
@@ -2391,7 +2390,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 Input('overlay-filter-value', 'value'),
                 Input('feature_finding_type', 'value'),
                 Input('run-feature-finding-button', 'n_clicks'),
-                Input('sychronization_load_session_button', 'n_clicks')
+                Input('sychronization_load_session_button', 'n_clicks'),
+                Input('sychronization_interval', 'n_intervals'),
               ],
               [
                 State('feature_finding_ppm', 'value'),
@@ -2414,6 +2414,7 @@ def draw_file(url_search, usi,
                 feature_finding_type,
                 feature_finding_click,
                 sychronization_load_session_button_clicks,
+                sychronization_interval,
                 feature_finding_ppm,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
@@ -2448,7 +2449,8 @@ def draw_file(url_search, usi,
                                                                                                             map_plot_mz_max=map_plot_mz_max)
     else:
         session_dict = {}
-        if "sychronization_load_session_button" in triggered_id:
+
+        if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
             try:
                 session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
             except:
@@ -2508,7 +2510,8 @@ def draw_file(url_search, usi,
                 Input('show_ms2_markers', 'value'),
                 Input("show_lcms_2nd_map", "value"),
                 Input('polarity-filtering2', 'value'),
-                Input('sychronization_load_session_button', 'n_clicks')
+                Input('sychronization_load_session_button', 'n_clicks'),
+                Input('sychronization_interval', 'n_intervals'),
               ],
               [
                   State('sychronization_session_id', 'value'),
@@ -2516,7 +2519,7 @@ def draw_file(url_search, usi,
 def draw_file2(url_search, usi, 
                 map_selection, map_plot_quantization_level, 
                 show_ms2_markers, show_lcms_2nd_map, polarity_filter,
-                sychronization_load_session_button_clicks, sychronization_session_id):
+                sychronization_load_session_button_clicks, sychronization_interval, sychronization_session_id):
 
     if show_lcms_2nd_map is False:
         return [dash.no_update]
@@ -2533,7 +2536,7 @@ def draw_file2(url_search, usi,
         show_ms2_markers = False
 
     session_dict = {}
-    if "sychronization_load_session_button" in triggered_id:
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         try:
             session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
         except:
