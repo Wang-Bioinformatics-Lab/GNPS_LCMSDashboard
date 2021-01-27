@@ -1335,8 +1335,8 @@ def _sychronize_load_state(session_id, redis_client):
                   Output("ms2_identifier", "value")
               ],
               [
-                  Input('url', 'search'), 
-                  Input('usi', 'value'), 
+                  Input('url', 'search'),
+                  Input('usi', 'value'),
                   Input('map-plot', 'clickData'), 
                   Input('xic-plot', 'clickData'), 
                   Input('tic-plot', 'clickData'),
@@ -1564,6 +1564,11 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   State('xic_integration_type', 'value'),
                   State('xic_file_grouping', 'value'),
                   State('xic_rt_window', 'value'),
+                  State('show_ms2_markers', 'value'),
+                  State('show_lcms_2nd_map', 'value'),
+                  State('tic_option', 'value'),
+                  State('polarity_filtering', 'value'),
+                  State('polarity_filtering2', 'value'),
               ]
               )
 def determine_url_only_parameters(  search, 
@@ -1580,6 +1585,14 @@ def determine_url_only_parameters(  search,
                                     existing_xic_integration_type,
                                     existing_xic_file_grouping,
                                     existing_xic_rt_window,
+
+                                    existing_show_ms2_markers,
+                                    existing_show_lcms_2nd_map,
+
+                                    existing_tic_option,
+
+                                    existing_polarity_filtering,
+                                    existing_polarity_filtering2,
                                     ):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -1603,13 +1616,13 @@ def determine_url_only_parameters(  search,
     xic_file_grouping = _get_param_from_url(search, "", "xic_file_grouping", dash.no_update, session_dict=session_dict, old_value=existing_xic_file_grouping, no_change_default=dash.no_update)
     xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict, old_value=existing_xic_rt_window, no_change_default=dash.no_update)
 
-    show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", dash.no_update, session_dict=session_dict)
-    show_lcms_2nd_map = _get_param_from_url(search, "", "show_lcms_2nd_map", dash.no_update, session_dict=session_dict)
+    show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", dash.no_update, session_dict=session_dict, old_value=existing_show_ms2_markers, no_change_default=dash.no_update)
+    show_lcms_2nd_map = _get_param_from_url(search, "", "show_lcms_2nd_map", dash.no_update, session_dict=session_dict, old_value=existing_show_lcms_2nd_map, no_change_default=dash.no_update)
 
-    tic_option = _get_param_from_url(search, "", "tic_option", dash.no_update, session_dict=session_dict)
+    tic_option = _get_param_from_url(search, "", "tic_option", dash.no_update, session_dict=session_dict, old_value=existing_tic_option, no_change_default=dash.no_update)
 
-    polarity_filtering = _get_param_from_url(search, "", "polarity_filtering", dash.no_update, session_dict=session_dict)
-    polarity_filtering2 = _get_param_from_url(search, "", "polarity_filtering2", dash.no_update, session_dict=session_dict)
+    polarity_filtering = _get_param_from_url(search, "", "polarity_filtering", dash.no_update, session_dict=session_dict, old_value=existing_polarity_filtering, no_change_default=dash.no_update)
+    polarity_filtering2 = _get_param_from_url(search, "", "polarity_filtering2", dash.no_update, session_dict=session_dict, old_value=existing_polarity_filtering2, no_change_default=dash.no_update)
 
     overlay_usi = _get_param_from_url(search, "", "overlay_usi", dash.no_update, session_dict=session_dict)
     overlay_mz = _get_param_from_url(search, "", "overlay_mz", dash.no_update, session_dict=session_dict)
@@ -2465,6 +2478,7 @@ def draw_file(url_search, usi,
                 map_plot_mz_min,
                 map_plot_mz_max,
                 sychronization_session_id):
+
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
