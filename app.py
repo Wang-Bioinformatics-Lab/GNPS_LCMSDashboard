@@ -1344,9 +1344,11 @@ def _sychronize_load_state(session_id, redis_client):
                   Input('sychronization_interval', 'n_intervals'),
               ],
               [
-                  State('sychronization_session_id', 'value')
+                  State('sychronization_session_id', 'value'),
+                  State('ms2_identifier', 'value'),
               ])
-def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_interval, sychronization_session_id):
+def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_interval, sychronization_session_id,
+                existing_ms2_identifier):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -1367,7 +1369,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
             except:
                 pass
 
-        return [_get_param_from_url(url_search, "", "ms2_identifier", dash.no_update, session_dict=session_dict)]
+        return [_get_param_from_url(url_search, "", "ms2_identifier", dash.no_update, session_dict=session_dict, old_value=existing_ms2_identifier, no_change_default=dash.no_update)]
     
     # This is an MS2
     if clicked_target["curveNumber"] == 1:
@@ -1687,7 +1689,7 @@ def determine_url_only_parameters(  search,
                   State('upload-data', 'filename'),
                   State('upload-data', 'last_modified'),
                   State('sychronization_session_id', 'value'),
-                  
+
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
