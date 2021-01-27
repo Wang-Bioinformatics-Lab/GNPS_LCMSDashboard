@@ -1517,7 +1517,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
     return [spectrum_type, interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string)]
 
-@app.callback([ Output("xic_formula", "value"),
+@app.callback([ 
+                Output("xic_formula", "value"),
                 Output("xic_peptide", "value"),
                 Output("xic_tolerance", "value"), 
                 Output("xic_ppm_tolerance", "value"), 
@@ -1546,7 +1547,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("feature_finding_max_peak_rt", "value"),
                 Output("feature_finding_rt_tolerance", "value"),
                 Output("sychronization_session_id", "value"),
-                ],
+              ],
               [
                   Input('url', 'search'), 
                   Input('sychronization_load_session_button', 'n_clicks'),
@@ -1631,6 +1632,8 @@ def determine_url_only_parameters(  search,
                                     existing_sychronization_session_id):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
+    print("TRIGGERED URL PARSING", triggered_id, file=sys.stderr)
+
     session_dict = {}
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         if len(sychronization_session_id) > 0:
@@ -1678,7 +1681,8 @@ def determine_url_only_parameters(  search,
 
     # Sychronization
     sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", dash.no_update, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
-    
+
+
     # Formatting the types
     try:
         if xic_norm == "True":
@@ -1727,6 +1731,45 @@ def determine_url_only_parameters(  search,
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
             sychronization_session_id]
+
+
+# This has to be disabled because of weird circular dependency
+# @app.callback([ 
+#                 Output("synchronization_type", "value"),
+#               ],
+#               [
+#                   Input('url', 'search'), 
+#                   Input('sychronization_load_session_button', 'n_clicks'),
+#                   Input('sychronization_interval', 'n_intervals'),
+#               ],
+#               [
+#                   State('sychronization_session_id', 'value'),
+#                   State('synchronization_type', 'value'),
+#               ]
+#               )
+# def determine_url_only_parameters_synchronization(  search, 
+#                                     sychronization_load_session_button_click, 
+#                                     sychronization_interval, 
+#                                     sychronization_session_id,
+#                                     existing_synchronization_type):
+
+#     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+#     print("TRIGGERED SYNCHRONIZATION URL PARSING", triggered_id, file=sys.stderr)
+
+#     session_dict = {}
+#     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
+#         if len(sychronization_session_id) > 0:
+#             try:
+#                 session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+#             except:
+#                 pass
+
+#     synchronization_type  = _get_param_from_url(search, "", "synchronization_type", dash.no_update, session_dict=session_dict, old_value=existing_synchronization_type, no_change_default=dash.no_update)
+
+#     print(synchronization_type, "XEIFNEI")
+
+#     return [synchronization_type]
 
 
 # Handling file upload
@@ -2707,45 +2750,46 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 
 
 @app.callback(Output('link-button', 'children'),
-              [Input('usi', 'value'), 
-              Input('usi2', 'value'), 
-              Input('xic_mz', 'value'), 
-              Input('xic_formula', 'value'), 
-              Input('xic_peptide', 'value'), 
-              Input('xic_tolerance', 'value'),
-              Input('xic_ppm_tolerance', 'value'),
-              Input('xic_tolerance_unit', 'value'),
-              Input('xic_rt_window', 'value'),
-              Input("xic_norm", "value"),
-              Input('xic_file_grouping', 'value'),
-              Input('xic_integration_type', 'value'),
-              Input("show_ms2_markers", "value"),
-              Input("ms2_identifier", "value"),
-              Input("map_plot_zoom", "children"),
+              [
+                Input('usi', 'value'), 
+                Input('usi2', 'value'), 
+                Input('xic_mz', 'value'), 
+                Input('xic_formula', 'value'), 
+                Input('xic_peptide', 'value'), 
+                Input('xic_tolerance', 'value'),
+                Input('xic_ppm_tolerance', 'value'),
+                Input('xic_tolerance_unit', 'value'),
+                Input('xic_rt_window', 'value'),
+                Input("xic_norm", "value"),
+                Input('xic_file_grouping', 'value'),
+                Input('xic_integration_type', 'value'),
+                Input("show_ms2_markers", "value"),
+                Input("ms2_identifier", "value"),
+                Input("map_plot_zoom", "children"),
 
-              Input('polarity_filtering', 'value'),
-              Input('polarity_filtering2', 'value'),
+                Input('polarity_filtering', 'value'),
+                Input('polarity_filtering2', 'value'),
 
-              Input("show_lcms_2nd_map", "value"),
-              Input("tic_option", "value"),
-              Input("overlay_usi", "value"),
-              Input("overlay_mz", "value"),
-              Input("overlay_rt", "value"),
-              Input("overlay_color", "value"),
-              Input("overlay_size", "value"),
-              Input("overlay_hover", "value"),
-              Input('overlay_filter_column', 'value'),
-              Input('overlay_filter_value', 'value'),
-              Input("feature_finding_type", "value"),
-              Input("feature_finding_ppm", "value"),
-              Input("feature_finding_noise", "value"),
-              Input("feature_finding_min_peak_rt", "value"),
-              Input("feature_finding_max_peak_rt", "value"),
-              Input("feature_finding_rt_tolerance", "value"),
-              Input("sychronization_save_session_button", "n_clicks")
+                Input("show_lcms_2nd_map", "value"),
+                Input("tic_option", "value"),
+                Input("overlay_usi", "value"),
+                Input("overlay_mz", "value"),
+                Input("overlay_rt", "value"),
+                Input("overlay_color", "value"),
+                Input("overlay_size", "value"),
+                Input("overlay_hover", "value"),
+                Input('overlay_filter_column', 'value'),
+                Input('overlay_filter_value', 'value'),
+                Input("feature_finding_type", "value"),
+                Input("feature_finding_ppm", "value"),
+                Input("feature_finding_noise", "value"),
+                Input("feature_finding_min_peak_rt", "value"),
+                Input("feature_finding_max_peak_rt", "value"),
+                Input("feature_finding_rt_tolerance", "value"),
+                Input("sychronization_save_session_button", "n_clicks"),
+                Input("sychronization_session_id", "value"),
               ],
               [
-                  State("sychronization_session_id", "value"),
                   State('synchronization_type', 'value')
               ])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
@@ -2919,12 +2963,25 @@ def get_overlay_options(overlay_usi):
 
 
 
-@app.callback([Output('sychronization_interval', 'interval')],
-              [Input('synchronization_type', 'value')])
-def set_update_interval(synchronization_type):
+@app.callback([
+                Output('sychronization_interval', 'interval')
+              ],
+              [
+                  Input('synchronization_type', 'value')
+              ],
+              [
+                  State('sychronization_interval', 'interval')
+              ])
+def set_update_interval(synchronization_type, existing_sychronization_interval):
+    new_interval = 10000000 * 1000
     if synchronization_type == "FOLLOWER":
-        return [5 * 1000]
-    return [10000000 * 1000]
+        new_interval = 5 * 1000
+
+    print(existing_sychronization_interval, new_interval)
+
+    if new_interval == existing_sychronization_interval:
+        return [dash.no_update]
+    return [new_interval]
 
 ###########################################
 # Hiding Panels
