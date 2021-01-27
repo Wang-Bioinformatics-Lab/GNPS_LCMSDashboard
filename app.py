@@ -699,7 +699,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.Button("Update Feature Finding Interactively", color="primary", className="mr-1", id="run-feature-finding-button", block=True),
+                            dbc.Button("Update Feature Finding Interactively", color="primary", className="mr-1", id="run_feature_finding_button", block=True),
                         ],
                         className="mb-3",
                     )
@@ -726,7 +726,7 @@ OVERLAY_PANEL = [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Overlay USI", addon_type="prepend"),
-                            dbc.Input(id='overlay-usi', placeholder="Enter Overlay File USI"),
+                            dbc.Input(id='overlay_usi', placeholder="Enter Overlay File USI"),
                         ],
                         className="mb-3",
                     ),
@@ -737,7 +737,7 @@ OVERLAY_PANEL = [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Overlay m/z", addon_type="prepend"),
-                            dbc.Input(id='overlay-mz', placeholder="Enter Overlay mz column", value="row m/z"),
+                            dbc.Input(id='overlay_mz', placeholder="Enter Overlay mz column", value="row m/z"),
                         ],
                         className="mb-3",
                     ),
@@ -746,7 +746,7 @@ OVERLAY_PANEL = [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Overlay rt", addon_type="prepend"),
-                            dbc.Input(id='overlay-rt', placeholder="Enter Overlay rt column", value="row retention time"),
+                            dbc.Input(id='overlay_rt', placeholder="Enter Overlay rt column", value="row retention time"),
                         ],
                         className="mb-3",
                     ),
@@ -757,9 +757,9 @@ OVERLAY_PANEL = [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Overlay color", addon_type="prepend", style={"margin-right":"20px"}),
-                            #dbc.Input(id='overlay-color', placeholder="Enter Overlay color column", value=""),
+                            #dbc.Input(id='overlay_color', placeholder="Enter Overlay color column", value=""),
                             dcc.Dropdown(
-                                id='overlay-color',
+                                id='overlay_color',
                                 options=[
                                     {'label': 'None', 'value': ''},
                                 ],
@@ -778,9 +778,9 @@ OVERLAY_PANEL = [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Overlay size", addon_type="prepend", style={"margin-right":"20px"}),
-                            #dbc.Input(id='overlay-size', placeholder="Enter Overlay size column", value=""),
+                            #dbc.Input(id='overlay_size', placeholder="Enter Overlay size column", value=""),
                             dcc.Dropdown(
-                                id='overlay-size',
+                                id='overlay_size',
                                 options=[
                                     {'label': 'None', 'value': ''},
                                 ],
@@ -802,7 +802,7 @@ OVERLAY_PANEL = [
                         [
                             dbc.InputGroupAddon("Overlay Label Column", addon_type="prepend", style={"margin-right":"20px"}),
                             dcc.Dropdown(
-                                id='overlay-hover',
+                                id='overlay_hover',
                                 options=[
                                     {'label': 'None', 'value': ''},
                                 ],
@@ -823,7 +823,7 @@ OVERLAY_PANEL = [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Overlay Filter Column", addon_type="prepend"),
-                            dbc.Input(id='overlay-filter-column', placeholder="Enter Overlay filter column", value=""),
+                            dbc.Input(id='overlay_filter_column', placeholder="Enter Overlay filter column", value=""),
                         ],
                         className="mb-3",
                     ),
@@ -832,7 +832,7 @@ OVERLAY_PANEL = [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Overlay Filter Value", addon_type="prepend"),
-                            dbc.Input(id='overlay-filter-value', placeholder="Enter Overlay size column", value=""),
+                            dbc.Input(id='overlay_filter_value', placeholder="Enter Overlay size column", value=""),
                         ],
                         className="mb-3",
                     ),
@@ -853,7 +853,7 @@ USI1_FILTERING_PANEL = [
                         [
                             dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                             dcc.Dropdown(
-                                id='polarity-filtering',
+                                id='polarity_filtering',
                                 options=[
                                     {'label': 'None', 'value': 'None'},
                                     {'label': 'Positive', 'value': 'Positive'},
@@ -887,7 +887,7 @@ USI2_FILTERING_PANEL = [
                         [
                             dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                             dcc.Dropdown(
-                                id='polarity-filtering2',
+                                id='polarity_filtering2',
                                 options=[
                                     {'label': 'None', 'value': 'None'},
                                     {'label': 'Positive', 'value': 'Positive'},
@@ -1032,7 +1032,7 @@ MIDDLE_DASHBOARD = [
     dbc.CardBody(
         [
             html.Br(),
-            html.Div(id='map-plot-zoom', style={'display': 'none'}),
+            html.Div(id='map_plot_zoom', style={'display': 'none'}),
             dcc.Graph(
                 id='map-plot',
                 figure=placeholder_map_plot,
@@ -1216,7 +1216,7 @@ BODY = dbc.Container(
                     ),
                 ],
                 id='overlay-collapse',
-                is_open=False,
+                is_open=True,
                 style={"width": "50%", "marginTop": 30}
             )
         ]),
@@ -1529,16 +1529,16 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("show_ms2_markers", "value"),
                 Output("show_lcms_2nd_map", "value"),
                 Output("tic_option", "value"),
-                Output("polarity-filtering", "value"),
-                Output("polarity-filtering2", "value"),
-                Output("overlay-usi", "value"),
-                Output("overlay-mz", "value"),
-                Output("overlay-rt", "value"),
-                Output("overlay-color", "value"),
-                Output("overlay-size", "value"),
-                Output("overlay-hover", "value"),
-                Output('overlay-filter-column', 'value'),
-                Output('overlay-filter-value', 'value'),
+                Output("polarity_filtering", "value"),
+                Output("polarity_filtering2", "value"),
+                Output("overlay_usi", "value"),
+                Output("overlay_mz", "value"),
+                Output("overlay_rt", "value"),
+                Output("overlay_color", "value"),
+                Output("overlay_size", "value"),
+                Output("overlay_hover", "value"),
+                Output('overlay_filter_column', 'value'),
+                Output('overlay_filter_value', 'value'),
                 Output("feature_finding_type", "value"),
                 Output("feature_finding_ppm", "value"),
                 Output("feature_finding_noise", "value"),
@@ -1569,6 +1569,24 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   State('tic_option', 'value'),
                   State('polarity_filtering', 'value'),
                   State('polarity_filtering2', 'value'),
+
+                  State('overlay_usi', 'value'),
+                  State('overlay_mz', 'value'),
+                  State('overlay_rt', 'value'),
+                  State('overlay_color', 'value'),
+                  State('overlay_size', 'value'),
+                  State('overlay_hover', 'value'),
+                  State('overlay_filter_column', 'value'),
+                  State('overlay_filter_value', 'value'),
+
+                  State('feature_finding_type', 'value'),
+                  State('feature_finding_ppm', 'value'),
+                  State('feature_finding_noise', 'value'),
+                  State('feature_finding_min_peak_rt', 'value'),
+                  State('feature_finding_max_peak_rt', 'value'),
+                  State('feature_finding_rt_tolerance', 'value'),
+                  
+                  State('sychronization_session_id', 'value'),
               ]
               )
 def determine_url_only_parameters(  search, 
@@ -1593,7 +1611,24 @@ def determine_url_only_parameters(  search,
 
                                     existing_polarity_filtering,
                                     existing_polarity_filtering2,
-                                    ):
+
+                                    existing_overlay_usi,
+                                    existing_overlay_mz,
+                                    existing_overlay_rt,
+                                    existing_overlay_color,
+                                    existing_overlay_size,
+                                    existing_overlay_hover,
+                                    existing_overlay_filter_column,
+                                    existing_overlay_filter_value,
+
+                                    existing_feature_finding_type,
+                                    existing_feature_finding_ppm,
+                                    existing_feature_finding_noise,
+                                    existing_feature_finding_min_peak_rt,
+                                    existing_feature_finding_max_peak_rt,
+                                    existing_feature_finding_rt_tolerance,
+
+                                    existing_sychronization_session_id):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     session_dict = {}
@@ -1624,25 +1659,25 @@ def determine_url_only_parameters(  search,
     polarity_filtering = _get_param_from_url(search, "", "polarity_filtering", dash.no_update, session_dict=session_dict, old_value=existing_polarity_filtering, no_change_default=dash.no_update)
     polarity_filtering2 = _get_param_from_url(search, "", "polarity_filtering2", dash.no_update, session_dict=session_dict, old_value=existing_polarity_filtering2, no_change_default=dash.no_update)
 
-    overlay_usi = _get_param_from_url(search, "", "overlay_usi", dash.no_update, session_dict=session_dict)
-    overlay_mz = _get_param_from_url(search, "", "overlay_mz", dash.no_update, session_dict=session_dict)
-    overlay_rt = _get_param_from_url(search, "", "overlay_rt", dash.no_update, session_dict=session_dict)
-    overlay_color = _get_param_from_url(search, "", "overlay_color", dash.no_update, session_dict=session_dict)
-    overlay_size = _get_param_from_url(search, "", "overlay_size", dash.no_update, session_dict=session_dict)
-    overlay_hover = _get_param_from_url(search, "", "overlay_hover", dash.no_update, session_dict=session_dict)
-    overlay_filter_column = _get_param_from_url(search, "", "overlay_filter_column", dash.no_update, session_dict=session_dict)
-    overlay_filter_value = _get_param_from_url(search, "", "overlay_filter_value", dash.no_update, session_dict=session_dict)
+    overlay_usi = _get_param_from_url(search, "", "overlay_usi", dash.no_update, session_dict=session_dict, old_value=existing_overlay_usi, no_change_default=dash.no_update)
+    overlay_mz = _get_param_from_url(search, "", "overlay_mz", dash.no_update, session_dict=session_dict, old_value=existing_overlay_mz, no_change_default=dash.no_update)
+    overlay_rt = _get_param_from_url(search, "", "overlay_rt", dash.no_update, session_dict=session_dict, old_value=existing_overlay_rt, no_change_default=dash.no_update)
+    overlay_color = _get_param_from_url(search, "", "overlay_color", dash.no_update, session_dict=session_dict, old_value=existing_overlay_color, no_change_default=dash.no_update)
+    overlay_size = _get_param_from_url(search, "", "overlay_size", dash.no_update, session_dict=session_dict, old_value=existing_overlay_size, no_change_default=dash.no_update)
+    overlay_hover = _get_param_from_url(search, "", "overlay_hover", dash.no_update, session_dict=session_dict, old_value=existing_overlay_hover, no_change_default=dash.no_update)
+    overlay_filter_column = _get_param_from_url(search, "", "overlay_filter_column", dash.no_update, session_dict=session_dict, old_value=existing_overlay_filter_column, no_change_default=dash.no_update)
+    overlay_filter_value = _get_param_from_url(search, "", "overlay_filter_value", dash.no_update, session_dict=session_dict, old_value=existing_overlay_filter_value, no_change_default=dash.no_update)
 
     # Feature Finding
-    feature_finding_type = _get_param_from_url(search, "", "feature_finding_type", dash.no_update, session_dict=session_dict)
-    feature_finding_ppm = _get_param_from_url(search, "", "feature_finding_ppm", dash.no_update, session_dict=session_dict)
-    feature_finding_noise = _get_param_from_url(search, "", "feature_finding_noise", dash.no_update, session_dict=session_dict)
-    feature_finding_min_peak_rt = _get_param_from_url(search, "", "feature_finding_min_peak_rt", dash.no_update, session_dict=session_dict)
-    feature_finding_max_peak_rt = _get_param_from_url(search, "", "feature_finding_max_peak_rt", dash.no_update, session_dict=session_dict)
-    feature_finding_rt_tolerance = _get_param_from_url(search, "", "feature_finding_rt_tolerance", dash.no_update, session_dict=session_dict)
+    feature_finding_type = _get_param_from_url(search, "", "feature_finding_type", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_type, no_change_default=dash.no_update)
+    feature_finding_ppm = _get_param_from_url(search, "", "feature_finding_ppm", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_ppm, no_change_default=dash.no_update)
+    feature_finding_noise = _get_param_from_url(search, "", "feature_finding_noise", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_noise, no_change_default=dash.no_update)
+    feature_finding_min_peak_rt = _get_param_from_url(search, "", "feature_finding_min_peak_rt", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_min_peak_rt, no_change_default=dash.no_update)
+    feature_finding_max_peak_rt = _get_param_from_url(search, "", "feature_finding_max_peak_rt", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_max_peak_rt, no_change_default=dash.no_update)
+    feature_finding_rt_tolerance = _get_param_from_url(search, "", "feature_finding_rt_tolerance", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_rt_tolerance, no_change_default=dash.no_update)
 
     # Sychronization
-    sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", dash.no_update, session_dict=session_dict)
+    sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", dash.no_update, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
     
     # Formatting the types
     try:
@@ -1650,6 +1685,9 @@ def determine_url_only_parameters(  search,
             xic_norm = True
         if xic_norm == "False":
             xic_norm = False
+        
+        if xic_norm == existing_xic_norm:
+            xic_norm = dash.no_update
     except:
         pass
 
@@ -1658,6 +1696,9 @@ def determine_url_only_parameters(  search,
             show_ms2_markers = True
         if show_ms2_markers == "False":
             show_ms2_markers = True
+
+        if show_ms2_markers == existing_show_ms2_markers:
+            show_ms2_markers = dash.no_update
     except:
         pass
 
@@ -1666,6 +1707,9 @@ def determine_url_only_parameters(  search,
             show_lcms_2nd_map = True
         if show_lcms_2nd_map == "False":
             show_lcms_2nd_map = False
+
+        if show_lcms_2nd_map == existing_show_lcms_2nd_map:
+            show_lcms_2nd_map = dash.no_update
     except:
         pass
     
@@ -2007,7 +2051,7 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value"), 
               Input("tic_option", "value"),
-              Input("polarity-filtering", "value"),
+              Input("polarity_filtering", "value"),
               Input("show_multiple_tic", "value")])
 def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
@@ -2051,7 +2095,7 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value"), 
               Input("tic_option", "value"),
-              Input("polarity-filtering2", "value"),
+              Input("polarity_filtering2", "value"),
               Input("show_multiple_tic", "value")])
 def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
@@ -2256,7 +2300,7 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input('xic_integration_type', 'value'),
               Input('xic_norm', 'value'),
               Input('xic_file_grouping', 'value'),
-              Input('polarity-filtering', 'value'),
+              Input('polarity_filtering', 'value'),
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value")])
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
@@ -2421,7 +2465,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 @app.callback([
                 Output('map-plot', 'figure'), 
                 Output('download-link', 'children'), 
-                Output('map-plot-zoom', 'children'), 
+                Output('map_plot_zoom', 'children'), 
                 Output("feature-finding-table", 'children'),
                 Output("map_plot_rt_min", 'value'),
                 Output("map_plot_rt_max", 'value'),
@@ -2435,17 +2479,17 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 Input('map_plot_quantization_level', 'value'), 
                 Input('map_plot_update_range_button', 'n_clicks'), 
                 Input('show_ms2_markers', 'value'),
-                Input('polarity-filtering', 'value'),
-                Input('overlay-usi', 'value'),
-                Input('overlay-mz', 'value'),
-                Input('overlay-rt', 'value'),
-                Input('overlay-size', 'value'),
-                Input('overlay-color', 'value'),
-                Input('overlay-hover', 'value'),
-                Input('overlay-filter-column', 'value'),
-                Input('overlay-filter-value', 'value'),
+                Input('polarity_filtering', 'value'),
+                Input('overlay_usi', 'value'),
+                Input('overlay_mz', 'value'),
+                Input('overlay_rt', 'value'),
+                Input('overlay_size', 'value'),
+                Input('overlay_color', 'value'),
+                Input('overlay_hover', 'value'),
+                Input('overlay_filter_column', 'value'),
+                Input('overlay_filter_value', 'value'),
                 Input('feature_finding_type', 'value'),
-                Input('run-feature-finding-button', 'n_clicks'),
+                Input('run_feature_finding_button', 'n_clicks'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
               ],
@@ -2566,7 +2610,7 @@ def draw_file(url_search, usi,
                 Input('map_plot_quantization_level', 'value'), 
                 Input('show_ms2_markers', 'value'),
                 Input("show_lcms_2nd_map", "value"),
-                Input('polarity-filtering2', 'value'),
+                Input('polarity_filtering2', 'value'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
               ],
@@ -2677,19 +2721,21 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
               Input('xic_integration_type', 'value'),
               Input("show_ms2_markers", "value"),
               Input("ms2_identifier", "value"),
-              Input("map-plot-zoom", "children"),
-              Input('polarity-filtering', 'value'),
-              Input('polarity-filtering2', 'value'),
+              Input("map_plot_zoom", "children"),
+
+              Input('polarity_filtering', 'value'),
+              Input('polarity_filtering2', 'value'),
+
               Input("show_lcms_2nd_map", "value"),
               Input("tic_option", "value"),
-              Input("overlay-usi", "value"),
-              Input("overlay-mz", "value"),
-              Input("overlay-rt", "value"),
-              Input("overlay-color", "value"),
-              Input("overlay-size", "value"),
-              Input("overlay-hover", "value"),
-              Input('overlay-filter-column', 'value'),
-              Input('overlay-filter-value', 'value'),
+              Input("overlay_usi", "value"),
+              Input("overlay_mz", "value"),
+              Input("overlay_rt", "value"),
+              Input("overlay_color", "value"),
+              Input("overlay_size", "value"),
+              Input("overlay_hover", "value"),
+              Input('overlay_filter_column', 'value'),
+              Input('overlay_filter_value', 'value'),
               Input("feature_finding_type", "value"),
               Input("feature_finding_ppm", "value"),
               Input("feature_finding_noise", "value"),
@@ -2847,8 +2893,8 @@ def get_file_summary(usi, usi2):
     return [table]
 
 
-@app.callback([Output('overlay-hover', 'options'), Output('overlay-color', 'options'), Output('overlay-size', 'options')],
-              [Input('overlay-usi', 'value')])
+@app.callback([Output('overlay_hover', 'options'), Output('overlay_color', 'options'), Output('overlay_size', 'options')],
+              [Input('overlay_usi', 'value')])
 @cache.memoize()
 def get_overlay_options(overlay_usi):
     """This function finds all the overlay options
