@@ -2261,6 +2261,9 @@ def _integrate_files(long_data_df, xic_integration_type):
               Input("plot_theme", "value")])
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
 
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", triggered_id, file=sys.stdout)
+
     # For Drawing and Exporting
     graph_config = {
         "toImageButtonOptions":{
