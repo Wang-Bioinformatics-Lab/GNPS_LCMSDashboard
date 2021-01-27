@@ -1551,10 +1551,34 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   Input('sychronization_interval', 'n_intervals'),
               ],
               [
-                  State('sychronization_session_id', 'value')
+                  State('sychronization_session_id', 'value'),
+
+                  State('xic_formula', 'value'),
+                  State('xic_peptide', 'value'),
+                  State('xic_tolerance', 'value'),
+                  State('xic_ppm_tolerance', 'value'),
+                  State('xic_tolerance_unit', 'value'),
+                  State('xic_norm', 'value'),
+                  State('xic_integration_type', 'value'),
+                  State('xic_file_grouping', 'value'),
+                  State('xic_rt_window', 'value'),
               ]
               )
-def determine_url_only_parameters(search, sychronization_load_session_button_click, sychronization_interval, sychronization_session_id):
+def determine_url_only_parameters(  search, 
+                                    sychronization_load_session_button_click, 
+                                    sychronization_interval, 
+                                    sychronization_session_id,
+
+                                    existing_xic_formula,
+                                    existing_xic_peptide,
+                                    existing_xic_tolerance,
+                                    existing_xic_ppm_tolerance,
+                                    existing_xic_tolerance_unit,
+                                    existing_xic_norm,
+                                    existing_xic_integration_type,
+                                    existing_xic_file_grouping,
+                                    existing_xic_rt_window,
+                                    ):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     session_dict = {}
@@ -1567,20 +1591,24 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
             except:
                 pass
 
-    xic_formula = _get_param_from_url(search, "", "xic_formula", dash.no_update, session_dict=session_dict)
-    xic_peptide = _get_param_from_url(search, "", "xic_peptide", dash.no_update, session_dict=session_dict)
-    xic_tolerance = _get_param_from_url(search, "", "xic_tolerance", dash.no_update, session_dict=session_dict)
-    xic_ppm_tolerance = _get_param_from_url(search, "", "xic_ppm_tolerance", dash.no_update, session_dict=session_dict)
-    xic_tolerance_unit = _get_param_from_url(search, "", "xic_tolerance_unit", dash.no_update, session_dict=session_dict)
-    xic_norm = _get_param_from_url(search, "", "xic_norm", dash.no_update, session_dict=session_dict)
-    xic_integration_type = _get_param_from_url(search, "", "xic_integration_type", dash.no_update, session_dict=session_dict)
+    xic_formula = _get_param_from_url(search, "", "xic_formula", dash.no_update, session_dict=session_dict, old_value=existing_xic_formula, no_change_default=dash.no_update)
+    xic_peptide = _get_param_from_url(search, "", "xic_peptide", dash.no_update, session_dict=session_dict, old_value=existing_xic_peptide, no_change_default=dash.no_update)
+    xic_tolerance = _get_param_from_url(search, "", "xic_tolerance", dash.no_update, session_dict=session_dict, old_value=existing_xic_tolerance, no_change_default=dash.no_update)
+    xic_ppm_tolerance = _get_param_from_url(search, "", "xic_ppm_tolerance", dash.no_update, session_dict=session_dict, old_value=existing_xic_ppm_tolerance, no_change_default=dash.no_update)
+    xic_tolerance_unit = _get_param_from_url(search, "", "xic_tolerance_unit", dash.no_update, session_dict=session_dict, old_value=existing_xic_tolerance_unit, no_change_default=dash.no_update)
+    xic_norm = _get_param_from_url(search, "", "xic_norm", dash.no_update, session_dict=session_dict, old_value=existing_xic_norm, no_change_default=dash.no_update)
+    xic_integration_type = _get_param_from_url(search, "", "xic_integration_type", dash.no_update, session_dict=session_dict, old_value=existing_xic_integration_type, no_change_default=dash.no_update)
+    xic_file_grouping = _get_param_from_url(search, "", "xic_file_grouping", dash.no_update, session_dict=session_dict, old_value=existing_xic_file_grouping, no_change_default=dash.no_update)
+    xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict, old_value=existing_xic_rt_window, no_change_default=dash.no_update)
+
     show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", dash.no_update, session_dict=session_dict)
-    xic_file_grouping = _get_param_from_url(search, "", "xic_file_grouping", dash.no_update, session_dict=session_dict)
-    xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict)
     show_lcms_2nd_map = _get_param_from_url(search, "", "show_lcms_2nd_map", dash.no_update, session_dict=session_dict)
+
     tic_option = _get_param_from_url(search, "", "tic_option", dash.no_update, session_dict=session_dict)
+
     polarity_filtering = _get_param_from_url(search, "", "polarity_filtering", dash.no_update, session_dict=session_dict)
     polarity_filtering2 = _get_param_from_url(search, "", "polarity_filtering2", dash.no_update, session_dict=session_dict)
+
     overlay_usi = _get_param_from_url(search, "", "overlay_usi", dash.no_update, session_dict=session_dict)
     overlay_mz = _get_param_from_url(search, "", "overlay_mz", dash.no_update, session_dict=session_dict)
     overlay_rt = _get_param_from_url(search, "", "overlay_rt", dash.no_update, session_dict=session_dict)
@@ -1643,19 +1671,29 @@ def determine_url_only_parameters(search, sychronization_load_session_button_cli
 
 
 # Handling file upload
-@app.callback([Output('usi', 'value'), Output('usi2', 'value'), Output('debug-output-2', 'children')],
-              [Input('url', 'search'), 
-              Input('url', 'hash'), 
-              Input('upload-data', 'contents'),
-              Input('sychronization_load_session_button', 'n_clicks'),
-              Input('sychronization_interval', 'n_intervals'),
+@app.callback([
+                Output('usi', 'value'), 
+                Output('usi2', 'value'), 
+                Output('debug-output-2', 'children')
+              ],
+              [
+                Input('url', 'search'), 
+                Input('url', 'hash'), 
+                Input('upload-data', 'contents'),
+                Input('sychronization_load_session_button', 'n_clicks'),
+                Input('sychronization_interval', 'n_intervals'),
               ],
               [
                   State('upload-data', 'filename'),
                   State('upload-data', 'last_modified'),
-                  State('sychronization_session_id', 'value')
+                  State('sychronization_session_id', 'value'),
+                  
+                  State('usi', 'value'),
+                  State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, filename, filedate, sychronization_session_id):
+def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, filename, filedate, sychronization_session_id,
+                existing_usi,
+                existing_usi2):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
@@ -1709,8 +1747,8 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
             pass
 
     # Resolving USI
-    usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict)
-    usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict)
+    usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict, old_value=existing_usi, no_change_default=dash.no_update)
+    usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict, old_value=existing_usi2, no_change_default=dash.no_update)
 
     return [usi, usi2, "Using URL USI"]
     
@@ -1768,7 +1806,7 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
         except:
             pass
 
-    xicmz = _get_param_from_url(search, "", "xicmz", dash.no_update, session_dict=session_dict)
+    xicmz = _get_param_from_url(search, "", "xicmz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
 
     return xicmz
 
