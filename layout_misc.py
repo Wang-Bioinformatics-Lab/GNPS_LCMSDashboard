@@ -168,6 +168,7 @@ SYCHRONIZATION_MODAL = [
                 html.Br(),
                 html.Div(id="sychronization_output1"),
                 html.Div(id="sychronization_output2"),
+                html.Br(),
                 html.Div(id="sychronization_teaching_links"),
             ]),
             dbc.ModalFooter(
