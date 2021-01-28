@@ -147,7 +147,28 @@ SYCHRONIZATION_MODAL = [
                     style={
                         "width":"60%"
                     }
-                )  
+                ),
+                html.Hr(),
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupAddon("Leader Session Token", addon_type="prepend"),
+                        dbc.Input(id='synchronization_leader_token', placeholder="Enter Token", value=""),
+                    ],
+                    className="mb-3",
+                ),
+                dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Get New Token", block=False, id="synchronization_leader_newtoken_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Check Token", block=False, id="synchronization_leader_checktoken_button"),
+                        ),
+                    ]
+                ),
+                html.Br(),
+                html.Div(id="sychronization_output1"),
+                html.Div(id="sychronization_output2"),
+                html.Div(id="sychronization_teaching_links"),
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="sychronization_options_modal_close", className="ml-auto")

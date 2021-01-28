@@ -2963,6 +2963,89 @@ def get_overlay_options(overlay_usi):
 
 
 
+# Sychronization Section for callbacks
+
+
+
+@app.callback([
+                Output('synchronization_leader_token', 'value'),
+                Output('sychronization_output1', 'children')
+              ],
+              [
+                  Input('synchronization_leader_newtoken_button', 'n_clicks')
+              ],
+              [
+                  State('sychronization_session_id', 'value'),
+                  State('synchronization_leader_token', 'value')
+              ])
+def get_new_token(synchronization_leader_newtoken_button, sychronization_session_id, synchronization_leader_token):
+    """Here we will try to get a new token for the user
+
+    Args:
+        synchronization_leader_newtoken_button ([type]): [description]
+        sychronization_session_id ([type]): [description]
+        synchronization_leader_token ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+
+    if len(sychronization_session_id) < 1:
+        return [dash.no_update, "Please enter a session id"]
+
+    if len(synchronization_leader_token) > 0:
+        return [dash.no_update, "Please delete your token to get a new one"]
+    else:
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            session_dict = {}
+
+        if session_dict.get("sychronization_token", None) is None:
+            # There exists no token, let's create one and save it
+            new_token = str(uuid.uuid4()).replace("-", "")
+            session_dict["sychronization_token"] = new_token
+            _sychronize_save_state(sychronization_session_id, session_dict, redis_client)
+            return [new_token, "New Session Token Updated"]
+        else:
+            # There exists a token
+            return [dash.no_update, "Token already exists for this session, please enter it to be the leader"]
+
+    return [dash.no_update, "Bad News Bears"]
+
+
+@app.callback([
+                Output('sychronization_output2', 'children')
+              ],
+              [
+                  Input('synchronization_leader_checktoken_button', 'n_clicks')
+              ],
+              [
+                  State('sychronization_session_id', 'value'),
+                  State('synchronization_leader_token', 'value')
+              ])
+def check_token(synchronization_leader_newtoken_button, sychronization_session_id, synchronization_leader_token):
+    if len(sychronization_session_id) < 1:
+        return ["Please enter a session id"]
+
+    if len(sychronization_session_id) == 0:
+        return ["Please enter a token"]
+    else:
+        # Lets check the session against the token
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            
+            if session_dict.get("sychronization_token", None) is None:
+                return ["Session has no token to verify against, you may create one by deleting your entry"]
+            else:
+                db_token = session_dict.get("sychronization_token", None)
+                if db_token == synchronization_leader_token:
+                    return ["Token Verified, ready to rock and roll"]
+                else:
+                    return ["Token Verification Failed"]
+        except:
+            return ["Error Verifying Session and Token"]
+
 @app.callback([
                 Output('sychronization_interval', 'interval')
               ],
