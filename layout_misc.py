@@ -134,20 +134,27 @@ SYCHRONIZATION_MODAL = [
                 ),
                 html.Hr(),
                 html.H5("Teaching Sychronization (Beta)"),
-                dcc.Dropdown(
-                    id='synchronization_type',
-                    options=[
-                        {'label': 'MANUAL(Default)', 'value': 'MANUAL'},
-                        {'label': 'LEADER', 'value': 'LEADER'},
-                        {'label': 'FOLLOWER', 'value': 'FOLLOWER'},
-                    ],
-                    searchable=False,
-                    clearable=False,
-                    value="MANUAL",
-                    style={
-                        "width":"60%"
-                    }
-                ),
+                dbc.Row([
+                    dbc.Col(
+                        dcc.Dropdown(
+                            id='synchronization_type',
+                            options=[
+                                {'label': 'MANUAL (Default)', 'value': 'MANUAL'},
+                                {'label': 'LEADER', 'value': 'LEADER'},
+                                {'label': 'FOLLOWER', 'value': 'FOLLOWER'},
+                            ],
+                            searchable=False,
+                            clearable=False,
+                            value="MANUAL",
+                            style={
+                                "width":"100%"
+                            }
+                        ),
+                    ),
+                    dbc.Col(
+                        dbc.Button("Update Synchronization Type", block=True, id="synchronization_type_button"),
+                    )
+                ]),
                 html.Hr(),
                 dbc.InputGroup(
                     [
