@@ -3105,14 +3105,13 @@ def check_token(synchronization_leader_newtoken_button, sychronization_session_i
                 Output('sychronization_interval', 'interval')
               ],
               [
-                  Input('synchronization_type_button', 'n_clicks'),
                   Input('synchronization_begin_button', 'n_clicks'),
               ],
               [
                   State('synchronization_type', 'value'),
                   State('sychronization_interval', 'interval')
               ])
-def set_update_interval(synchronization_type_button, synchronization_begin_button, synchronization_type, existing_sychronization_interval):
+def set_update_interval(synchronization_begin_button, synchronization_type, existing_sychronization_interval):
     new_interval = 10000000 * 1000
     if synchronization_type == "FOLLOWER":
         new_interval = 5 * 1000

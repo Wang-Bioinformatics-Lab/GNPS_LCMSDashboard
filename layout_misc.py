@@ -151,9 +151,7 @@ SYCHRONIZATION_MODAL = [
                             }
                         ),
                     ),
-                    dbc.Col(
-                        dbc.Button("Update Synchronization Type", block=True, id="synchronization_type_button"),
-                    )
+                    dbc.Col()
                 ]),
                 html.Hr(),
                 dbc.InputGroup(
