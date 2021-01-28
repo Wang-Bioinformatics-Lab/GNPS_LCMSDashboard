@@ -598,7 +598,7 @@ DATASELECTION_CARD = [
                         dbc.Button("Sychronization Options", block=True, id="sychronization_options_modal_button"),
                     ),
                     dbc.Col(
-                        dbc.Button("Sychronization Options", block=True, id="synchronization_begin_button"),
+                        dbc.Button("Sync Initiate", block=True, id="synchronization_begin_button"),
                     ),
                 ])
             ], className="col-sm")
