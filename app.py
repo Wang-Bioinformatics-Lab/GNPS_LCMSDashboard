@@ -145,6 +145,7 @@ NAVBAR = dbc.Navbar(
                 dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.28", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
                 dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
+                dbc.NavItem(id="dataset_files_nav"),
             ],
         navbar=True)
     ],
@@ -2994,6 +2995,31 @@ def get_file_summary(usi, usi2):
 
     return [table]
 
+
+# Creating File Summary
+@app.callback([Output('dataset_files_nav', 'children')],
+              [Input('usi', 'value'), Input('usi2', 'value')])
+@cache.memoize()
+def get_dataset_link(usi, usi2):
+    usi1_list = usi.split("\n")
+    usi2_list = usi2.split("\n")
+
+    usi1_list = [usi for usi in usi1_list if len(usi) > 8] # Filtering out empty USIs
+    usi2_list = [usi for usi in usi2_list if len(usi) > 8] # Filtering out empty USIs
+
+    usi_list = usi1_list + usi2_list
+
+    all_accessions = []
+    for usi in usi_list:
+        accession = usi.split(":")[1]
+        if "MSV" in accession:
+            all_accessions.append(accession)
+        if "MTBLS" in accession:
+            all_accessions.append(accession)
+
+    if len(all_accessions) > 0:
+        return [dbc.NavLink("Select Other Dataset Files", href="https://gnps-dataset-explorer.herokuapp.com/{}".format(all_accessions[0]))]
+    return [dash.no_update]
 
 @app.callback([Output('overlay_hover', 'options'), Output('overlay_color', 'options'), Output('overlay_size', 'options')],
               [Input('overlay_usi', 'value')])
