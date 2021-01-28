@@ -595,10 +595,10 @@ DATASELECTION_CARD = [
                 html.Br(),
                 dbc.Row([
                     dbc.Col(
-                        dbc.Button("Sychronization Options", block=True, id="sychronization_options_modal_button"),
+                        dbc.Button("Sychronization Options", block=True, color="info", id="sychronization_options_modal_button"),
                     ),
                     dbc.Col(
-                        dbc.Button("Sync Initiate", block=True, id="synchronization_begin_button"),
+                        dbc.Button("Sync Initiate", block=True, color="success", id="synchronization_begin_button"),
                     ),
                 ])
             ], className="col-sm")
