@@ -158,10 +158,10 @@ SYCHRONIZATION_MODAL = [
                 ),
                 dbc.Row([
                         dbc.Col(
-                            dbc.Button("Get New Token", block=False, id="synchronization_leader_newtoken_button"),
+                            dbc.Button("Get New Token", block=True, id="synchronization_leader_newtoken_button"),
                         ),
                         dbc.Col(
-                            dbc.Button("Check Token", block=False, id="synchronization_leader_checktoken_button"),
+                            dbc.Button("Check Token", block=True, id="synchronization_leader_checktoken_button"),
                         ),
                     ]
                 ),

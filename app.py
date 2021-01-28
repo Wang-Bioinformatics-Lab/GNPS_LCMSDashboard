@@ -1337,8 +1337,6 @@ def _sychronize_load_state(session_id, redis_client):
     except:
         pass
 
-    print("ZZZZZZZZZZZZZZZZZZZZZZZZ", session_id, session_state, file=sys.stderr)
-
     return session_state
         
     
@@ -1559,7 +1557,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("feature_finding_min_peak_rt", "value"),
                 Output("feature_finding_max_peak_rt", "value"),
                 Output("feature_finding_rt_tolerance", "value"),
-                Output("sychronization_session_id", "value"),
+                Output("sychronization_session_id", "value")
               ],
               [
                   Input('url', 'search'), 
@@ -1694,7 +1692,6 @@ def determine_url_only_parameters(  search,
 
     # Sychronization
     sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", dash.no_update, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
-
 
     # Formatting the types
     try:
@@ -2874,6 +2871,38 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     return provenance_link_object
 
 
+@app.callback(Output('sychronization_teaching_links', 'children'),
+              [
+                Input("sychronization_session_id", "value"),
+                Input("synchronization_leader_token", "value")
+              ])
+def create_sychronization_link(sychronization_session_id, synchronization_leader_token):
+    url_params = {}
+
+    url_params["sychronization_session_id"] = sychronization_session_id
+    url_params["synchronization_type"] = "FOLLOWER"
+
+    follower_url = "/?{}".format(urllib.parse.urlencode(url_params))
+
+    url_params["synchronization_leader_token"] = synchronization_leader_token
+    url_params["synchronization_type"] = "LEADER"
+
+    leader_url = "/?{}".format(urllib.parse.urlencode(url_params))
+
+    return dbc.Row([
+            dbc.Col(
+                dcc.Link(dbc.Button("Follower URL", block=True, color="primary", className="mr-1"), href=follower_url, target="_blank")
+            ),
+            dbc.Col(
+                dcc.Link(dbc.Button("Leader URL", block=True, color="primary", className="mr-1"), href=leader_url, target="_blank")
+            ),
+        ]
+    )
+
+    #url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
+    #provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
+
+
 
 @app.callback(Output('network-link-button', 'children'),
               [Input('usi', 'value'), 
@@ -2983,13 +3012,14 @@ def get_overlay_options(overlay_usi):
                 Output('sychronization_output1', 'children')
               ],
               [
+                  Input('url', 'search'),
                   Input('synchronization_leader_newtoken_button', 'n_clicks')
               ],
               [
                   State('sychronization_session_id', 'value'),
                   State('synchronization_leader_token', 'value')
               ])
-def get_new_token(synchronization_leader_newtoken_button, sychronization_session_id, synchronization_leader_token):
+def get_new_token(search, synchronization_leader_newtoken_button, sychronization_session_id, synchronization_leader_token):
     """Here we will try to get a new token for the user
 
     Args:
@@ -3000,30 +3030,35 @@ def get_new_token(synchronization_leader_newtoken_button, sychronization_session
     Returns:
         [type]: [description]
     """
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    if len(sychronization_session_id) < 1:
-        return [dash.no_update, "Please enter a session id"]
+    if "synchronization_leader_newtoken_button" in triggered_id:
+        if len(sychronization_session_id) < 1:
+            return [dash.no_update, "Please enter a session id"]
 
-    if len(synchronization_leader_token) > 0:
-        return [dash.no_update, "Please delete your token to get a new one"]
-    else:
-        try:
-            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
-        except:
-            session_dict = {}
-
-        if session_dict.get("synchronization_token", None) is None:
-            # There exists no token, let's create one and save it
-            new_token = str(uuid.uuid4()).replace("-", "")
-            session_dict["synchronization_token"] = new_token
-            _sychronize_save_state(sychronization_session_id, session_dict, redis_client)
-
-            return [new_token, "New Session Token Updated"]
+        if len(synchronization_leader_token) > 0:
+            return [dash.no_update, "Please delete your token to get a new one"]
         else:
-            # There exists a token
-            return [dash.no_update, "Token already exists for this session, please enter it to be the leader"]
+            try:
+                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            except:
+                session_dict = {}
 
-    return [dash.no_update, "Bad News Bears"]
+            if session_dict.get("synchronization_token", None) is None:
+                # There exists no token, let's create one and save it
+                new_token = str(uuid.uuid4()).replace("-", "")
+                session_dict["synchronization_token"] = new_token
+                _sychronize_save_state(sychronization_session_id, session_dict, redis_client)
+
+                return [new_token, "New Session Token Updated"]
+            else:
+                # There exists a token
+                return [dash.no_update, "Token already exists for this session, please enter it to be the leader"]
+
+        return [dash.no_update, "Bad News Bears"]
+    else:
+        synchronization_leader_token = _get_param_from_url(search, "", "synchronization_leader_token", dash.no_update)
+        return [synchronization_leader_token, "Loaded Token from URL"]
 
 
 @app.callback([
