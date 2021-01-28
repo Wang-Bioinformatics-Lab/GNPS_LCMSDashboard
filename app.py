@@ -1312,7 +1312,15 @@ def _resolve_usi(usi, temp_folder="temp"):
             return tasks._download_convert_file(usi, temp_folder=temp_folder)
 
 
-def _sychronize_save_state(session_id, parameter_dict, redis_client):
+def _sychronize_save_state(session_id, parameter_dict, redis_client, synchronization_token=None):
+    session_dict = _sychronize_load_state(session_id, redis_client)
+
+    db_token = session_dict.get("synchronization_token", None)
+
+    if db_token is not None:
+        if db_token != synchronization_token:
+            return
+
     try:
         redis_client.set(session_id, json.dumps(parameter_dict))
     except:
@@ -2788,6 +2796,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("feature_finding_rt_tolerance", "value"),
                 Input("sychronization_save_session_button", "n_clicks"),
                 Input("sychronization_session_id", "value"),
+                Input("synchronization_leader_token", "value")
               ],
               [
                   State('synchronization_type', 'value')
@@ -2797,7 +2806,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
-                sychronization_save_session_button_clicks, sychronization_session_id, synchronization_type):
+                sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, synchronization_type):
 
     url_params = {}
     url_params["xicmz"] = xic_mz
@@ -2854,7 +2863,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
             # Lets save this to redis
             url_params["usi"] = usi
             url_params["usi2"] = usi2
-            _sychronize_save_state(sychronization_session_id, url_params, redis_client)
+            _sychronize_save_state(sychronization_session_id, url_params, redis_client, synchronization_token=synchronization_leader_token)
             print("Saving", url_params)
 
     return provenance_link_object
@@ -3001,11 +3010,12 @@ def get_new_token(synchronization_leader_newtoken_button, sychronization_session
         except:
             session_dict = {}
 
-        if session_dict.get("sychronization_token", None) is None:
+        if session_dict.get("synchronization_token", None) is None:
             # There exists no token, let's create one and save it
             new_token = str(uuid.uuid4()).replace("-", "")
-            session_dict["sychronization_token"] = new_token
+            session_dict["synchronization_token"] = new_token
             _sychronize_save_state(sychronization_session_id, session_dict, redis_client)
+
             return [new_token, "New Session Token Updated"]
         else:
             # There exists a token
