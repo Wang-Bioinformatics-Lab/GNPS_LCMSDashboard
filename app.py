@@ -144,7 +144,7 @@ NAVBAR = dbc.Navbar(
             [
                 dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.28", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
-                
+                dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
             ],
         navbar=True)
     ],
@@ -600,6 +600,17 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.Button("Sync Initiate", block=True, color="success", id="synchronization_begin_button"),
                     ),
+                    dbc.Col(
+                        dbc.Button("Sync Terminate", block=True, color="danger", id="synchronization_stop_button"),
+                    ),
+                ]),
+                html.Br(),
+                dbc.Row([
+                    dbc.Col(),
+                    dbc.Col(
+                        html.Div(id="synchronization_status")
+                    ),
+                    dbc.Col(),
                 ])
             ], className="col-sm")
         ])
@@ -1782,8 +1793,6 @@ def determine_url_only_parameters_synchronization(  search,
                 pass
 
     synchronization_type  = _get_param_from_url(search, "", "synchronization_type", dash.no_update, session_dict=session_dict, old_value=existing_synchronization_type, no_change_default=dash.no_update)
-
-    print(synchronization_type, "XEIFNEI")
 
     return [synchronization_type]
 
@@ -3102,25 +3111,37 @@ def check_token(synchronization_leader_newtoken_button, sychronization_session_i
 
 
 @app.callback([
-                Output('sychronization_interval', 'interval')
+                Output('sychronization_interval', 'interval'),
+                Output('synchronization_status', 'children'),
               ],
               [
                   Input('synchronization_begin_button', 'n_clicks'),
+                  Input('synchronization_stop_button', 'n_clicks')
               ],
               [
                   State('synchronization_type', 'value'),
                   State('sychronization_interval', 'interval')
               ])
-def set_update_interval(synchronization_begin_button, synchronization_type, existing_sychronization_interval):
+def set_update_interval(synchronization_begin_button, synchronization_stop_button, synchronization_type, existing_sychronization_interval):
     new_interval = 10000000 * 1000
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    status_text = ""
+
+    # If we click stop, lets not do anything anymore
+    if "synchronization_stop_button" in triggered_id:
+        status_text = "Sync Stopped"
+        return [new_interval, status_text]
+
+    if "synchronization_begin_button" in triggered_id:
+        status_text = "Sync Started"
+    
     if synchronization_type == "FOLLOWER":
         new_interval = 5 * 1000
 
-    print(existing_sychronization_interval, new_interval)
-
     if new_interval == existing_sychronization_interval:
-        return [dash.no_update]
-    return [new_interval]
+        return [dash.no_update, dash.no_update]
+    return [new_interval, status_text]
 
 ###########################################
 # Hiding Panels
