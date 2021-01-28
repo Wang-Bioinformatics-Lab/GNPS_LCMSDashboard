@@ -81,27 +81,39 @@ def _get_scan_polarity(spec):
     return polarity
 
 # Given URL, will try to parse and get key
-def _get_param_from_url(search, url_hash, param_key, default, session_dict={}):
+def _get_param_from_url(search, url_hash, param_key, default, session_dict={}, old_value=None, no_change_default=None):
     try:
-        return session_dict[param_key]
+        param_value = session_dict[param_key]
+        if param_value == old_value:
+            return no_change_default
+        return param_value
     except:
         pass
 
     try:
         params_dict = urllib.parse.parse_qs(search[1:])
         if param_key in params_dict:
-            return str(params_dict[param_key][0])
+            param_value = str(params_dict[param_key][0])
+            if param_value == old_value:
+                return no_change_default
+            return param_value
     except:
         pass
 
     try:
         hash_dict = json.loads(urllib.parse.unquote(url_hash[1:]))
         if param_key in hash_dict:
-            return str(hash_dict[param_key])
+            param_value = str(hash_dict[param_key])
+            if param_value == old_value:
+                return no_change_default
+            return param_value
     except:
         pass
 
-    return default
+    param_value = default
+    if param_value == old_value:
+        return no_change_default
+    return param_value
 
 def _resolve_map_plot_selection(url_search, usi, local_filename, 
                 ui_map_selection=None, 

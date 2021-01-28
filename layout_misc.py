@@ -20,7 +20,7 @@ EXAMPLE_DASHBOARD = [
             html.H5("Basic Examples - LC/MS Metabolomics"),
             html.Hr(),
 
-            html.A("LCMS Multiple m/z XIC for QC Files", href="/?usi=mzspec%3AMSV000085852%3AQC_0&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier="),
+            html.A("LCMS Multiple m/z XIC for QC Files", href="/?usi=mzspec%3AMSV000085852%3AQC_0&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=True&ms2_identifier="),
             html.Br(),
             html.A("LCMS Side By Side Visualization", href='/?usi=mzspec%3AMSV000085852%3AQC_0&usi2=mzspec%3AMSV000085852%3AQC_1&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381%3B833.062397505189&xic_tolerance=0.5&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&show_ms2_markers=True&ms2_identifier=MS2%3A2277&show_lcms_2nd_map=True&map_plot_zoom=%7B"xaxis.range%5B0%5D"%3A+3.2846848333333334%2C+"xaxis.range%5B1%5D"%3A+3.5981121270270275%2C+"yaxis.range%5B0%5D"%3A+815.4334319736646%2C+"yaxis.range%5B1%5D"%3A+853.5983309206755%7D'),
             html.Br(),
@@ -132,6 +132,49 @@ SYCHRONIZATION_MODAL = [
                         ),
                     ]
                 ),
+                html.Hr(),
+                html.H5("Teaching Sychronization (Beta)"),
+                dbc.Row([
+                    dbc.Col(
+                        dcc.Dropdown(
+                            id='synchronization_type',
+                            options=[
+                                {'label': 'MANUAL (Default)', 'value': 'MANUAL'},
+                                {'label': 'LEADER', 'value': 'LEADER'},
+                                {'label': 'FOLLOWER', 'value': 'FOLLOWER'},
+                            ],
+                            searchable=False,
+                            clearable=False,
+                            value="MANUAL",
+                            style={
+                                "width":"100%"
+                            }
+                        ),
+                    ),
+                    dbc.Col()
+                ]),
+                html.Hr(),
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupAddon("Leader Session Token", addon_type="prepend"),
+                        dbc.Input(id='synchronization_leader_token', placeholder="Enter Token", value=""),
+                    ],
+                    className="mb-3",
+                ),
+                dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Get New Token", block=True, id="synchronization_leader_newtoken_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Check Token", block=True, id="synchronization_leader_checktoken_button"),
+                        ),
+                    ]
+                ),
+                html.Br(),
+                html.Div(id="sychronization_output1"),
+                html.Div(id="sychronization_output2"),
+                html.Br(),
+                html.Div(id="sychronization_teaching_links"),
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="sychronization_options_modal_close", className="ml-auto")
