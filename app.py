@@ -1320,6 +1320,9 @@ def _sychronize_save_state(session_id, parameter_dict, redis_client, synchroniza
     if db_token is not None:
         if db_token != synchronization_token:
             return
+        
+        # tokens are equal, so lets make sure to keep saving it
+        parameter_dict["synchronization_token"] = synchronization_token
 
     try:
         redis_client.set(session_id, json.dumps(parameter_dict))
@@ -1333,7 +1336,9 @@ def _sychronize_load_state(session_id, redis_client):
         session_state = json.loads(redis_client.get(session_id))
     except:
         pass
-    
+
+    print("ZZZZZZZZZZZZZZZZZZZZZZZZ", session_id, session_state, file=sys.stderr)
+
     return session_state
         
     
@@ -2973,9 +2978,6 @@ def get_overlay_options(overlay_usi):
 
 
 # Sychronization Section for callbacks
-
-
-
 @app.callback([
                 Output('synchronization_leader_token', 'value'),
                 Output('sychronization_output1', 'children')
@@ -3045,16 +3047,18 @@ def check_token(synchronization_leader_newtoken_button, sychronization_session_i
         try:
             session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
             
-            if session_dict.get("sychronization_token", None) is None:
+            if session_dict.get("synchronization_token", None) is None:
                 return ["Session has no token to verify against, you may create one by deleting your entry"]
             else:
-                db_token = session_dict.get("sychronization_token", None)
+                db_token = session_dict.get("synchronization_token", None)
                 if db_token == synchronization_leader_token:
                     return ["Token Verified, ready to rock and roll"]
                 else:
                     return ["Token Verification Failed"]
         except:
             return ["Error Verifying Session and Token"]
+
+
 
 @app.callback([
                 Output('sychronization_interval', 'interval')
