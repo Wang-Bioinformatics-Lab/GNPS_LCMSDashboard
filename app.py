@@ -593,7 +593,14 @@ DATASELECTION_CARD = [
                 ]),
                 dbc.Button("Advanced Visualization Options", block=True, id="advanced_visualization_modal_button"),
                 html.Br(),
-                dbc.Button("Sychronization Options", block=True, id="sychronization_options_modal_button"),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.Button("Sychronization Options", block=True, id="sychronization_options_modal_button"),
+                    ),
+                    dbc.Col(
+                        dbc.Button("Sychronization Options", block=True, id="synchronization_begin_button"),
+                    ),
+                ])
             ], className="col-sm")
         ])
     )
@@ -3099,12 +3106,13 @@ def check_token(synchronization_leader_newtoken_button, sychronization_session_i
               ],
               [
                   Input('synchronization_type_button', 'n_clicks'),
+                  Input('synchronization_begin_button', 'n_clicks'),
               ],
               [
                   State('synchronization_type', 'value'),
                   State('sychronization_interval', 'interval')
               ])
-def set_update_interval(synchronization_type_button, synchronization_type, existing_sychronization_interval):
+def set_update_interval(synchronization_type_button, synchronization_begin_button, synchronization_type, existing_sychronization_interval):
     new_interval = 10000000 * 1000
     if synchronization_type == "FOLLOWER":
         new_interval = 5 * 1000
