@@ -2755,25 +2755,20 @@ def draw_file(url_search, usi,
     return [map_fig, remote_link, table_graph, dash.no_update]
 
 
-@app.callback([Output('map-plot2', 'figure')],
+@app.callback([
+                Output('map-plot2', 'figure')
+              ],
               [
-                Input('url', 'search'), 
                 Input('usi2', 'value'), 
-                Input('map-plot', 'relayoutData'), 
+                Input('map_plot_zoom', 'children'),
                 Input('map_plot_quantization_level', 'value'), 
                 Input('show_ms2_markers', 'value'),
                 Input("show_lcms_2nd_map", "value"),
                 Input('polarity_filtering2', 'value'),
-                Input('sychronization_load_session_button', 'n_clicks'),
-                Input('sychronization_interval', 'n_intervals'),
-              ],
-              [
-                  State('sychronization_session_id', 'value'),
               ])
-def draw_file2(url_search, usi, 
-                map_selection, map_plot_quantization_level, 
-                show_ms2_markers, show_lcms_2nd_map, polarity_filter,
-                sychronization_load_session_button_clicks, sychronization_interval, sychronization_session_id):
+def draw_file2( usi, 
+                map_plot_zoom, map_plot_quantization_level, 
+                show_ms2_markers, show_lcms_2nd_map, polarity_filter):
 
     if show_lcms_2nd_map is False:
         return [dash.no_update]
@@ -2789,17 +2784,10 @@ def draw_file2(url_search, usi,
     else:
         show_ms2_markers = False
 
-    session_dict = {}
-    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
-        try:
-            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
-        except:
-            pass
-
-    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection, session_dict=session_dict)
+    current_map_selection = json.loads(map_plot_zoom)
 
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
+    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
 
     return [map_fig]
 
