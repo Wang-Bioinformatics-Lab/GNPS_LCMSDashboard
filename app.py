@@ -619,7 +619,20 @@ DATASELECTION_CARD = [
 ]
 
 DATASLICE_CARD = [
-    dbc.CardHeader(html.H5("Details Panel")),
+    dbc.CardHeader([
+        dbc.Row([
+            dbc.Col(
+                html.H5("Details Panel"),
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    id="loading_xic_plot",
+                    children="",
+                    type="dot"
+                )
+            )
+        ])
+    ]),
     dbc.CardBody(
         [   
             html.Br(),
@@ -1047,7 +1060,20 @@ LEFT_DASHBOARD = [
 ]
 
 MIDDLE_DASHBOARD = [
-    dbc.CardHeader(html.H5("Data Exploration")),
+    dbc.CardHeader([
+        dbc.Row([
+            dbc.Col(
+                html.H5("Data Exploration"),
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    id="loading_map_plot",
+                    children="",
+                    type="dot"
+                )
+            )
+        ])
+    ]),
     dbc.CardBody(
         [
             html.Br(),
@@ -1175,6 +1201,7 @@ BODY = dbc.Container(
             interval=1000000000*1000, # in milliseconds
             n_intervals=0
         ),
+
         dbc.Row([
             dbc.Col(
                 dbc.Card(TOP_DASHBOARD), 
@@ -1437,12 +1464,19 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
 
 
 # This helps to update the ms2/ms1 plot
-@app.callback([Output('debug-output', 'children'), 
+@app.callback([
+                Output('debug-output', 'children'), 
                 Output('ms2-plot', 'figure'), 
                 Output('ms2-plot', 'config'), 
                 Output('ms2-plot-buttons', 'children'),
-                Output('spectrum_details_area', 'children')],
-              [Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")], [State('xic_mz', 'value')])
+                Output('spectrum_details_area', 'children'), 
+              ],
+              [
+                  Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")
+              ], 
+              [
+                  State('xic_mz', 'value')
+              ])
 def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     usi_first = usi.split("\n")[0]
 
@@ -2357,7 +2391,13 @@ def _integrate_files(long_data_df, xic_integration_type):
     return grouped_df
 
 # Creating XIC plot
-@app.callback([Output('xic-plot', 'figure'), Output('xic-plot', 'config'), Output("integration-table", "children"), Output("integration-boxplot", "children")],
+@app.callback([
+                Output('xic-plot', 'figure'), 
+                Output('xic-plot', 'config'), 
+                Output("integration-table", "children"), 
+                Output("integration-boxplot", "children"),
+                Output('loading_xic_plot', 'children')
+              ],
               [Input('usi', 'value'), 
               Input('usi2', 'value'), 
               Input('xic_mz', 'value'), 
@@ -2526,7 +2566,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     except:
         pass
 
-    return [fig, graph_config, table_graph, box_graph]
+    return [fig, graph_config, table_graph, box_graph, dash.no_update]
 
 
 @app.callback([
@@ -2614,6 +2654,7 @@ def determine_plot_zoom_bounds(url_search, usi,
                 Output('map-plot', 'figure'), 
                 Output('download-link', 'children'), 
                 Output("feature-finding-table", 'children'),
+                Output('loading_map_plot', 'children')
                 ],
               [
                 Input('url', 'search'), 
@@ -2711,7 +2752,7 @@ def draw_file(url_search, usi,
     except:
         pass
 
-    return [map_fig, remote_link, table_graph]
+    return [map_fig, remote_link, table_graph, dash.no_update]
 
 
 @app.callback([Output('map-plot2', 'figure')],
