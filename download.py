@@ -108,11 +108,11 @@ def _resolve_gnps_usi(usi):
         filename = "-".join(usi_splits[2].split("-")[2:])
         task = usi_splits[2].split("-")[1]
 
-        remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+        remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, urllib.parse.quote(filename))
     elif "QUICKSTART-" in usi_splits[2]:
         filename = "-".join(usi_splits[2].split("-")[2:])
         task = usi_splits[2].split("-")[1]
-        remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
+        remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, urllib.parse.quote(filename))
     elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
         print("Library Entry")
         # Lets find the provenance file

@@ -2986,7 +2986,6 @@ def get_file_summary(usi, usi2):
     table = dbc.Table.from_dataframe(stats_df, striped=True, bordered=True, hover=True, size="sm")
 
     # Adding Download Buttons instead of DOWNLOAD
-    print(table)
     for row in table.children:
         for tbody in row.children:
             usi = tbody.children[0].children
