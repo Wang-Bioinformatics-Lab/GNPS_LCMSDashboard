@@ -596,13 +596,13 @@ DATASELECTION_CARD = [
                 html.Br(),
                 dbc.Row([
                     dbc.Col(
-                        dbc.Button("Sychronization Options", block=True, color="info", id="sychronization_options_modal_button"),
+                        dbc.Button("Sync Options", block=True, color="info", id="sychronization_options_modal_button"),
                     ),
                     dbc.Col(
-                        dbc.Button("Sync Initiate", block=True, color="success", id="synchronization_begin_button"),
+                        dbc.Button("Sync Initiate (Follower)", block=True, color="success", id="synchronization_begin_button"),
                     ),
                     dbc.Col(
-                        dbc.Button("Sync Terminate", block=True, color="danger", id="synchronization_stop_button"),
+                        dbc.Button("Sync Terminate (Follower)", block=True, color="danger", id="synchronization_stop_button"),
                     ),
                 ]),
                 html.Br(),
