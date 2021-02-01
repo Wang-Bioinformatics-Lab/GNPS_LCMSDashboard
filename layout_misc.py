@@ -66,6 +66,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo LCMS - Q Exactive HF - Proteomics - TMT10Plex - RAW from MassIVE via PX", href="/?usi=mzspec:PXD022935:21720-TMT-Fra-1-1.raw"),
             html.Br(),
+            html.A("Thermo LCMS - Q Exactive - Proteomics - Deep Proteome - mzML from MassIVE", href='/?xicmz=&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"autosize"%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=mzspec%3AGNPS%3ATASK-5ecfcf81cb3c471698995b194d8246a0-f.benpullman%2F_cluster%2Ffeatures%2F29_tissues_colon_01308_H02_P013387_B00_N16_R1.tsv&overlay_mz=m%2Fz&overlay_rt=Retention+time&overlay_color=&overlay_size=&overlay_filter_column=&overlay_filter_value=&feature_finding_type=Off#%7B"usi":%20"mzspec:MSV000083508:01308_H02_P013387_B00_N16_R1%5Cn",%20"usi2":%20""%7D'),
+            html.Br(),
             html.Br(),
 
             html.H5("Different Data Sources Examples - LC/MS Metabolomics"),
