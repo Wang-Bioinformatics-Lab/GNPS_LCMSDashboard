@@ -142,7 +142,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.28", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.29", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
                 dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
                 dbc.NavItem(id="dataset_files_nav"),
@@ -1052,6 +1052,7 @@ MIDDLE_DASHBOARD = [
         [
             html.Br(),
             html.Div(id='map_plot_zoom', style={'display': 'none'}),
+            html.Div(id='highlight_box', style={'display': 'none'}),
             dcc.Graph(
                 id='map-plot',
                 figure=placeholder_map_plot,
@@ -2527,15 +2528,10 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 
     return [fig, graph_config, table_graph, box_graph]
 
-# Inspiration for structure from
-# https://github.com/plotly/dash-datashader
-# https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
 
 @app.callback([
-                Output('map-plot', 'figure'), 
-                Output('download-link', 'children'), 
-                Output('map_plot_zoom', 'children'), 
-                Output("feature-finding-table", 'children'),
+                Output('map_plot_zoom', 'children'),
+                Output('highlight_box', 'children'),
                 Output("map_plot_rt_min", 'value'),
                 Output("map_plot_rt_max", 'value'),
                 Output("map_plot_mz_min", 'value'),
@@ -2544,67 +2540,30 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               [
                 Input('url', 'search'), 
                 Input('usi', 'value'), 
-                Input('map-plot', 'relayoutData'), 
-                Input('map_plot_quantization_level', 'value'), 
-                Input('map_plot_update_range_button', 'n_clicks'), 
-                Input('show_ms2_markers', 'value'),
-                Input('polarity_filtering', 'value'),
-                Input('overlay_usi', 'value'),
-                Input('overlay_mz', 'value'),
-                Input('overlay_rt', 'value'),
-                Input('overlay_size', 'value'),
-                Input('overlay_color', 'value'),
-                Input('overlay_hover', 'value'),
-                Input('overlay_filter_column', 'value'),
-                Input('overlay_filter_value', 'value'),
-                Input('feature_finding_type', 'value'),
-                Input('run_feature_finding_button', 'n_clicks'),
+                Input('map-plot', 'relayoutData'),
+                Input('map_plot_update_range_button', 'n_clicks'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
               ],
-              [
-                State('feature_finding_ppm', 'value'),
-                State('feature_finding_noise', 'value'),
-                State('feature_finding_min_peak_rt', 'value'),
-                State('feature_finding_max_peak_rt', 'value'),
-                State('feature_finding_rt_tolerance', 'value'),
-                
+              [ 
                 State("map_plot_rt_min", 'value'),
                 State("map_plot_rt_max", 'value'),
                 State("map_plot_mz_min", 'value'),
                 State("map_plot_mz_max", 'value'),
 
+                State("map_plot_zoom", 'children'),
+
                 State('sychronization_session_id', 'value'),
               ])
-def draw_file(url_search, usi, 
-                map_selection, map_plot_quantization_level, map_plot_update_range_button,
-                show_ms2_markers, polarity_filter, 
-                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
-                feature_finding_type,
-                feature_finding_click,
-                sychronization_load_session_button_clicks,
-                sychronization_interval,
-                feature_finding_ppm,
-                feature_finding_noise,
-                feature_finding_min_peak_rt,
-                feature_finding_max_peak_rt, 
-                feature_finding_rt_tolerance,
-                map_plot_rt_min,
-                map_plot_rt_max,
-                map_plot_mz_min,
-                map_plot_mz_max,
-                sychronization_session_id):
+def determine_plot_zoom_bounds(url_search, usi, 
+                                map_selection, map_plot_update_range_button, sychronization_load_session_button, sychronization_interval,
+                                map_plot_rt_min, map_plot_rt_max, map_plot_mz_min, map_plot_mz_max, existing_map_plot_zoom, 
+                                sychronization_session_id):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
-
-    remote_link, local_filename = _resolve_usi(usi_list[0])
-
-    if show_ms2_markers == 1:
-        show_ms2_markers = True
-    else:
-        show_ms2_markers = False
+    remote_link, local_filename = _resolve_usi(usi_list[0])                         
 
     # Figuring out the map plot selection
     if "map_plot_update_range_button" in triggered_id:
@@ -2628,6 +2587,85 @@ def draw_file(url_search, usi,
 
         current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection, session_dict=session_dict)
 
+
+    current_map_plot_zoom_string = json.dumps(current_map_selection)
+
+    if current_map_plot_zoom_string == existing_map_plot_zoom:
+        return  [dash.no_update, dash.no_update, min_rt, max_rt, min_mz, max_mz]
+
+    highlight_box_string = ""
+    try:
+        highlight_box_string = json.dumps(highlight_box)
+    except:
+        pass
+
+    print("MAP SELECTION", map_selection, file=sys.stderr)
+    print("NEW SELECTION", current_map_selection, highlight_box, file=sys.stderr)
+    print("EXISTING PLOT ZOOM", existing_map_plot_zoom, file=sys.stderr)
+
+    return [current_map_plot_zoom_string, highlight_box_string, min_rt, max_rt, min_mz, max_mz]
+    
+
+# Inspiration for structure from
+# https://github.com/plotly/dash-datashader
+# https://community.plotly.com/t/heatmap-is-slow-for-large-data-arrays/21007/2
+
+@app.callback([
+                Output('map-plot', 'figure'), 
+                Output('download-link', 'children'), 
+                Output("feature-finding-table", 'children'),
+                ],
+              [
+                Input('url', 'search'), 
+                Input('usi', 'value'), 
+                Input('map_plot_zoom', 'children'), 
+                Input('highlight_box', 'children'),
+                Input('map_plot_quantization_level', 'value'), 
+                Input('show_ms2_markers', 'value'),
+                Input('polarity_filtering', 'value'),
+                Input('overlay_usi', 'value'),
+                Input('overlay_mz', 'value'),
+                Input('overlay_rt', 'value'),
+                Input('overlay_size', 'value'),
+                Input('overlay_color', 'value'),
+                Input('overlay_hover', 'value'),
+                Input('overlay_filter_column', 'value'),
+                Input('overlay_filter_value', 'value'),
+                Input('feature_finding_type', 'value'),
+                Input('run_feature_finding_button', 'n_clicks'),
+              ],
+              [
+                State('feature_finding_ppm', 'value'),
+                State('feature_finding_noise', 'value'),
+                State('feature_finding_min_peak_rt', 'value'),
+                State('feature_finding_max_peak_rt', 'value'),
+                State('feature_finding_rt_tolerance', 'value'),
+              ])
+def draw_file(url_search, usi, 
+                map_plot_zoom, highlight_box_zoom, map_plot_quantization_level,
+                show_ms2_markers, polarity_filter, 
+                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
+                feature_finding_type,
+                feature_finding_click,
+                feature_finding_ppm,
+                feature_finding_noise,
+                feature_finding_min_peak_rt,
+                feature_finding_max_peak_rt, 
+                feature_finding_rt_tolerance):
+
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    print("TRIGGERED MAP PLOT", triggered_id, file=sys.stderr, flush=True)
+
+    usi_list = usi.split("\n")
+
+    remote_link, local_filename = _resolve_usi(usi_list[0])
+
+    if show_ms2_markers == 1:
+        show_ms2_markers = True
+    else:
+        show_ms2_markers = False
+
     # Feature Finding parameters
     table_graph = dash.no_update
     if feature_finding_type == "Off":
@@ -2642,7 +2680,13 @@ def draw_file(url_search, usi,
         feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
         feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
 
-        
+    current_map_selection = json.loads(map_plot_zoom)
+    highlight_box = None
+    try:
+        highlight_box = json.loads(highlight_box_zoom)
+    except:
+        pass
+
     # Doing LCMS Map
     map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
 
@@ -2667,8 +2711,7 @@ def draw_file(url_search, usi,
     except:
         pass
 
-
-    return [map_fig, remote_link, json.dumps(current_map_selection), table_graph, min_rt, max_rt, min_mz, max_mz]
+    return [map_fig, remote_link, table_graph]
 
 
 @app.callback([Output('map-plot2', 'figure')],
