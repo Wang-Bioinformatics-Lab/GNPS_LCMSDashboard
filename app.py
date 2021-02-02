@@ -65,6 +65,7 @@ from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAIL
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
+TEMPFOLDER = "./temp"
 
 # Optionally turn on caching
 if __name__ == "__main__":
@@ -1319,7 +1320,9 @@ BODY = dbc.Container(
     className="",
 )
 
-app.layout = html.Div(children=[NAVBAR, BODY])
+app.layout = html.Div(children=[
+    NAVBAR, 
+    BODY])
 
 
 
@@ -3320,7 +3323,32 @@ app.callback(
     [State("sychronization_options_modal", "is_open")],
 )(toggle_modal)
 
+#######################
+# Flask URLS
+#######################
 
+@server.route("/mspreview/<usi>")
+@cache.memoize()
+def preview(usi):
+    remote_link, local_filename = _resolve_usi(usi)
+    temp_result_folder = os.path.join(TEMPFOLDER, "image_previews", str(uuid.uuid4()))
+
+    cmd = 'export LC_ALL=C && ./bin/msaccess {} -o {} -x "image" '.format(local_filename, temp_result_folder)
+    os.system(cmd)
+
+    import glob
+    import shutil
+    result_filename = glob.glob(os.path.join(temp_result_folder, "*.png"))[0]
+    target_preview_image = os.path.join(TEMPFOLDER, "image_previews", os.path.basename(result_filename))
+
+    # Copying image
+    shutil.copyfile(result_filename, target_preview_image)
+
+    # Remove temp folder
+    shutil.rmtree(temp_result_folder)
+
+    # Lets create a preview with msaccess
+    return send_from_directory(os.path.join(TEMPFOLDER, "image_previews"), os.path.basename(target_preview_image))
 
 
 if __name__ == "__main__":
