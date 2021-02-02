@@ -8,7 +8,7 @@ import lcms_map
 import tic
 from joblib import Memory
 
-memory = Memory("temp/xic-cache", verbose=0)
+memory = Memory("temp/memory-cache", verbose=0)
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
@@ -28,8 +28,13 @@ def _download_convert_file(usi, temp_folder="temp"):
 # Compute Data
 #################################
 @celery_instance.task(time_limit=120)
-def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium"):
-    return lcms_map._aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
+def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium", cache=True):
+    if cache:
+        _aggregate_lcms_map = memory.cache(lcms_map._aggregate_lcms_map)
+    else:
+        _aggregate_lcms_map = lcms_map._aggregate_lcms_map
+
+    return _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
 
 
 @celery_instance.task(time_limit=90)
