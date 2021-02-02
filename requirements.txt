@@ -49,3 +49,4 @@ xmltodict
 redis
 joblib
 bs4
+qrcode
