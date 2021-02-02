@@ -964,6 +964,10 @@ DEBUG_CARD = [
                 children=[html.Div([html.Div(id="loading-output-16")])],
                 type="default",
             ),
+            dcc.Loading(
+                id="qrcode",
+                type="default"
+            )
         ]
     )
 ]
@@ -2850,7 +2854,10 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
     return gnps_url
 
 
-@app.callback(Output('link-button', 'children'),
+@app.callback([
+                Output('link-button', 'children'),
+                Output('qrcode', 'children')
+              ],  
               [
                 Input('usi', 'value'), 
                 Input('usi2', 'value'), 
@@ -2959,7 +2966,20 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
             _sychronize_save_state(sychronization_session_id, url_params, redis_client, synchronization_token=synchronization_leader_token)
             print("Saving", url_params)
 
-    return provenance_link_object
+    import base64
+    import qrcode
+    import io
+
+    url = request.url.replace('/_dash-update-component', full_url)
+    qr_image = qrcode.make(url, box_size=2)
+    qr_bytes = io.BytesIO()
+    qr_image.save(qr_bytes, format='png')
+    qr_bytes.seek(0)
+
+    encoded_image = base64.b64encode(qr_bytes.getvalue()).decode('ascii')
+    qr_html_img = html.Img(src='data:image/png;base64,{}'.format(encoded_image))
+
+    return [provenance_link_object, qr_html_img]
 
 
 @app.callback(Output('sychronization_teaching_links', 'children'),
@@ -3356,6 +3376,8 @@ def preview():
 
     # Lets create a preview with msaccess
     return send_from_directory(os.path.join(TEMPFOLDER, "image_previews"), os.path.basename(target_preview_image))
+
+
 
 
 if __name__ == "__main__":
