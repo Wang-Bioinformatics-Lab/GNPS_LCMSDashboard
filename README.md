@@ -57,3 +57,13 @@ mzspec:MSV000085852:QC_2
 271.0315;278.1902;279.0909;285.0205;311.0805;314.1381
 
 [Test Link](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000085852%3AQC_DOM_2%0Amzspec%3AMSV000085852%3AQC_DOM_3%3Ascan%3A62886%0Amzspec%3AMSV000085852%3AQC_DOM_4%3Ascan%3A62886%0Amzspec%3AMSV000085852%3AQC_DOM_5%3Ascan%3A62886%0A&usi2=mzspec%3AMSV000085852%3AQC_DOM_0%3Ascan%3A62886%0Amzspec%3AMSV000085852%3AQC_DOM_1%3Ascan%3A62886%0A%0A&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=False&xic_file_grouping=FILE&show_ms2_markers=True&ms2_identifier=None)
+
+## API
+
+We provide several APIs to programmatically get data
+
+
+### Image Preview of MS run
+```
+/mspreview?usi=<usi>
+```
