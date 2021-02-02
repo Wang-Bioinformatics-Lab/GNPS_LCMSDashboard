@@ -11,3 +11,9 @@ server-compose:
 
 attach:
 	docker exec -i -t gnpslcms-dash /bin/bash
+
+
+clear-cache:
+	sudo rm temp/flask-cache/*
+	sudo rm temp/memory-cache/*
+	sudo rm temp/image_previews/*.png
