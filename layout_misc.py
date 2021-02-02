@@ -20,7 +20,7 @@ EXAMPLE_DASHBOARD = [
             html.H5("Basic Examples - LC/MS Metabolomics"),
             html.Hr(),
 
-            html.A("LCMS Multiple m/z XIC for QC Files", href="/?usi=mzspec%3AMSV000085852%3AQC_0&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier="),
+            html.A("LCMS Multiple m/z XIC for QC Files", href="/?usi=mzspec%3AMSV000085852%3AQC_0&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=True&ms2_identifier="),
             html.Br(),
             html.A("LCMS Side By Side Visualization", href='/?usi=mzspec%3AMSV000085852%3AQC_0&usi2=mzspec%3AMSV000085852%3AQC_1&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381%3B833.062397505189&xic_tolerance=0.5&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&show_ms2_markers=True&ms2_identifier=MS2%3A2277&show_lcms_2nd_map=True&map_plot_zoom=%7B"xaxis.range%5B0%5D"%3A+3.2846848333333334%2C+"xaxis.range%5B1%5D"%3A+3.5981121270270275%2C+"yaxis.range%5B0%5D"%3A+815.4334319736646%2C+"yaxis.range%5B1%5D"%3A+853.5983309206755%7D'),
             html.Br(),
@@ -39,6 +39,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo Q Exactive LCMS RAW", href="/?usi=mzspec%3AMSV000086206%3Araw/raw/S_N1.raw&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
+            html.A("Thermo Lumos LCMS RAW", href="/?usi=mzspec:MSV000086729:raw/raw/Identification/UP_Fusion_AcX_SAT_ob_pool_1_NOlist.raw"),
+            html.Br(),
             html.A("Sciex LCMS", href="/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
             html.A("Bruker LCMS", href="/?usi=mzspec%3AMSV000086015%3AStdMix_02__GA2_01_55623&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
@@ -51,6 +53,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Agilent LCMS CDF", href="/?usi=mzspec:MSV000086521:raw/ORSL13CM.CDF"),
             html.Br(),
+            html.A("Shimadzu LCMS", href="/?usi=mzspec%3AMSV000081501%3Accms_peak%2FAA+BPM+D7+1_Seg1Ev1.mzML"),
+            html.Br(),
             html.Br(),
 
             html.H5("Basic Examples - LC/MS Proteomics"),
@@ -61,6 +65,8 @@ EXAMPLE_DASHBOARD = [
             html.A("Thermo LCMS - Orbitrap Velos - Proteomics - Pandey Draft Proteome - RAW from PRIDE via PX", href="/?usi=mzspec:PXD000561:Adult_Adrenalgland_bRP_Velos_1_f07.raw"),
             html.Br(),
             html.A("Thermo LCMS - Q Exactive HF - Proteomics - TMT10Plex - RAW from MassIVE via PX", href="/?usi=mzspec:PXD022935:21720-TMT-Fra-1-1.raw"),
+            html.Br(),
+            html.A("Thermo LCMS - Q Exactive - Proteomics - Deep Proteome - mzML from MassIVE", href='/?xicmz=&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"autosize"%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=mzspec%3AGNPS%3ATASK-5ecfcf81cb3c471698995b194d8246a0-f.benpullman%2F_cluster%2Ffeatures%2F29_tissues_colon_01308_H02_P013387_B00_N16_R1.tsv&overlay_mz=m%2Fz&overlay_rt=Retention+time&overlay_color=&overlay_size=&overlay_filter_column=&overlay_filter_value=&feature_finding_type=Off#%7B"usi":%20"mzspec:MSV000083508:01308_H02_P013387_B00_N16_R1%5Cn",%20"usi2":%20""%7D'),
             html.Br(),
             html.Br(),
 
@@ -99,4 +105,106 @@ EXAMPLE_DASHBOARD = [
 
         ]
     )
+]
+
+
+SYCHRONIZATION_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Sychronization Options"),
+            dbc.ModalBody([
+                dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("Session ID", addon_type="prepend"),
+                                    dbc.Input(id='sychronization_session_id', placeholder="Enter Session ID", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                    ]
+                ),
+                dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Save Session", block=True, id="sychronization_save_session_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Load Session", block=True, id="sychronization_load_session_button"),
+                        ),
+                    ]
+                ),
+                html.Hr(),
+                html.H5("Teaching Sychronization (Beta)"),
+                dbc.Row([
+                    dbc.Col(
+                        dcc.Dropdown(
+                            id='synchronization_type',
+                            options=[
+                                {'label': 'MANUAL (Default)', 'value': 'MANUAL'},
+                                {'label': 'LEADER', 'value': 'LEADER'},
+                                {'label': 'FOLLOWER', 'value': 'FOLLOWER'},
+                            ],
+                            searchable=False,
+                            clearable=False,
+                            value="MANUAL",
+                            style={
+                                "width":"100%"
+                            }
+                        ),
+                    ),
+                    dbc.Col()
+                ]),
+                html.Hr(),
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupAddon("Leader Session Token", addon_type="prepend"),
+                        dbc.Input(id='synchronization_leader_token', placeholder="Enter Token", value=""),
+                    ],
+                    className="mb-3",
+                ),
+                dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Get New Token", block=True, id="synchronization_leader_newtoken_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Check Token", block=True, id="synchronization_leader_checktoken_button"),
+                        ),
+                    ]
+                ),
+                html.Br(),
+                html.Div(id="sychronization_output1"),
+                html.Div(id="sychronization_output2"),
+                html.Br(),
+                html.Div(id="sychronization_teaching_links"),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="sychronization_options_modal_close", className="ml-auto")
+            ),
+        ],
+        id="sychronization_options_modal",
+        size="xl",
+    )
+]
+
+
+
+SPECTRUM_DETAILS_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Spectrum Details as YAML"),
+            dbc.ModalBody([
+                dcc.Loading(
+                    id="spectrum_details_area",
+                    children=[html.Div([html.Div(id="loading-output-1035")])],
+                    type="default",
+                ),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="spectrum_details_modal_close", className="ml-auto")
+            ),
+        ],
+        id="spectrum_details_modal",
+        size="xl",
+    ),
 ]

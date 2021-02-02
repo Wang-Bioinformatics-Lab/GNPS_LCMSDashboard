@@ -108,11 +108,11 @@ def _resolve_gnps_usi(usi):
         filename = "-".join(usi_splits[2].split("-")[2:])
         task = usi_splits[2].split("-")[1]
 
-        remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, filename)
+        remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, urllib.parse.quote(filename))
     elif "QUICKSTART-" in usi_splits[2]:
         filename = "-".join(usi_splits[2].split("-")[2:])
         task = usi_splits[2].split("-")[1]
-        remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, filename)
+        remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, urllib.parse.quote(filename))
     elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
         print("Library Entry")
         # Lets find the provenance file
@@ -328,7 +328,7 @@ def _convert_raw_to_mzML(input_raw, output_mzML):
 
 
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
-    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense' --filter 'msLevel 1-4'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
     os.system(conversion_cmd)
 
 
@@ -341,7 +341,7 @@ def _convert_mzML(input_mzXML, output_mzML):
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'msLevel 1' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
-    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense' --filter 'msLevel 1-4'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {}".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     conversion_ret_code = os.system(conversion_cmd)
 
@@ -420,7 +420,7 @@ def _convert_mzML(input_mzXML, output_mzML):
                             
         # Round trip through MsConvert
         #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(temp_filename, output_mzML, os.path.dirname(output_mzML))
-        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense'".format(temp_filename, output_mzML, os.path.dirname(output_mzML))
+        conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense' --filter 'msLevel 1-4'".format(temp_filename, output_mzML, os.path.dirname(output_mzML))
 
         conversion_ret_code = os.system(conversion_cmd)
 

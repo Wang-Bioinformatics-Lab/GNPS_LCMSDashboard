@@ -28,8 +28,8 @@ def _download_convert_file(usi, temp_folder="temp"):
 # Compute Data
 #################################
 @celery_instance.task(time_limit=120)
-def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
-    return lcms_map._aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium"):
+    return lcms_map._aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
 
 
 @celery_instance.task(time_limit=90)

@@ -124,7 +124,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
     return ms1_results, ms2_results, ms3_results
 
-def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
+def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium"):
     import time
     start_time = time.time()
     ms1_results, ms2_results, ms3_results = _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
@@ -162,6 +162,13 @@ def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
     min_size = min(number_spectra, int(max_mz - min_mz) * 4)
     width = max(min(min_size*4, 750), 120)
     height = max(min(int(min_size*1.75), 500), 80)
+
+    if map_plot_quantization_level == "Low":
+        width = int(width / 2)
+        height = int(height / 2)
+    elif map_plot_quantization_level == "High":
+        width = int(width * 2)
+        height = int(height * 2)
 
     print("Datashader Len", len(df))
 

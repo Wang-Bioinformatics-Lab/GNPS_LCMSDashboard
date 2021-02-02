@@ -48,3 +48,4 @@ netcdf4
 xmltodict
 redis
 joblib
+bs4
