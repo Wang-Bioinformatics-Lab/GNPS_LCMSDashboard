@@ -1752,7 +1752,7 @@ def determine_url_only_parameters(  search,
     feature_finding_rt_tolerance = _get_param_from_url(search, "", "feature_finding_rt_tolerance", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_rt_tolerance, no_change_default=dash.no_update)
 
     # Sychronization
-    sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", dash.no_update, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
+    sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", str(uuid.uuid4()).replace("-", ""), session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
 
     # Formatting the types
     try:
