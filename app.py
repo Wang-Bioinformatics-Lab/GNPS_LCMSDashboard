@@ -2005,6 +2005,19 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
 
     return lcms_fig
 
+def _generate_qrcode_img(text_string):
+    import base64
+    import qrcode
+    import io
+    qr_image = qrcode.make(text_string, box_size=4)
+    qr_bytes = io.BytesIO()
+    qr_image.save(qr_bytes, format='png')
+    qr_bytes.seek(0)
+
+    encoded_image = base64.b64encode(qr_bytes.getvalue()).decode('ascii')
+    qr_html_img = html.Img(src='data:image/png;base64,{}'.format(encoded_image))
+
+    return qr_html_img
 
 # This calls the actual feature finding so it can be cached
 @cache.memoize()
@@ -2966,18 +2979,8 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
             _sychronize_save_state(sychronization_session_id, url_params, redis_client, synchronization_token=synchronization_leader_token)
             print("Saving", url_params)
 
-    import base64
-    import qrcode
-    import io
-
     url = request.url.replace('/_dash-update-component', full_url)
-    qr_image = qrcode.make(url, box_size=2)
-    qr_bytes = io.BytesIO()
-    qr_image.save(qr_bytes, format='png')
-    qr_bytes.seek(0)
-
-    encoded_image = base64.b64encode(qr_bytes.getvalue()).decode('ascii')
-    qr_html_img = html.Img(src='data:image/png;base64,{}'.format(encoded_image))
+    qr_html_img = _generate_qrcode_img(url)
 
     return [provenance_link_object, qr_html_img]
 
@@ -3000,18 +3003,27 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
 
     leader_url = "/?{}".format(urllib.parse.urlencode(url_params))
 
-    return dbc.Row([
+    follower_full_url = request.url.replace('/_dash-update-component', follower_url)
+    follower_img = _generate_qrcode_img(follower_full_url)
+
+    return [
+        dbc.Row([
             dbc.Col(
                 dcc.Link(dbc.Button("Follower URL", block=True, color="primary", className="mr-1"), href=follower_url, target="_blank")
             ),
             dbc.Col(
                 dcc.Link(dbc.Button("Leader URL", block=True, color="primary", className="mr-1"), href=leader_url, target="_blank")
             ),
-        ]
-    )
+        ]),
+        dbc.Row([
+            dbc.Col(
+                follower_img
+            ),
+            dbc.Col()
+            
+        ])
+    ]
 
-    #url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
-    #provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
 
 
 
