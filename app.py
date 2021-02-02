@@ -3327,19 +3327,26 @@ app.callback(
 # Flask URLS
 #######################
 
-@server.route("/mspreview/<usi>")
+from flask import request
+import glob
+import shutil
+
+@server.route("/mspreview")
 @cache.memoize()
-def preview(usi):
+def preview():
+    usi = request.args.get("usi")
+
     remote_link, local_filename = _resolve_usi(usi)
     temp_result_folder = os.path.join(TEMPFOLDER, "image_previews", str(uuid.uuid4()))
+    target_preview_image = os.path.join(TEMPFOLDER, "image_previews", werkzeug.utils.secure_filename(os.path.basename(local_filename)) + ".png")
+
+    if os.path.exists(target_preview_image):
+        return send_from_directory(os.path.join(TEMPFOLDER, "image_previews"), os.path.basename(target_preview_image))
 
     cmd = 'export LC_ALL=C && ./bin/msaccess {} -o {} -x "image" '.format(local_filename, temp_result_folder)
     os.system(cmd)
 
-    import glob
-    import shutil
     result_filename = glob.glob(os.path.join(temp_result_folder, "*.png"))[0]
-    target_preview_image = os.path.join(TEMPFOLDER, "image_previews", os.path.basename(result_filename))
 
     # Copying image
     shutil.copyfile(result_filename, target_preview_image)
