@@ -100,6 +100,17 @@ def _resolve_msv_usi(usi):
 
     return remote_link
 
+def _resolve_private_msv_usi(usi):
+    usi_splits = usi.split(':')
+    accession = usi_splits[1].replace("PRIVATE", "")
+
+    filename = os.path.join("f." + accession, usi_splits[2])
+    task = "5ecfcf81cb3c471698995b194d8246a0"
+
+    remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, urllib.parse.quote(filename))
+
+    return remote_link
+
 def _resolve_gnps_usi(usi):
     usi_splits = usi.split(':')
 
@@ -189,7 +200,9 @@ def _resolve_usi_remotelink(usi):
 
     usi_splits = usi.split(":")
     
-    if "MSV" in usi_splits[1]:
+    if "PRIVATEMSV" in usi_splits[1]:
+        remote_link = _resolve_private_msv_usi(usi)
+    elif "MSV" in usi_splits[1]:
         remote_link = _resolve_msv_usi(usi)
     elif "GNPS" in usi_splits[1]:
         remote_link = _resolve_gnps_usi(usi)
@@ -199,6 +212,8 @@ def _resolve_usi_remotelink(usi):
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
     elif "PXD" in usi_splits[1]:
         remote_link = _resolve_pxd_usi(usi)
+    
+    print("XXXXXXXXXXXXXXXXXXXXXXXX", usi_splits, remote_link)
 
     return remote_link
 
