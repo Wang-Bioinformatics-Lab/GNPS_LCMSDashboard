@@ -785,6 +785,13 @@ OVERLAY_PANEL = [
                     ),
                 )
             ]),
+            dbc.InputGroup(
+                [
+                    dbc.InputGroupAddon("Dataset Password (if private MSV) - Beta Feature", addon_type="prepend"),
+                    dbc.Input(id='dataset_password', placeholder="Enter Dataset Password", type="password", value=""),
+                ],
+                className="mb-3",
+            ),
             dbc.Row([
                 dbc.Col(
                     dbc.InputGroup(
