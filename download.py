@@ -212,8 +212,6 @@ def _resolve_usi_remotelink(usi):
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
     elif "PXD" in usi_splits[1]:
         remote_link = _resolve_pxd_usi(usi)
-    
-    print("XXXXXXXXXXXXXXXXXXXXXXXX", usi_splits, remote_link)
 
     return remote_link
 
