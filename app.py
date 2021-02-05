@@ -60,7 +60,7 @@ from formula_utils import get_adduct_mass
 import xic
 
 # Importing layout for HTML
-from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL
+from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -593,7 +593,14 @@ DATASELECTION_CARD = [
                             className="mb-3",
                         )),
                 ]),
-                dbc.Button("Advanced Visualization Options", block=True, id="advanced_visualization_modal_button"),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.Button("Advanced Visualization Options", block=True, id="advanced_visualization_modal_button"),
+                    ),
+                    dbc.Col(
+                        dbc.Button("Advanced Import Options", block=True, id="advanced_import_modal_button"),
+                    ),
+                ]),
                 html.Br(),
                 dbc.Row([
                     dbc.Col(
@@ -1138,72 +1145,6 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
 
 
 
-ADVANCED_VISUALIZATION_MODAL = [
-    dbc.Modal(
-        [
-            dbc.ModalHeader("Advanced Visualization Modal"),
-            dbc.ModalBody([
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("LCMS Quantization Map Level", width=4.8, style={"width":"250px"}),
-                                dcc.Dropdown(
-                                    id='map_plot_quantization_level',
-                                    options=[
-                                        {'label': 'Low', 'value': 'Low'},
-                                        {'label': 'Medium', 'value': 'Medium'},
-                                        {'label': 'High', 'value': 'High'},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="Medium",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                    )),
-                ]),
-                html.Hr(),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("RT Range", addon_type="prepend"),
-                                dbc.Input(id='map_plot_rt_min', placeholder="Enter Min RT", value=""),
-                                dbc.Input(id='map_plot_rt_max', placeholder="Enter Max RT", value=""),
-                            ],
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                    )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("m/z Range", addon_type="prepend"),
-                                dbc.Input(id='map_plot_mz_min', placeholder="Enter Min m/z", value=""),
-                                dbc.Input(id='map_plot_mz_max', placeholder="Enter Max m/z", value=""),
-                            ],
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                    )),
-                ]),
-                dbc.Button("Update Map Plot Ranges", block=True, id="map_plot_update_range_button"),
-            ]),
-            dbc.ModalFooter(
-                dbc.Button("Close", id="advanced_visualization_modal_close", className="ml-auto")
-            ),
-        ],
-        id="advanced_visualization_modal",
-        size="lg",
-    ),
-]
-
 BODY = dbc.Container(
     [
         dcc.Location(id='url', refresh=False),
@@ -1325,6 +1266,7 @@ BODY = dbc.Container(
 
         # Adding modals
         dbc.Row(SPECTRUM_DETAILS_MODAL),
+        dbc.Row(ADVANCED_IMPORT_MODAL),
         dbc.Row(ADVANCED_VISUALIZATION_MODAL),
         
     ],
@@ -1415,12 +1357,16 @@ def _sychronize_load_state(session_id, redis_client):
                   Input('tic-plot', 'clickData'),
                   Input('sychronization_load_session_button', 'n_clicks'),
                   Input('sychronization_interval', 'n_intervals'),
+                  Input('advanced_import_update_button', "n_clicks"),
               ],
               [
                   State('sychronization_session_id', 'value'),
+                  State('setting_json_area', 'value'),
                   State('ms2_identifier', 'value'),
               ])
-def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_interval, sychronization_session_id,
+def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, 
+                sychronization_session_id,
+                setting_json_area, 
                 existing_ms2_identifier):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -1439,6 +1385,13 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
         if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
             try:
                 session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            except:
+                pass
+        
+        # We clicked the button so we are going to load from the text area
+        if "advanced_import_update_button" in triggered_id:
+            try:
+                session_dict = json.loads(setting_json_area)
             except:
                 pass
 
@@ -1632,9 +1585,11 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   Input('url', 'search'), 
                   Input('sychronization_load_session_button', 'n_clicks'),
                   Input('sychronization_interval', 'n_intervals'),
+                  Input('advanced_import_update_button', "n_clicks")
               ],
               [
                   State('sychronization_session_id', 'value'),
+                  State('setting_json_area', 'value'),
 
                   State('xic_formula', 'value'),
                   State('xic_peptide', 'value'),
@@ -1673,7 +1628,10 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 def determine_url_only_parameters(  search, 
                                     sychronization_load_session_button_click, 
                                     sychronization_interval, 
+                                    advanced_import_update_button, 
                                     sychronization_session_id,
+
+                                    setting_json_area,
 
                                     existing_xic_formula,
                                     existing_xic_peptide,
@@ -1715,6 +1673,7 @@ def determine_url_only_parameters(  search,
     print("TRIGGERED URL PARSING", triggered_id, file=sys.stderr)
 
     session_dict = {}
+    # We are going to load it from internal redis session server
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         if len(sychronization_session_id) > 0:
             print("LOADING", sychronization_session_id, file=sys.stderr)
@@ -1723,6 +1682,13 @@ def determine_url_only_parameters(  search,
                 print(session_dict, file=sys.stderr)
             except:
                 pass
+    
+    # We clicked the button so we are going to load from the text area
+    if "advanced_import_update_button" in triggered_id:
+        try:
+            session_dict = json.loads(setting_json_area)
+        except:
+            pass
 
     xic_formula = _get_param_from_url(search, "", "xic_formula", dash.no_update, session_dict=session_dict, old_value=existing_xic_formula, no_change_default=dash.no_update)
     xic_peptide = _get_param_from_url(search, "", "xic_peptide", dash.no_update, session_dict=session_dict, old_value=existing_xic_peptide, no_change_default=dash.no_update)
@@ -1847,16 +1813,21 @@ def determine_url_only_parameters_synchronization(  search,
                 Input('upload-data', 'contents'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
+                Input('advanced_import_update_button', "n_clicks"),
               ],
               [
                   State('upload-data', 'filename'),
                   State('upload-data', 'last_modified'),
                   State('sychronization_session_id', 'value'),
 
+                  State('setting_json_area', 'value'),
+
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, filename, filedate, sychronization_session_id,
+def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button,
+                filename, filedate, sychronization_session_id,
+                setting_json_area, 
                 existing_usi,
                 existing_usi2):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
@@ -1911,6 +1882,13 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
         except:
             pass
 
+    # We clicked the button so we are going to load from the text area
+    if "advanced_import_update_button" in triggered_id:
+        try:
+            session_dict = json.loads(setting_json_area)
+        except:
+            pass
+
     # Resolving USI
     usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict, old_value=existing_usi, no_change_default=dash.no_update)
     usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict, old_value=existing_usi2, no_change_default=dash.no_update)
@@ -1925,12 +1903,16 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
                 Input('map-plot', 'clickData'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
+                Input('advanced_import_update_button', "n_clicks"),
               ], 
               [
                   State('xic_mz', 'value'),
-                  State('sychronization_session_id', 'value')
+                  State('sychronization_session_id', 'value'),
+
+                  State('setting_json_area', 'value'),
               ])
-def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, existing_xic, sychronization_session_id):
+def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, 
+                        existing_xic, sychronization_session_id, setting_json_area):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     print("TRIGGERED XIC MZ", triggered_id, file=sys.stderr)
@@ -1972,6 +1954,13 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         try:
             session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            pass
+
+    # We clicked the button so we are going to load from the text area
+    if "advanced_import_update_button" in triggered_id:
+        try:
+            session_dict = json.loads(setting_json_area)
         except:
             pass
 
@@ -2868,6 +2857,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 
 @app.callback([
                 Output('link-button', 'children'),
+                Output('setting_json_area', 'value'),
                 Output('qrcode', 'children')
               ],  
               [
@@ -2968,15 +2958,17 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
     provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
 
+    full_json_settings = url_params
+    full_json_settings["usi"] = usi
+    full_json_settings["usi2"] = usi2
+
     # Determining Savings
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if "sychronization_save_session_button" in triggered_id or synchronization_type == "LEADER":
         if len(sychronization_session_id) > 0:
             # Lets save this to redis
-            url_params["usi"] = usi
-            url_params["usi2"] = usi2
-            _sychronize_save_state(sychronization_session_id, url_params, redis_client, synchronization_token=synchronization_leader_token)
-            print("Saving", url_params)
+            _sychronize_save_state(sychronization_session_id, full_json_settings, redis_client, synchronization_token=synchronization_leader_token)
+            print("Saving", full_json_settings)
 
     qr_html_img = dash.no_update
     try:
@@ -2985,7 +2977,10 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     except:
         pass
 
-    return [provenance_link_object, qr_html_img]
+    # Removing Sync token for json area
+    full_json_settings.pop("sychronization_session_id", None)
+
+    return [provenance_link_object, json.dumps(full_json_settings, indent=4), qr_html_img]
 
 
 @app.callback(Output('sychronization_teaching_links', 'children'),
@@ -3355,6 +3350,12 @@ app.callback(
     Output("sychronization_options_modal", "is_open"),
     [Input("sychronization_options_modal_button", "n_clicks"), Input("sychronization_options_modal_close", "n_clicks")],
     [State("sychronization_options_modal", "is_open")],
+)(toggle_modal)
+
+app.callback(
+    Output("advanced_import_modal", "is_open"),
+    [Input("advanced_import_modal_button", "n_clicks"), Input("advanced_import_modal_close", "n_clicks")],
+    [State("advanced_import_modal", "is_open")],
 )(toggle_modal)
 
 #######################
