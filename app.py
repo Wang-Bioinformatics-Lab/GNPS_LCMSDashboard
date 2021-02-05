@@ -1787,21 +1787,6 @@ def determine_url_only_parameters(  search,
             show_lcms_2nd_map = dash.no_update
     except:
         pass
-
-    print([xic_formula, 
-            xic_peptide, 
-            xic_tolerance, 
-            xic_ppm_tolerance, 
-            xic_tolerance_unit, 
-            xic_rt_window, xic_norm, 
-            xic_file_grouping, xic_integration_type, 
-            show_ms2_markers, 
-            show_lcms_2nd_map, 
-            tic_option, polarity_filtering, 
-            polarity_filtering2, 
-            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
-            feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
-            sychronization_session_id], file=sys.stderr)
     
     return [xic_formula, 
             xic_peptide, 
