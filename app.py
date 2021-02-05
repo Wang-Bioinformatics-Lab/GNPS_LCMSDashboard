@@ -1954,6 +1954,7 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     print("TRIGGERED XIC MZ", triggered_id, file=sys.stderr)
+    print(clickData, file=sys.stderr)
     
     try:
         if existing_xic is None:
