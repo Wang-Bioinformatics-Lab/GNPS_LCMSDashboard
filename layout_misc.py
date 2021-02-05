@@ -304,7 +304,7 @@ ADVANCED_IMPORT_MODAL = [
                 dbc.Row(
                     [
                         dbc.Col(
-                            dbc.Button("Manually Import Settings JSON", block=True, id="advanced_import_update_button"),
+                            dbc.Button("Import These Settings JSON", block=True, id="advanced_import_update_button"),
                         ),
                         dbc.Col(
                             html.A(
