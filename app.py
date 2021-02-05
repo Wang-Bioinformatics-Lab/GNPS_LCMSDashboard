@@ -3264,11 +3264,10 @@ def set_update_interval(synchronization_begin_button, synchronization_stop_butto
         status_text = "Sync Stopped"
         return [new_interval, status_text]
 
-    if "synchronization_begin_button" in triggered_id:
-        status_text = "Sync Started"
-    
+    # We know we're the follower, so lets act like it
     if synchronization_type == "FOLLOWER":
         new_interval = 5 * 1000
+        status_text = "Sync Started"
 
     return [new_interval, status_text]
 
