@@ -1154,6 +1154,7 @@ BODY = dbc.Container(
             n_intervals=0
         ),
         html.Div("", id="synchronization_type_dependency", style={"display":"none"}), # This is a hack to pass on a retrigger without causing infinite loops in the dependency chain
+        html.Div("", id="page_parameters", style={"display":"none"}), # This is an intermediate dependency to hold the parameters so we make it easier to update them
 
 
         dbc.Row([
@@ -2870,7 +2871,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 
 @app.callback([
                 Output('link-button', 'children'),
-                Output('setting_json_area', 'value'),
+                Output('page_parameters', 'children'),
                 Output('qrcode', 'children')
               ],  
               [
@@ -2994,6 +2995,30 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     full_json_settings.pop("sychronization_session_id", None)
 
     return [provenance_link_object, json.dumps(full_json_settings, indent=4), qr_html_img]
+
+
+@app.callback(Output('setting_json_area', 'value'),
+              [
+                Input("page_parameters", "children"),
+                Input('upload-settings-json', 'contents'),
+              ],
+              [
+                  State('upload-settings-json', 'filename'),
+                  State('upload-settings-json', 'last_modified'),
+              ])
+def create_param_json(page_parameters, filecontent, filename, filedate):
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    # Checking if we're doing stuff
+    if "upload-settings-json" in triggered_id:
+        if len(filecontent) < 100000:
+            data = filecontent.encode("utf8").split(b";base64,")[1]
+            decoded_data = base64.decodebytes(data).decode("utf8", "ignore")
+            file_setting_dict = json.loads(decoded_data)
+            
+            return json.dumps(file_setting_dict, indent=4)
+
+    return page_parameters
 
 
 @app.callback(Output('sychronization_teaching_links', 'children'),
