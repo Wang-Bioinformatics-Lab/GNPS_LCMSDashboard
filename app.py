@@ -1206,6 +1206,8 @@ BODY = dbc.Container(
             interval=1000000000*1000, # in milliseconds
             n_intervals=0
         ),
+        html.Div("", id="synchronization_type_dependency", style={"display":"none"}), # This is a hack to pass on a retrigger without causing infinite loops in the dependency chain
+
 
         dbc.Row([
             dbc.Col(
@@ -1806,38 +1808,25 @@ def determine_url_only_parameters(  search,
 
 @app.callback([ 
                   Output("synchronization_type", "value"),
+                  Output("synchronization_type_dependency", "children")
               ],
               [
                   Input('url', 'search'), 
-                  Input('sychronization_load_session_button', 'n_clicks'),
-                  Input('sychronization_interval', 'n_intervals'),
               ],
               [
-                  State('sychronization_session_id', 'value'),
                   State('synchronization_type', 'value'),
               ]
               )
 def determine_url_only_parameters_synchronization(  search, 
-                                    sychronization_load_session_button_click, 
-                                    sychronization_interval, 
-                                    sychronization_session_id,
                                     existing_synchronization_type):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     print("TRIGGERED SYNCHRONIZATION URL PARSING", triggered_id, file=sys.stderr)
 
-    session_dict = {}
-    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
-        if len(sychronization_session_id) > 0:
-            try:
-                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
-            except:
-                pass
+    synchronization_type  = _get_param_from_url(search, "", "synchronization_type", dash.no_update, old_value=existing_synchronization_type, no_change_default=dash.no_update)
 
-    synchronization_type  = _get_param_from_url(search, "", "synchronization_type", dash.no_update, session_dict=session_dict, old_value=existing_synchronization_type, no_change_default=dash.no_update)
-
-    return [synchronization_type]
+    return [synchronization_type, "DEPENDENCY"]
 
 
 # Handling file upload
@@ -1981,8 +1970,6 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
             pass
 
     xicmz = _get_param_from_url(search, "", "xicmz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
-
-    print(xicmz, file=sys.stderr)
 
     return xicmz
 
@@ -3258,15 +3245,17 @@ def check_token(synchronization_leader_newtoken_button, sychronization_session_i
               ],
               [
                   Input('synchronization_begin_button', 'n_clicks'),
-                  Input('synchronization_stop_button', 'n_clicks')
+                  Input('synchronization_stop_button', 'n_clicks'),
+                  Input('synchronization_type_dependency', 'children')
               ],
               [
                   State('synchronization_type', 'value'),
-                  State('sychronization_interval', 'interval')
               ])
-def set_update_interval(synchronization_begin_button, synchronization_stop_button, synchronization_type, existing_sychronization_interval):
+def set_update_interval(synchronization_begin_button, synchronization_stop_button, synchronization_type_dependency, synchronization_type):
     new_interval = 10000000 * 1000
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    print("TRIGGERED INTERVALUPDATE", triggered_id, file=sys.stderr)
 
     status_text = ""
 
@@ -3281,8 +3270,6 @@ def set_update_interval(synchronization_begin_button, synchronization_stop_butto
     if synchronization_type == "FOLLOWER":
         new_interval = 5 * 1000
 
-    if new_interval == existing_sychronization_interval:
-        return [dash.no_update, dash.no_update]
     return [new_interval, status_text]
 
 ###########################################
