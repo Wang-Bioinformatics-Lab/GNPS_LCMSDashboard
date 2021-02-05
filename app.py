@@ -2451,7 +2451,7 @@ def _integrate_files(long_data_df, xic_integration_type):
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", triggered_id, file=sys.stdout)
+    print("TRIGGERED XIC PLOT", triggered_id, file=sys.stdout)
 
     # For Drawing and Exporting
     graph_config = {
@@ -2994,8 +2994,12 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
             _sychronize_save_state(sychronization_session_id, url_params, redis_client, synchronization_token=synchronization_leader_token)
             print("Saving", url_params)
 
-    url = request.url.replace('/_dash-update-component', full_url)
-    qr_html_img = _generate_qrcode_img(url)
+    qr_html_img = dash.no_update
+    try:
+        url = request.url.replace('/_dash-update-component', full_url)
+        qr_html_img = _generate_qrcode_img(url) 
+    except:
+        pass
 
     return [provenance_link_object, qr_html_img]
 
