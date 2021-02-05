@@ -192,7 +192,7 @@ SYCHRONIZATION_MODAL = [
 SPECTRUM_DETAILS_MODAL = [
     dbc.Modal(
         [
-            dbc.ModalHeader("Spectrum Details as YAML"),
+            dbc.ModalHeader("Spectrum Details as XML"),
             dbc.ModalBody([
                 dcc.Loading(
                     id="spectrum_details_area",
@@ -205,6 +205,91 @@ SPECTRUM_DETAILS_MODAL = [
             ),
         ],
         id="spectrum_details_modal",
+        size="xl",
+    ),
+]
+
+
+ADVANCED_VISUALIZATION_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Advanced Visualization Modal"),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("LCMS Quantization Map Level", width=4.8, style={"width":"250px"}),
+                                dcc.Dropdown(
+                                    id='map_plot_quantization_level',
+                                    options=[
+                                        {'label': 'Low', 'value': 'Low'},
+                                        {'label': 'Medium', 'value': 'Medium'},
+                                        {'label': 'High', 'value': 'High'},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="Medium",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
+                html.Hr(),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("RT Range", addon_type="prepend"),
+                                dbc.Input(id='map_plot_rt_min', placeholder="Enter Min RT", value=""),
+                                dbc.Input(id='map_plot_rt_max', placeholder="Enter Max RT", value=""),
+                            ],
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.InputGroup(
+                            [
+                                dbc.InputGroupAddon("m/z Range", addon_type="prepend"),
+                                dbc.Input(id='map_plot_mz_min', placeholder="Enter Min m/z", value=""),
+                                dbc.Input(id='map_plot_mz_max', placeholder="Enter Max m/z", value=""),
+                            ],
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
+                dbc.Button("Update Map Plot Ranges", block=True, id="map_plot_update_range_button"),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_visualization_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_visualization_modal",
+        size="lg",
+    ),
+]
+
+
+ADVANCED_IMPORT_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("GNPS Dashboard Settings as JSON"),
+            dbc.ModalBody([
+                dbc.Textarea(id="setting_json_area", className="mb-3", placeholder="JSON Settings", rows="20"),
+                dbc.Button("Manually Import Settings JSON", block=True, id="advanced_import_update_button"),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_import_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_import_modal",
         size="xl",
     ),
 ]
