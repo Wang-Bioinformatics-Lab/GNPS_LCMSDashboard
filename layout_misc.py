@@ -301,7 +301,21 @@ ADVANCED_IMPORT_MODAL = [
                     },
                     multiple=False
                 ),
-                dbc.Button("Manually Import Settings JSON", block=True, id="advanced_import_update_button"),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dbc.Button("Manually Import Settings JSON", block=True, id="advanced_import_update_button"),
+                        ),
+                        dbc.Col(
+                            html.A(
+                                dbc.Button("Download Settings as File", block=True),
+                                id="advanced_import_download_button",
+                                target="_blank",
+                                href="/settingsdownload"
+                            ),
+                        )
+                    ]
+                )
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_import_modal_close", className="ml-auto")
