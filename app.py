@@ -1951,6 +1951,10 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
                   State('sychronization_session_id', 'value')
               ])
 def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, existing_xic, sychronization_session_id):
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    print("TRIGGERED XIC MZ", triggered_id, file=sys.stderr)
+    
     try:
         if existing_xic is None:
             existing_xic = ""
@@ -1982,8 +1986,6 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
     except:
         pass
 
-    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-
     session_dict = {}
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         try:
@@ -1992,6 +1994,8 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
             pass
 
     xicmz = _get_param_from_url(search, "", "xicmz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
+
+    print(xicmz, file=sys.stderr)
 
     return xicmz
 
