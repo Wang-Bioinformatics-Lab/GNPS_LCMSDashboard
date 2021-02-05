@@ -630,7 +630,10 @@ DATASLICE_CARD = [
                     id="loading_xic_plot",
                     children="",
                     type="dot"
-                )
+                ),
+                style={
+                    "margin-top" : "20px"
+                }
             )
         ])
     ]),
@@ -1075,7 +1078,10 @@ MIDDLE_DASHBOARD = [
                     id="loading_map_plot",
                     children="",
                     type="dot"
-                )
+                ),
+                style={
+                    "margin-top" : "20px"
+                }
             )
         ])
     ]),
