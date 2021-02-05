@@ -283,7 +283,39 @@ ADVANCED_IMPORT_MODAL = [
             dbc.ModalHeader("GNPS Dashboard Settings as JSON"),
             dbc.ModalBody([
                 dbc.Textarea(id="setting_json_area", className="mb-3", placeholder="JSON Settings", rows="20"),
-                dbc.Button("Manually Import Settings JSON", block=True, id="advanced_import_update_button"),
+                dcc.Upload(
+                    id='upload-settings-json',
+                    children=html.Div([
+                        'Enter paste json settings or Drag and Drop file with existing settings',
+                        html.A(' or Select Files')
+                    ]),
+                    style={
+                        'width': '95%',
+                        'height': '60px',
+                        'lineHeight': '60px',
+                        'borderWidth': '1px',
+                        'borderStyle': 'dashed',
+                        'borderRadius': '5px',
+                        'textAlign': 'center',
+                        'margin': '10px'
+                    },
+                    multiple=False
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dbc.Button("Import These Settings JSON", block=True, id="advanced_import_update_button"),
+                        ),
+                        dbc.Col(
+                            html.A(
+                                dbc.Button("Download Settings as File", block=True),
+                                id="advanced_import_download_button",
+                                target="_blank",
+                                href="/settingsdownload"
+                            ),
+                        )
+                    ]
+                )
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_import_modal_close", className="ml-auto")
