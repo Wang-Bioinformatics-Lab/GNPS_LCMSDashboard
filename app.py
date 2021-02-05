@@ -1966,24 +1966,25 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
 
     # Clicked points for MS1
     try:
-        clicked_target = clickData["points"][0]
+        if "map-plot" in triggered_id:
+            clicked_target = clickData["points"][0]
 
-        # This is MS1
-        if clicked_target["curveNumber"] == 0:
-            mz_target = clicked_target["y"]
+            # This is MS1
+            if clicked_target["curveNumber"] == 0:
+                mz_target = clicked_target["y"]
 
-            if len(existing_xic) > 0:
-                return existing_xic + ";" + str(mz_target)
+                if len(existing_xic) > 0:
+                    return existing_xic + ";" + str(mz_target)
 
-            return str(mz_target)
-        # This is MS2
-        elif clicked_target["curveNumber"] == 1:
-            mz_target = clicked_target["y"]
+                return str(mz_target)
+            # This is MS2
+            elif clicked_target["curveNumber"] == 1:
+                mz_target = clicked_target["y"]
 
-            if len(existing_xic) > 0:
-                return existing_xic + ";" + str(mz_target)
+                if len(existing_xic) > 0:
+                    return existing_xic + ";" + str(mz_target)
 
-            return str(mz_target)
+                return str(mz_target)
     except:
         pass
 
