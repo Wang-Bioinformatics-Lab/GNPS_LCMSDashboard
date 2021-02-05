@@ -2592,6 +2592,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 Input('map_plot_update_range_button', 'n_clicks'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
+                Input('advanced_import_update_button', "n_clicks"),
               ],
               [ 
                 State("map_plot_rt_min", 'value'),
@@ -2602,11 +2603,13 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 State("map_plot_zoom", 'children'),
 
                 State('sychronization_session_id', 'value'),
+
+                State('setting_json_area', 'value'),
               ])
 def determine_plot_zoom_bounds(url_search, usi, 
-                                map_selection, map_plot_update_range_button, sychronization_load_session_button, sychronization_interval,
+                                map_selection, map_plot_update_range_button, sychronization_load_session_button, sychronization_interval, advanced_import_update_button,
                                 map_plot_rt_min, map_plot_rt_max, map_plot_mz_min, map_plot_mz_max, existing_map_plot_zoom, 
-                                sychronization_session_id):
+                                sychronization_session_id, setting_json_area):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -2630,6 +2633,13 @@ def determine_plot_zoom_bounds(url_search, usi,
         if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
             try:
                 session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+            except:
+                pass
+        
+        # We clicked the button so we are going to load from the text area
+        if "advanced_import_update_button" in triggered_id:
+            try:
+                session_dict = json.loads(setting_json_area)
             except:
                 pass
 
