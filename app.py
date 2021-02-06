@@ -405,7 +405,7 @@ DATASELECTION_CARD = [
                                     clearable=False,
                                     value="Da",
                                     style={
-                                        "width":"60%"
+                                        "width":"40%"
                                     }
                                 )  
                             ],
