@@ -293,7 +293,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("Feature Finding (Beta)", width=4.8, style={"width":"150px"}),
+                                dbc.Label("Feature Finding", width=4.8, style={"width":"140px"}),
                                 dcc.Dropdown(
                                     id='feature_finding_type',
                                     options=[
@@ -308,7 +308,7 @@ DATASELECTION_CARD = [
                                     clearable=False,
                                     value="Off",
                                     style={
-                                        "width":"60%"
+                                        "width":"50%"
                                     }
                                 )
                             ],
@@ -428,7 +428,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("XIC Integration Type", width=4.8, style={"width":"150px"}),
+                                dbc.Label("XIC Integration", width=4.8, style={"width":"120px"}),
                                 dcc.Dropdown(
                                     id='xic_integration_type',
                                     options=[
@@ -440,7 +440,7 @@ DATASELECTION_CARD = [
                                     clearable=False,
                                     value="AUC",
                                     style={
-                                        "width":"60%"
+                                        "width":"50%"
                                     }
                                 )  
                             ],
@@ -451,7 +451,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"150px"}),
+                                dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
                                 dbc.Col(
                                     daq.ToggleSwitch(
                                         id='xic_norm',
@@ -471,7 +471,7 @@ DATASELECTION_CARD = [
                     dbc.Col(
                         dbc.FormGroup(
                             [
-                                dbc.Label("XIC File Grouping", width=4.8, style={"width":"150px"}),
+                                dbc.Label("XIC Grouping", width=4.8, style={"width":"120px"}),
                                 dcc.Dropdown(
                                     id='xic_file_grouping',
                                     options=[
@@ -483,7 +483,7 @@ DATASELECTION_CARD = [
                                     clearable=False,
                                     value="FILE",
                                     style={
-                                        "width":"60%"
+                                        "width":"50%"
                                     }
                                 )  
                             ],
