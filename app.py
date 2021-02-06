@@ -1038,8 +1038,6 @@ CONTRIBUTORS_CARD = [
             html.Div([
                 "Mingxun Wang PhD - UC San Diego",
                 html.Br(),
-                "Benjamin Pullman - UC San Diego",
-                html.Br(),
                 "Daniel Petras PhD - UC San Diego",
                 html.Br(),
                 "Vanessa Phelan PhD - CU Anschutz",
@@ -1059,6 +1057,8 @@ CONTRIBUTORS_CARD = [
                 "Wout Bittremieux PhD - UC San Diego",
                 html.Br(),
                 "Laura-Isobel McCall PhD - University of Oklahoma",
+                html.Br(),
+                "Benjamin Pullman - UC San Diego",
                 html.Br(),
                 ]
             )
