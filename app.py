@@ -3173,15 +3173,19 @@ def get_file_summary(usi, usi2):
 
     all_file_stats = [_calculate_file_stats(usi, _resolve_usi(usi)[1]) for usi in usi_list]
     stats_df = pd.DataFrame(all_file_stats)     
-    stats_df["Download"] = "DOWNLOAD"  
+    stats_df["Download"] = "DOWNLOAD"
+    stats_df["Image"] = "Image"
     table = dbc.Table.from_dataframe(stats_df, striped=True, bordered=True, hover=True, size="sm")
 
     # Adding Download Buttons instead of DOWNLOAD
     for row in table.children:
         for tbody in row.children:
             usi = tbody.children[0].children
-            remote_link = download._resolve_usi_remotelink(usi)
-            tbody.children[-1].children = html.A(dbc.Button("Download", color="primary", className="mr-1", size="sm"), href=remote_link, target="_blank")
+            download_remote_link = download._resolve_usi_remotelink(usi)
+            tbody.children[-2].children = html.A(dbc.Button("Download", color="primary", className="mr-1", size="sm"), href=download_remote_link, target="_blank")
+
+            image_link = "/mspreview?usi={}".format(usi)
+            tbody.children[-1].children = html.A(dbc.Button("Image", color="primary", className="mr-1", size="sm"), href=image_link, target="_blank")
 
     return [table]
 
