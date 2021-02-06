@@ -39,3 +39,7 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
 
     return peaks, precursor_mz, spectrum_details_string
 
+
+# This will be the main thing to call to process a spectrum
+def perform_processing_ms2(usi, local_filename, scan_number):
+    print("PERFORM PROCESSING")
