@@ -215,6 +215,39 @@ ADVANCED_VISUALIZATION_MODAL = [
         [
             dbc.ModalHeader("Advanced Visualization Modal"),
             dbc.ModalBody([
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Heatmap Color", width=4.8, style={"width":"150px"}),
+                                    dcc.Dropdown(
+                                        id='map_plot_color_scale',
+                                        options=[
+                                            {'label': 'Hot_r', 'value': 'Hot_r'},
+                                            {'label': 'Blues', 'value': 'Blues'},
+                                            {'label': 'Sunsetdark', 'value': 'Sunsetdark'},
+                                            {'label': 'Viridis', 'value': 'Viridis'},
+                                            {'label': 'Greys', 'value': 'Greys'},
+                                              
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="Hot_r",
+                                        style={
+                                            "width":"60%"
+                                        }
+                                    )
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                        )),
+                        dbc.Col()
+                    ]
+                ),
+                html.Hr(),
+
                 dbc.Row([
                     dbc.Col(
                         dbc.FormGroup(

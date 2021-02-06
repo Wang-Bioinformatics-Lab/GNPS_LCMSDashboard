@@ -1975,7 +1975,7 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, map_plot_quantization_level="Medium"):
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, map_plot_quantization_level="Medium", map_plot_color_scale="Hot_r"):
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     print("BEFORE AGGREGATE")
@@ -1994,7 +1994,12 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         print("CALL AGGREGATE")
         agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level, cache=False)
 
-    lcms_fig = lcms_map._create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, map_selection=map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box)
+    lcms_fig = lcms_map._create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, 
+                                            map_selection=map_selection, 
+                                            show_ms2_markers=show_ms2_markers, 
+                                            polarity_filter=polarity_filter, 
+                                            highlight_box=highlight_box,
+                                            color_scale=map_plot_color_scale)
 
     return lcms_fig
 
@@ -2685,6 +2690,7 @@ def determine_plot_zoom_bounds(url_search, usi,
                 Input('map_plot_zoom', 'children'), 
                 Input('highlight_box', 'children'),
                 Input('map_plot_quantization_level', 'value'), 
+                Input('map_plot_color_scale', 'value'),
                 Input('show_ms2_markers', 'value'),
                 Input('polarity_filtering', 'value'),
                 Input('overlay_usi', 'value'),
@@ -2706,7 +2712,7 @@ def determine_plot_zoom_bounds(url_search, usi,
                 State('feature_finding_rt_tolerance', 'value'),
               ])
 def draw_file(url_search, usi, 
-                map_plot_zoom, highlight_box_zoom, map_plot_quantization_level,
+                map_plot_zoom, highlight_box_zoom, map_plot_quantization_level, map_plot_color_scale,
                 show_ms2_markers, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
@@ -2752,7 +2758,13 @@ def draw_file(url_search, usi,
         pass
 
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, highlight_box=highlight_box, map_plot_quantization_level=map_plot_quantization_level)
+    map_fig = _create_map_fig(local_filename, 
+                                map_selection=current_map_selection, 
+                                show_ms2_markers=show_ms2_markers, 
+                                polarity_filter=polarity_filter, 
+                                highlight_box=highlight_box, 
+                                map_plot_quantization_level=map_plot_quantization_level,
+                                map_plot_color_scale=map_plot_color_scale)
 
     # Adding on Feature Finding data
     map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
@@ -2785,12 +2797,13 @@ def draw_file(url_search, usi,
                 Input('usi2', 'value'), 
                 Input('map_plot_zoom', 'children'),
                 Input('map_plot_quantization_level', 'value'), 
+                Input('map_plot_color_scale', 'value'),
                 Input('show_ms2_markers', 'value'),
                 Input("show_lcms_2nd_map", "value"),
                 Input('polarity_filtering2', 'value'),
               ])
 def draw_file2( usi, 
-                map_plot_zoom, map_plot_quantization_level, 
+                map_plot_zoom, map_plot_quantization_level, map_plot_color_scale,
                 show_ms2_markers, show_lcms_2nd_map, polarity_filter):
 
     if show_lcms_2nd_map is False:
@@ -2810,7 +2823,12 @@ def draw_file2( usi,
     current_map_selection = json.loads(map_plot_zoom)
 
     # Doing LCMS Map
-    map_fig = _create_map_fig(local_filename, map_selection=current_map_selection, show_ms2_markers=show_ms2_markers, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
+    map_fig = _create_map_fig(local_filename, 
+                                map_selection=current_map_selection, 
+                                show_ms2_markers=show_ms2_markers, 
+                                polarity_filter=polarity_filter, 
+                                map_plot_quantization_level=map_plot_quantization_level,
+                                map_plot_color_scale=map_plot_color_scale)
 
     return [map_fig]
 
