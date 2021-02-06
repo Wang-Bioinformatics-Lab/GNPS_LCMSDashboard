@@ -187,13 +187,13 @@ def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
 
 # Creates the figure for map plot
 # overlay_data is a dataframe that includes the overlay, rt and mz are the expected columns
-def _create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None):
+def _create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, color_scale="Hot_r"):
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     agg = xarray.DataArray.from_dict(agg_dict)
 
     # Creating the figures
-    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale="Hot_r", height=600, template="plotly_white")
+    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale=color_scale, height=600, template="plotly_white")
     fig.update_traces(hoverongaps=False)
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'))
 
