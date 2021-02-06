@@ -3455,7 +3455,6 @@ def preview():
     return send_from_directory(os.path.join(TEMPFOLDER, "image_previews"), os.path.basename(target_preview_image))
 
 @server.route("/settingsdownload")
-@cache.memoize()
 def settingsdownload():
     settings_json = request.args.get("settings_json")
 
@@ -3470,10 +3469,16 @@ def settingsdownload():
     mem.seek(0)
     proxy.close()
 
+    import hashlib
+    hash_value = int(hashlib.sha256(settings_json.encode('utf-8')).hexdigest(), 16) % 10**8
+    output_filename = "settings_{}.json".format(hash_value)
+
+    print("output_filename", output_filename, hash_value, file=sys.stderr)
+
     return send_file(
         mem,
         as_attachment=True,
-        attachment_filename='settings.json',
+        attachment_filename=output_filename,
         mimetype='text/json'
     )
 
