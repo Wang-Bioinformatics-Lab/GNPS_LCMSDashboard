@@ -642,6 +642,16 @@ DATASLICE_CARD = [
                 style={
                     "margin-top" : "20px"
                 }
+            ),
+            dbc.Col(
+                dbc.Button("Clear XIC", 
+                    id="xicmz_clear_button", 
+                    color="info", size="sm", 
+                    className="mr-1", 
+                    style={
+                        "float" : "right"
+                    }
+                ),
             )
         ])
     ]),
@@ -1920,6 +1930,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
+                Input('xicmz_clear_button', "n_clicks"),
               ], 
               [
                   State('xic_mz', 'value'),
@@ -1927,13 +1938,15 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
 
                   State('setting_json_area', 'value'),
               ])
-def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, 
+def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, xicmz_clear_button,
                         existing_xic, sychronization_session_id, setting_json_area):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     print("TRIGGERED XIC MZ", triggered_id, file=sys.stderr)
-    print(clickData, file=sys.stderr)
-    
+
+    if "xicmz_clear_button" in triggered_id:
+        return ""
+
     try:
         if existing_xic is None:
             existing_xic = ""
