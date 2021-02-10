@@ -3039,8 +3039,11 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     # Saving the data to logs area
     try:
         log_filename = "./logs/params/{}.json".format(str(uuid.uuid4()))
+        import copy
+        to_save_settings = copy.deepcopy(full_json_settings)
+        to_save_settings["ip"] = request.remote_addr
         with open(log_filename, "w") as o:
-            o.write(json.dumps(full_json_settings))
+            o.write(json.dumps(to_save_settings))
     except:
         pass
 
