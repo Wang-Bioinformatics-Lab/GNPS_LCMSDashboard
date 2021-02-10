@@ -256,7 +256,7 @@ def _resolve_exists_local(usi, temp_folder="temp"):
 
 
 # Returns remote_link and local filepath
-def _resolve_usi(usi, temp_folder="temp"):
+def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     usi_splits = usi.split(":")
 
     converted_local_filename = os.path.join(temp_folder, _usi_to_local_filename(usi))
@@ -306,7 +306,7 @@ def _resolve_usi(usi, temp_folder="temp"):
 
     # Cleanup
     try:
-        if local_filename != converted_local_filename:
+        if local_filename != converted_local_filename and cleanup:
             os.remove(local_filename)
     except:
         pass
@@ -338,11 +338,14 @@ def _convert_mzML(input_mzXML, output_mzML):
     This will convert mzXML and mzML to mzML
     """
 
+    # These are old versions of the convert
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'msLevel 1' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
-    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense' --filter 'msLevel 1-4'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {}".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense' --filter 'msLevel 1-4'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+
     conversion_ret_code = os.system(conversion_cmd)
 
     # Checking the conversion only if the source is mzXML

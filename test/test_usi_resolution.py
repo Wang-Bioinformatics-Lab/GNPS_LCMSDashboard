@@ -18,6 +18,9 @@ def test_resolve_download():
         remote_link, local_filename = download._resolve_usi(record["usi"])
 
         assert(os.path.exists(local_filename))
+
+        # We should also check the number of spectra
+        #TODO: Check this
         
 
 def test_resolve_filename():
