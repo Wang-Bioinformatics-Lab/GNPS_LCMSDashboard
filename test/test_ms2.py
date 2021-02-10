@@ -35,6 +35,10 @@ def test_ms1_selection_spectrum():
 
     assert(int(closest_scan) > 0)
 
+    peaks, mz, spectrum_details_string = ms2._get_ms2_peaks(usi, local_filename, 764)
+
+    assert(len(peaks) > 10)
+
     
 
 
