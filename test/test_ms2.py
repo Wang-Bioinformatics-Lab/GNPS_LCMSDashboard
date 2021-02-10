@@ -2,7 +2,7 @@ import sys
 sys.path.insert(0, "..")
 import xic
 import pandas as pd
-import ms2 
+import ms2
 import download
 
 
@@ -25,3 +25,23 @@ def test_ms2_spectrum():
     # peaks, mz = ms2._get_ms2_peaks(usi, local_filename, 501217)
 
     # assert(len(peaks) > 10)
+
+def test_ms1_selection_spectrum():
+    usi = "mzspec:MSV000086521:raw/ORSL13CM.CDF"
+    remote_link, local_filename = download._resolve_usi(usi)
+    closest_scan = ms2.determine_scan_by_rt(usi, local_filename, 12.83)
+
+    print("closest_scan", closest_scan)
+
+    assert(int(closest_scan) > 0)
+
+    peaks, mz, spectrum_details_string = ms2._get_ms2_peaks(usi, local_filename, 764)
+
+    assert(len(peaks) > 10)
+
+    
+
+
+
+
+
