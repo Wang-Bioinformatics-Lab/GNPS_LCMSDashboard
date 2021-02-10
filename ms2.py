@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 import xmltodict
 import yaml
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 def _get_ms2_peaks(usi, local_filename, scan_number):
     # Let's first try to get the spectrum from disk
@@ -39,3 +40,19 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
 
     return peaks, precursor_mz, spectrum_details_string
 
+def determine_scan_by_rt(usi, local_filename, rt, ms_level=1):
+    # Understand parameters
+    min_rt_delta = 1000
+    closest_scan = 0
+    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
+    for spec in tqdm(run):
+        if spec.ms_level == ms_level:
+            try:
+                delta = abs(spec.scan_time_in_minutes() - rt)
+                if delta < min_rt_delta:
+                    closest_scan = spec.ID
+                    min_rt_delta = delta
+            except:
+                pass
+
+    return closest_scan

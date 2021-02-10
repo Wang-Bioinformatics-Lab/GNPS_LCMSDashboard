@@ -1435,23 +1435,9 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
         usi_first = usi.split("\n")[0]
         remote_link, local_filename = _resolve_usi(usi_first)
 
-        # Understand parameters
-        min_rt_delta = 1000
-        closest_scan = 0
-        run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-        for spec in tqdm(run):
-            if spec.ms_level == 1:
-                try:
-                    delta = abs(spec.scan_time_in_minutes() - rt_target)
-                    if delta < min_rt_delta:
-                        closest_scan = spec.ID
-                        min_rt_delta = delta
-                except:
-                    pass
+        closest_scan = ms2.determine_scan_by_rt(usi_first, local_filename, rt_target)
 
-        return ["MS1:" + str(closest_scan)]
-
-    
+        return ["MS1:{}".format(closest_scan)]
 
 
 # This helps to update the ms2/ms1 plot
