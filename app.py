@@ -988,7 +988,23 @@ DEBUG_CARD = [
             dcc.Loading(
                 id="qrcode",
                 type="default"
-            )
+            ),
+            html.Hr(),
+            html.H5("Privacy Policy"),
+            dcc.Markdown('''
+In order to be transparent in the usage of this tool, we track the following data
+
+1. IP Addresses
+1. Data selected and visualization options
+1. Website that directed you to tool (if applicable)
+
+It is our intention with the collected data to keep the specific data private but aggregate for research purposes. These purposes include and be limited to:
+
+1. Understanding user behavior and learning how people explore and interact with mass spectrometry
+2. Finding bugs and improving the platform
+3. Aggregating user interactions and publish findings regarding which features and analysis workflows are useful to users
+4. Usage reporting for grant and manuscript purposes
+                ''')
         ]
     )
 ]
@@ -1264,7 +1280,7 @@ BODY = dbc.Container(
                         html.Br(),
                         dbc.Card(EXAMPLE_DASHBOARD),
                         html.Br(),
-                        dbc.Card(SYCHRONIZATION_MODAL)
+                        dbc.Card(SYCHRONIZATION_MODAL),
                     ],
                         #className="w-50"
                     ),
@@ -3017,6 +3033,14 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     try:
         url = request.url.replace('/_dash-update-component', full_url)
         qr_html_img = _generate_qrcode_img(url) 
+    except:
+        pass
+
+    # Saving the data to logs area
+    try:
+        log_filename = "./logs/params/{}.json".format(str(uuid.uuid4()))
+        with open(log_filename, "w") as o:
+            o.write(json.dumps(full_json_settings))
     except:
         pass
 
