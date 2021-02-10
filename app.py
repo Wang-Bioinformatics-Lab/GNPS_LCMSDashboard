@@ -59,6 +59,9 @@ import lcms_map
 import tasks
 from formula_utils import get_adduct_mass
 import xic
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL
@@ -67,6 +70,14 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 TEMPFOLDER = "./temp"
+
+server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
+
+limiter = Limiter(
+    server,
+    key_func=get_remote_address,
+    default_limits=["10000 per hour"]
+)
 
 # Optionally turn on caching
 if __name__ == "__main__":
