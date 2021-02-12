@@ -3243,6 +3243,21 @@ def advance_replay(url_hash, replay_forward_button, replay_backward_button, repl
     ]
 
 
+@app.callback([
+                Output("advanced_import_replay_link", "href")
+              ],
+              [
+                  Input('replay_json_area', 'value'),
+              ])
+def create_replay_link(replay_json_area):
+    
+    hash_params = {}
+    hash_params["replay_list"] = json.loads(replay_json_area)
+    replay_link = "/#{}".format(urllib.parse.quote(json.dumps(hash_params)))
+
+    return [replay_link]
+
+
 @app.callback(Output('sychronization_teaching_links', 'children'),
               [
                 Input("sychronization_session_id", "value"),

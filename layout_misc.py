@@ -382,6 +382,12 @@ ADVANCED_REPLAY_MODAL = [
                     dbc.Col([
                         html.H5("Next Replay JSON"),
                         dbc.Textarea(id="replay_json_area", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                        html.A(
+                            dbc.Button("Link to this Replay", block=True),
+                            id="advanced_import_replay_link",
+                            target="_blank",
+                            href="/"
+                        ),
                     ])
                 ])
             ]),
