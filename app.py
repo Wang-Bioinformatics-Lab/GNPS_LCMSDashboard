@@ -44,6 +44,7 @@ import base64
 import redis
 from molmass import Formula
 from pyteomics import mass
+from datetime import datetime
 
 # Project Imports
 
@@ -3053,6 +3054,11 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
         import copy
         to_save_settings = copy.deepcopy(full_json_settings)
         to_save_settings["ip"] = request.remote_addr
+
+        now = datetime.now()
+        date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+        to_save_settings["timestamp"] = date_time
+
         with open(log_filename, "w") as o:
             o.write(json.dumps(to_save_settings))
     except:
