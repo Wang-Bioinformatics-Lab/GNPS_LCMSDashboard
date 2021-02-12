@@ -2690,6 +2690,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
+                Input('auto_import_parameters', 'children'),
               ],
               [ 
                 State("map_plot_rt_min", 'value'),
@@ -2704,7 +2705,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 State('setting_json_area', 'value'),
               ])
 def determine_plot_zoom_bounds(url_search, usi, 
-                                map_selection, map_plot_update_range_button, sychronization_load_session_button, sychronization_interval, advanced_import_update_button,
+                                map_selection, map_plot_update_range_button, sychronization_load_session_button, sychronization_interval, advanced_import_update_button, auto_import_parameters,
                                 map_plot_rt_min, map_plot_rt_max, map_plot_mz_min, map_plot_mz_max, existing_map_plot_zoom, 
                                 sychronization_session_id, setting_json_area):
 
@@ -2737,6 +2738,12 @@ def determine_plot_zoom_bounds(url_search, usi,
         if "advanced_import_update_button" in triggered_id:
             try:
                 session_dict = json.loads(setting_json_area)
+            except:
+                pass
+
+        if "auto_import_parameters" in triggered_id:
+            try:
+                session_dict = json.loads(auto_import_parameters)
             except:
                 pass
 
@@ -3162,7 +3169,7 @@ def advance_replay(replay_forward_button, replay_json_area):
     try:
         replay_list = json.loads(replay_json_area)
         if len(replay_list) > 0:
-            return [json.dumps(replay_list[0]), json.dumps(replay_list[1:])]
+            return [json.dumps(replay_list[0]), json.dumps(replay_list[1:], indent=4)]
         
         return [dash.no_update, dash.no_update]
     except:
