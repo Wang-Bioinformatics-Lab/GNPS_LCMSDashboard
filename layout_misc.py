@@ -350,6 +350,13 @@ ADVANCED_IMPORT_MODAL = [
                     dbc.Col([
                         html.H5("Settings History"),
                         dbc.Textarea(id="setting_json_area_history", className="mb-3", placeholder="JSON History Settings", rows="20"),
+                        html.Br(),
+                        html.A(
+                            dbc.Button("Link to Analysis with History", block=True),
+                            id="advanced_import_history_link",
+                            target="_blank",
+                            href="/"
+                        ),
                     ])
                 ]),
             ]),
@@ -367,10 +374,16 @@ ADVANCED_REPLAY_MODAL = [
         [
             dbc.ModalHeader("GNPS Dashboard Replay"),
             dbc.ModalBody([
-                html.H5("Next Replay JSON"),
-                dbc.Textarea(id="replay_json_area", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
-                html.H5("Previous Replay JSON"),
-                dbc.Textarea(id="replay_json_area_previous", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                dbc.Row([
+                    dbc.Col([
+                        html.H5("Previous Replay JSON"),
+                        dbc.Textarea(id="replay_json_area_previous", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                    ]),
+                    dbc.Col([
+                        html.H5("Next Replay JSON"),
+                        dbc.Textarea(id="replay_json_area", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                    ])
+                ])
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_replay_modal_close", className="ml-auto")
