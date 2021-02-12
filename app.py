@@ -3249,13 +3249,39 @@ def advance_replay(url_hash, replay_forward_button, replay_backward_button, repl
               [
                   Input('replay_json_area', 'value'),
               ])
-def create_replay_link(replay_json_area):
+def create_replay_link(replay_json_area,):
     
     hash_params = {}
     hash_params["replay_list"] = json.loads(replay_json_area)
     replay_link = "/#{}".format(urllib.parse.quote(json.dumps(hash_params)))
 
     return [replay_link]
+
+
+@app.callback([
+                Output("replay_summary", "children")
+              ],
+              [
+                  Input('replay_json_area', 'value'),
+                  Input('replay_json_area_previous', 'value')
+              ])
+def create_replay_link(replay_json_area, replay_json_area_previous):
+    replay_list = []
+    replay_previous_list = []
+
+    try:
+        replay_list = json.loads(replay_json_area)
+    except:
+        pass
+    
+    try:
+        replay_previous_list = json.loads(replay_json_area_previous)
+    except:
+        pass
+
+    return ["{} total replay steps and {} previous steps".format(len(replay_list), len(replay_previous_list))]
+
+
 
 
 @app.callback(Output('sychronization_teaching_links', 'children'),

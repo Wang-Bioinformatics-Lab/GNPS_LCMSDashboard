@@ -378,6 +378,7 @@ ADVANCED_REPLAY_MODAL = [
                     dbc.Col([
                         html.H5("Previous Replay JSON"),
                         dbc.Textarea(id="replay_json_area_previous", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                        html.Div(id="replay_summary")
                     ]),
                     dbc.Col([
                         html.H5("Next Replay JSON"),
