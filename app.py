@@ -170,479 +170,499 @@ NAVBAR = dbc.Navbar(
 
 DATASELECTION_CARD = [
     dbc.CardHeader([
-        html.H5("Data Selection"),
-    ]),
-    dbc.CardBody(dbc.Row(
-        [   ## Left Panel
-            dbc.Col([
-                html.H5(children='File Selection'),
-                dbc.InputGroup(
-                    [
-                        dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
-                        dbc.Textarea(id='usi', placeholder="Enter GNPS File USI"),
-                    ],
-                    className="mb-3",
-                ),
-                dbc.InputGroup(
-                    [
-                        dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
-                        dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
-                    ],
-                    className="mb-3",
-                ),
-                dcc.Upload(
-                    id='upload-data',
-                    children=html.Div([
-                        'Enter USI Above or Drag and Drop your own file',
-                        html.A(' or Select Files')
-                    ]),
+        dbc.Row([
+            dbc.Col(
+                html.H5("Data Selection"),
+            ),
+            dbc.Col(
+                dbc.Button("Show/Hide", 
+                    id="data_selection_show_hide_button", 
+                    color="primary", size="sm", 
+                    className="mr-1", 
                     style={
-                        'width': '95%',
-                        'height': '60px',
-                        'lineHeight': '60px',
-                        'borderWidth': '1px',
-                        'borderStyle': 'dashed',
-                        'borderRadius': '5px',
-                        'textAlign': 'center',
-                        'margin': '10px'
-                    },
-                    multiple=False
+                        "float" : "right"
+                    }
                 ),
-                # Linkouts
-                dcc.Loading(
-                    id="link-button",
-                    children=[html.Div([html.Div(id="loading-output-9")])],
-                    type="default",
-                ),
-                html.Br(),
-                dcc.Loading(
-                    id="network-link-button",
-                    children=[html.Div([html.Div(id="loading-output-232")])],
-                    type="default",
-                ),
-                html.H5(children='LCMS Viewer Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"160px", "margin-left": "25px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_ms2_markers',
-                                        value=True,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"160px", "margin-left": "25px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_lcms_1st_map',
-                                        value=True,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"160px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_lcms_2nd_map',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show Filters", html_for="show_filters", width=5.8, style={"width":"160px", "margin-left": "25px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_filters',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Feature Finding", width=4.8, style={"width":"140px"}),
-                                dcc.Dropdown(
-                                    id='feature_finding_type',
-                                    options=[
-                                        {'label': 'Off', 'value': 'Off'},
-                                        {'label': 'Test', 'value': 'Test'},
-                                        {'label': 'Trivial', 'value': 'Trivial'},
-                                        # {'label': 'TidyMS', 'value': 'TidyMS'},
-                                        {'label': 'MZmine2 (Metabolomics)', 'value': 'MZmine2'},
-                                        {'label': 'Dinosaur (Proteomics)', 'value': 'Dinosaur'},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="Off",
-                                    style={
-                                        "width":"50%"
-                                    }
-                                )
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                    )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show Overlay", html_for="show_overlay", width=5.8, style={"width":"160px", "margin-left": "25px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_overlay',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                    dbc.Col(),
-                ]),
-            ], className="col-sm"),
-            ## Right Panel
-            dbc.Col([
-                html.H5(children='XIC Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
-                                dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
-                                dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
-                                dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Tolerance (Da)", addon_type="prepend"),
-                                dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Tolerance (ppm)", addon_type="prepend"),
-                                dbc.Input(id='xic_ppm_tolerance', placeholder="Enter Da Tolerance", value="10"),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("XIC Tolerance Unit", width=4.8, style={"width":"150px"}),
-                                dcc.Dropdown(
-                                    id='xic_tolerance_unit',
-                                    options=[
-                                        {'label': 'Da', 'value': 'Da'},
-                                        {'label': 'ppm', 'value': 'ppm'}
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="Da",
-                                    style={
-                                        "width":"40%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                    )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Retention Time View/Integration Limits", addon_type="prepend"),
-                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2 or 1.5)", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("XIC Integration", width=4.8, style={"width":"120px"}),
-                                dcc.Dropdown(
-                                    id='xic_integration_type',
-                                    options=[
-                                        {'label': 'MS1 Sum', 'value': 'MS1SUM'},
-                                        {'label': 'AUC', 'value': 'AUC'},
-                                        {'label': 'MAXPEAKHEIGHT', 'value': 'MAXPEAKHEIGHT'},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="AUC",
-                                    style={
-                                        "width":"50%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                    )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='xic_norm',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                        )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("XIC Grouping", width=4.8, style={"width":"120px"}),
-                                dcc.Dropdown(
-                                    id='xic_file_grouping',
-                                    options=[
-                                        {'label': 'By File', 'value': 'FILE'},
-                                        {'label': 'By m/z', 'value': 'MZ'},
-                                        {'label': 'By Group', 'value': 'GROUP'}
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="FILE",
-                                    style={
-                                        "width":"50%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                    )),
-                ]),
-                html.H5(children='MS2 Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
-                                dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                ]),
-                html.H5(children='TIC Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
-                                dcc.Dropdown(
-                                    id='tic_option',
-                                    options=[
-                                        {'label': 'TIC', 'value': 'TIC'},
-                                        {'label': 'BPI', 'value': 'BPI'}
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="TIC",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                        )
-                    ),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show Multiple TICs", width=4.8, style={"width":"150px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_multiple_tic',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                        ),
-                    ),
-                ]),
-                html.H5(children='Rendering Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dcc.Dropdown(
-                            id='image_export_format',
-                            options=[
-                                {'label': 'SVG', 'value': 'svg'},
-                                {'label': 'PNG', 'value': 'png'},
-                            ],
-                            searchable=False,
-                            clearable=False,
-                            value="svg",
-                            style={
-                                "width":"150px"
-                            }
-                        )  
-                    ),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Style", width=2, style={"width":"150px"}),
-                                dcc.Dropdown(
-                                    id='plot_theme',
-                                    options=[
-                                        {'label': 'plotly_white', 'value': 'plotly_white'},
-                                        {'label': 'ggplot2', 'value': 'ggplot2'},
-                                        {'label': 'simple_white', 'value': 'simple_white'},
-                                        {'label': 'seaborn', 'value': 'seaborn'},
-                                        {'label': 'plotly', 'value': 'plotly'},
-                                        {'label': 'plotly_dark', 'value': 'plotly_dark'},
-                                        {'label': 'presentation', 'value': 'presentation'},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="simple_white",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.Button("Advanced Visualization Options", block=True, id="advanced_visualization_modal_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Advanced Import Options", block=True, id="advanced_import_modal_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Advanced Replay Options", block=True, id="advanced_replay_modal_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Replay Advance", block=True, id="replay_forward_button"),
-                    ),
-                ]),
-                html.Br(),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.Button("Sync Options", block=True, color="info", id="sychronization_options_modal_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Sync Initiate (Follower)", block=True, color="success", id="synchronization_begin_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Sync Terminate (Follower)", block=True, color="danger", id="synchronization_stop_button"),
-                    ),
-                ]),
-                html.Br(),
-                dbc.Row([
-                    dbc.Col(),
-                    dbc.Col(
-                        html.Div(id="synchronization_status")
-                    ),
-                    dbc.Col(),
-                ])
-            ], className="col-sm")
+            )
         ])
-    )
+    ]),
+    dbc.Collapse(
+        dbc.CardBody(dbc.Row(
+            [   ## Left Panel
+                dbc.Col([
+                    html.H5(children='File Selection'),
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
+                            dbc.Textarea(id='usi', placeholder="Enter GNPS File USI"),
+                        ],
+                        className="mb-3",
+                    ),
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
+                            dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
+                        ],
+                        className="mb-3",
+                    ),
+                    dcc.Upload(
+                        id='upload-data',
+                        children=html.Div([
+                            'Enter USI Above or Drag and Drop your own file',
+                            html.A(' or Select Files')
+                        ]),
+                        style={
+                            'width': '95%',
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                            'margin': '10px'
+                        },
+                        multiple=False
+                    ),
+                    # Linkouts
+                    dcc.Loading(
+                        id="link-button",
+                        children=[html.Div([html.Div(id="loading-output-9")])],
+                        type="default",
+                    ),
+                    html.Br(),
+                    dcc.Loading(
+                        id="network-link-button",
+                        children=[html.Div([html.Div(id="loading-output-232")])],
+                        type="default",
+                    ),
+                    html.H5(children='LCMS Viewer Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"160px", "margin-left": "25px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_ms2_markers',
+                                            value=True,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"160px", "margin-left": "25px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_lcms_1st_map',
+                                            value=True,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"160px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_lcms_2nd_map',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show Filters", html_for="show_filters", width=5.8, style={"width":"160px", "margin-left": "25px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_filters',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Feature Finding", width=4.8, style={"width":"140px"}),
+                                    dcc.Dropdown(
+                                        id='feature_finding_type',
+                                        options=[
+                                            {'label': 'Off', 'value': 'Off'},
+                                            {'label': 'Test', 'value': 'Test'},
+                                            {'label': 'Trivial', 'value': 'Trivial'},
+                                            # {'label': 'TidyMS', 'value': 'TidyMS'},
+                                            {'label': 'MZmine2 (Metabolomics)', 'value': 'MZmine2'},
+                                            {'label': 'Dinosaur (Proteomics)', 'value': 'Dinosaur'},
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="Off",
+                                        style={
+                                            "width":"50%"
+                                        }
+                                    )
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                        )),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show Overlay", html_for="show_overlay", width=5.8, style={"width":"160px", "margin-left": "25px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_overlay',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                        dbc.Col(),
+                    ]),
+                ], className="col-sm"),
+                ## Right Panel
+                dbc.Col([
+                    html.H5(children='XIC Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
+                                    dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
+                                    dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
+                                    dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Tolerance (Da)", addon_type="prepend"),
+                                    dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Tolerance (ppm)", addon_type="prepend"),
+                                    dbc.Input(id='xic_ppm_tolerance', placeholder="Enter Da Tolerance", value="10"),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("XIC Tolerance Unit", width=4.8, style={"width":"150px"}),
+                                    dcc.Dropdown(
+                                        id='xic_tolerance_unit',
+                                        options=[
+                                            {'label': 'Da', 'value': 'Da'},
+                                            {'label': 'ppm', 'value': 'ppm'}
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="Da",
+                                        style={
+                                            "width":"40%"
+                                        }
+                                    )  
+                                ],
+                                row=True,
+                                className="mb-3",
+                        )),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Retention Time View/Integration Limits", addon_type="prepend"),
+                                    dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2 or 1.5)", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("XIC Integration", width=4.8, style={"width":"120px"}),
+                                    dcc.Dropdown(
+                                        id='xic_integration_type',
+                                        options=[
+                                            {'label': 'MS1 Sum', 'value': 'MS1SUM'},
+                                            {'label': 'AUC', 'value': 'AUC'},
+                                            {'label': 'MAXPEAKHEIGHT', 'value': 'MAXPEAKHEIGHT'},
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="AUC",
+                                        style={
+                                            "width":"50%"
+                                        }
+                                    )  
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                        )),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='xic_norm',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                            )),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("XIC Grouping", width=4.8, style={"width":"120px"}),
+                                    dcc.Dropdown(
+                                        id='xic_file_grouping',
+                                        options=[
+                                            {'label': 'By File', 'value': 'FILE'},
+                                            {'label': 'By m/z', 'value': 'MZ'},
+                                            {'label': 'By Group', 'value': 'GROUP'}
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="FILE",
+                                        style={
+                                            "width":"50%"
+                                        }
+                                    )  
+                                ],
+                                row=True,
+                                className="mb-3",
+                        )),
+                    ]),
+                    html.H5(children='MS2 Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
+                                    dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                    ]),
+                    html.H5(children='TIC Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
+                                    dcc.Dropdown(
+                                        id='tic_option',
+                                        options=[
+                                            {'label': 'TIC', 'value': 'TIC'},
+                                            {'label': 'BPI', 'value': 'BPI'}
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="TIC",
+                                        style={
+                                            "width":"60%"
+                                        }
+                                    )
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                            )
+                        ),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show Multiple TICs", width=4.8, style={"width":"150px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_multiple_tic',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                            ),
+                        ),
+                    ]),
+                    html.H5(children='Rendering Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dcc.Dropdown(
+                                id='image_export_format',
+                                options=[
+                                    {'label': 'SVG', 'value': 'svg'},
+                                    {'label': 'PNG', 'value': 'png'},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="svg",
+                                style={
+                                    "width":"150px"
+                                }
+                            )  
+                        ),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Style", width=2, style={"width":"150px"}),
+                                    dcc.Dropdown(
+                                        id='plot_theme',
+                                        options=[
+                                            {'label': 'plotly_white', 'value': 'plotly_white'},
+                                            {'label': 'ggplot2', 'value': 'ggplot2'},
+                                            {'label': 'simple_white', 'value': 'simple_white'},
+                                            {'label': 'seaborn', 'value': 'seaborn'},
+                                            {'label': 'plotly', 'value': 'plotly'},
+                                            {'label': 'plotly_dark', 'value': 'plotly_dark'},
+                                            {'label': 'presentation', 'value': 'presentation'},
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="simple_white",
+                                        style={
+                                            "width":"60%"
+                                        }
+                                    )  
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                    ]),
+                    html.H5(children='Advanced Panels'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Visualization Options", block=True, id="advanced_visualization_modal_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Import Options", block=True, id="advanced_import_modal_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Replay Options", block=True, id="advanced_replay_modal_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Replay Advance", block=True, id="replay_forward_button"),
+                        ),
+                    ]),
+                    html.Br(),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Sync Options", block=True, color="info", id="sychronization_options_modal_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Sync Initiate (Follower)", block=True, color="success", id="synchronization_begin_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Sync Terminate (Follower)", block=True, color="danger", id="synchronization_stop_button"),
+                        ),
+                    ]),
+                    html.Br(),
+                    dbc.Row([
+                        dbc.Col(),
+                        dbc.Col(
+                            html.Div(id="synchronization_status")
+                        ),
+                        dbc.Col(),
+                    ])
+                ], className="col-sm")
+            ])
+        ),
+        id="data_selection_collapse",
+        is_open=True
+    ),
+    
 ]
 
 DATASLICE_CARD = [
@@ -1211,7 +1231,7 @@ BODY = dbc.Container(
         ),
         html.Div("", id="synchronization_type_dependency", style={"display":"none"}), # This is a hack to pass on a retrigger without causing infinite loops in the dependency chain
         html.Div("", id="page_parameters", style={"display":"none"}), # This is an intermediate dependency to hold the parameters so we make it easier to update them
-
+        html.Div("", id="auto_import_parameters", style={"display":"none"}),
 
         dbc.Row([
             dbc.Col(
@@ -1629,7 +1649,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   Input('url', 'search'), 
                   Input('sychronization_load_session_button', 'n_clicks'),
                   Input('sychronization_interval', 'n_intervals'),
-                  Input('advanced_import_update_button', "n_clicks")
+                  Input('advanced_import_update_button', "n_clicks"),
+                  Input('auto_import_parameters', 'children')
               ],
               [
                   State('sychronization_session_id', 'value'),
@@ -1673,6 +1694,7 @@ def determine_url_only_parameters(  search,
                                     sychronization_load_session_button_click, 
                                     sychronization_interval, 
                                     advanced_import_update_button, 
+                                    auto_import_parameters,
                                     sychronization_session_id,
 
                                     setting_json_area,
@@ -1731,6 +1753,12 @@ def determine_url_only_parameters(  search,
     if "advanced_import_update_button" in triggered_id:
         try:
             session_dict = json.loads(setting_json_area)
+        except:
+            pass
+
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
         except:
             pass
 
@@ -1861,6 +1889,7 @@ def determine_url_only_parameters_synchronization(  search,
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
+                Input('auto_import_parameters', 'children')
               ],
               [
                   State('upload-data', 'filename'),
@@ -1872,7 +1901,7 @@ def determine_url_only_parameters_synchronization(  search,
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button,
+def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
                 filename, filedate, sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
@@ -1936,6 +1965,12 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
         except:
             pass
 
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
+        except:
+            pass
+
     # Resolving USI
     usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict, old_value=existing_usi, no_change_default=dash.no_update)
     usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict, old_value=existing_usi2, no_change_default=dash.no_update)
@@ -1951,6 +1986,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
+                Input('auto_import_parameters', 'children'),
                 Input('xicmz_clear_button', "n_clicks"),
               ], 
               [
@@ -1959,7 +1995,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
 
                   State('setting_json_area', 'value'),
               ])
-def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, xicmz_clear_button,
+def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, xicmz_clear_button,
                         existing_xic, sychronization_session_id, setting_json_area):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -2011,6 +2047,12 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
     if "advanced_import_update_button" in triggered_id:
         try:
             session_dict = json.loads(setting_json_area)
+        except:
+            pass
+
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
         except:
             pass
 
@@ -3106,12 +3148,25 @@ def create_param_json(page_parameters, filecontent, filename, filedate):
     return [new_params, "/settingsdownload?settings_json={}".format(urllib.parse.quote(new_params))]
 
 
-@app.callback(Output('advanced_import_update_button', 'n_clicks'),
+@app.callback([
+                Output("auto_import_parameters", "children"),
+                Output("replay_json_area", "value")
+              ],
               [
                 Input("replay_forward_button", "n_clicks"),
+              ],
+              [
+                  State("replay_json_area", "value")
               ])
-def advance_replay(replay_forward_button):
-    return replay_forward_button
+def advance_replay(replay_forward_button, replay_json_area):
+    try:
+        replay_list = json.loads(replay_json_area)
+        if len(replay_list) > 0:
+            return [json.dumps(replay_list[0]), json.dumps(replay_list[1:])]
+        
+        return [dash.no_update, dash.no_update]
+    except:
+        return [dash.no_update, dash.no_update]
 
 
 @app.callback(Output('sychronization_teaching_links', 'children'),
@@ -3468,6 +3523,8 @@ def toggle_modal(n1, n2, is_open):
         return not is_open
     return is_open
 
+
+
 app.callback(
     Output("spectrum_details_modal", "is_open"),
     [Input("spectrum_details_modal_button", "n_clicks"), Input("spectrum_details_modal_close", "n_clicks")],
@@ -3498,6 +3555,19 @@ app.callback(
     [Input("advanced_replay_modal_button", "n_clicks"), Input("advanced_replay_modal_close", "n_clicks")],
     [State("advanced_replay_modal", "is_open")],
 )(toggle_modal)
+
+# Helping to toggle the panels
+def toggle_panel(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
+
+
+app.callback(
+    Output("data_selection_collapse", "is_open"),
+    [Input("data_selection_show_hide_button", "n_clicks")],
+    [State("data_selection_collapse", "is_open")],
+)(toggle_panel)
 
 
 #######################
