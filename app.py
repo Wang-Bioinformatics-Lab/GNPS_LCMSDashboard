@@ -3234,7 +3234,6 @@ def advance_replay(url_hash, replay_forward_button, replay_backward_button, repl
                 next_json_state.insert(0, previous_json_state[-1])
                 previous_json_state = previous_json_state[:-1]
         except:
-            raise
             pass
 
     return [
