@@ -352,7 +352,7 @@ ADVANCED_IMPORT_MODAL = [
                         dbc.Textarea(id="setting_json_area_history", className="mb-3", placeholder="JSON History Settings", rows="20"),
                         html.Br(),
                         html.A(
-                            dbc.Button("Link to Analysis with History", block=True),
+                            dbc.Button("Link to Analysis History Replay", block=True),
                             id="advanced_import_history_link",
                             target="_blank",
                             href="/"

@@ -631,28 +631,28 @@ DATASELECTION_CARD = [
                         ),
                         dbc.Col(
                             dbc.Button("Replay Options", block=True, id="advanced_replay_modal_button"),
-                        ),
-                        dbc.Col(
-                            dbc.Button("Replay Advance", block=True, id="replay_forward_button"),
-                        ),
+                        )
                     ]),
                     html.Br(),
                     dbc.Row([
                         dbc.Col(
                             dbc.Button("Sync Options", block=True, color="info", id="sychronization_options_modal_button"),
                         ),
-                        dbc.Col(
+                        dbc.Col([
                             dbc.Button("Sync Initiate (Follower)", block=True, color="success", id="synchronization_begin_button"),
-                        ),
+                            html.Div(id="synchronization_status")
+                        ]),
                         dbc.Col(
                             dbc.Button("Sync Terminate (Follower)", block=True, color="danger", id="synchronization_stop_button"),
                         ),
                     ]),
                     html.Br(),
                     dbc.Row([
-                        dbc.Col(),
                         dbc.Col(
-                            html.Div(id="synchronization_status")
+                            dbc.Button("Replay Advance", block=True, id="replay_forward_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Replay Rewind", block=True, id="replay_backward_button"),
                         ),
                         dbc.Col(),
                     ])
@@ -3129,6 +3129,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 @app.callback([
                   Output('setting_json_area', 'value'),
                   Output('setting_json_area_history', 'value'),
+                  Output('advanced_import_history_link', 'href'),
                   Output('advanced_import_download_button', 'href'),
               ],
               [
@@ -3144,6 +3145,8 @@ def create_param_json(page_parameters, filecontent, existing_setting_json_area_h
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     new_params = page_parameters
+    history_text = dash.no_update
+    history_link = dash.no_update
 
     # Checking if we're doing stuff
     if "upload-settings-json" in triggered_id:
@@ -3162,9 +3165,18 @@ def create_param_json(page_parameters, filecontent, existing_setting_json_area_h
         except:
             pass
         history_list.append(json.loads(page_parameters))
-    
+        history_text = json.dumps(history_list, indent=4)
 
-    return [new_params, json.dumps(history_list, indent=4),"/settingsdownload?settings_json={}".format(urllib.parse.quote(new_params))]
+        hash_params = {}
+        hash_params["replay_list"] = history_list
+        history_link = "/#{}".format(urllib.parse.quote(json.dumps(hash_params)))
+
+    return [
+        new_params, 
+        history_text,
+        history_link,
+        "/settingsdownload?settings_json={}".format(urllib.parse.quote(new_params))
+    ]
 
 
 @app.callback([
@@ -3173,13 +3185,15 @@ def create_param_json(page_parameters, filecontent, existing_setting_json_area_h
                 Output("replay_json_area_previous", "value"),
               ],
               [
-                Input("replay_forward_button", "n_clicks"),
+                  Input('url', 'hash'),
+                  Input("replay_forward_button", "n_clicks"),
+                  Input("replay_backward_button", "n_clicks"),
               ],
               [
                   State("replay_json_area", "value"),
                   State("replay_json_area_previous", "value")
               ])
-def advance_replay(replay_forward_button, replay_json_area, replay_json_area_previous):
+def advance_replay(url_hash, replay_forward_button, replay_backward_button, replay_json_area, replay_json_area_previous):
     import_parameters_json = dash.no_update
     next_json_state = []
     previous_json_state = []
@@ -3195,18 +3209,37 @@ def advance_replay(replay_forward_button, replay_json_area, replay_json_area_pre
         pass
     
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    if "url" in triggered_id:
+        try:
+            hash_dict = json.loads(urllib.parse.unquote(url_hash[1:]))
+            next_json_state = hash_dict["replay_list"]
+        except:
+            pass
+
     if "replay_forward_button" in triggered_id:
         try:
             if len(next_json_state) > 0:
-                next_json_state = json.dumps(replay_list[1:], indent=4)
-                import_parameters_json = replay_list[0]
-                previous_json_state = previous_json_state.append(replay_list[0])
+                import_parameters_json = json.dumps(next_json_state[0], indent=4)
+                previous_json_state.append(next_json_state[0])
+                next_json_state = next_json_state[1:]
         except:
+            pass
+
+
+    if "replay_backward_button" in triggered_id:
+        try:
+            if len(previous_json_state) > 0:
+                import_parameters_json = json.dumps(previous_json_state[-1], indent=4)
+                next_json_state.insert(0, previous_json_state[-1])
+                previous_json_state = previous_json_state[:-1]
+        except:
+            raise
             pass
 
     return [
         import_parameters_json, 
-        json.dumps(next_json_state, indent=4), 
+        json.dumps(next_json_state, indent=4),
         json.dumps(previous_json_state, indent=4)
     ]
 
