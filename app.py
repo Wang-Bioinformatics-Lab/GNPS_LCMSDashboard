@@ -2985,7 +2985,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 @app.callback([
                 Output('link-button', 'children'),
                 Output('page_parameters', 'children'),
-                Output('qrcode', 'children')
+                Output('qrcode', 'children'),
               ],  
               [
                 Input('usi', 'value'), 
@@ -3128,6 +3128,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 # This helps write the json string that we can use to load parameters in the whole page
 @app.callback([
                   Output('setting_json_area', 'value'),
+                  Output('setting_json_area_history', 'value'),
                   Output('advanced_import_download_button', 'href'),
               ],
               [
@@ -3135,10 +3136,11 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                   Input('upload-settings-json', 'contents'),
               ],
               [
+                  State('setting_json_area_history', 'value'),
                   State('upload-settings-json', 'filename'),
                   State('upload-settings-json', 'last_modified'),
               ])
-def create_param_json(page_parameters, filecontent, filename, filedate):
+def create_param_json(page_parameters, filecontent, existing_setting_json_area_history, filename, filedate):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     new_params = page_parameters
@@ -3152,28 +3154,61 @@ def create_param_json(page_parameters, filecontent, filename, filedate):
             
             new_params = json.dumps(file_setting_dict, indent=4)
 
-    return [new_params, "/settingsdownload?settings_json={}".format(urllib.parse.quote(new_params))]
+    if "page_parameters" in triggered_id:
+        # Updating the history
+        history_list = []
+        try:
+            history_list = json.loads(existing_setting_json_area_history)
+        except:
+            pass
+        history_list.append(json.loads(page_parameters))
+    
+
+    return [new_params, json.dumps(history_list, indent=4),"/settingsdownload?settings_json={}".format(urllib.parse.quote(new_params))]
 
 
 @app.callback([
                 Output("auto_import_parameters", "children"),
-                Output("replay_json_area", "value")
+                Output("replay_json_area", "value"),
+                Output("replay_json_area_previous", "value"),
               ],
               [
                 Input("replay_forward_button", "n_clicks"),
               ],
               [
-                  State("replay_json_area", "value")
+                  State("replay_json_area", "value"),
+                  State("replay_json_area_previous", "value")
               ])
-def advance_replay(replay_forward_button, replay_json_area):
+def advance_replay(replay_forward_button, replay_json_area, replay_json_area_previous):
+    import_parameters_json = dash.no_update
+    next_json_state = []
+    previous_json_state = []
+
     try:
-        replay_list = json.loads(replay_json_area)
-        if len(replay_list) > 0:
-            return [json.dumps(replay_list[0]), json.dumps(replay_list[1:], indent=4)]
-        
-        return [dash.no_update, dash.no_update]
+        next_json_state = json.loads(replay_json_area)
     except:
-        return [dash.no_update, dash.no_update]
+        pass
+        
+    try:
+        previous_json_state = json.loads(replay_json_area_previous)
+    except:
+        pass
+    
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    if "replay_forward_button" in triggered_id:
+        try:
+            if len(next_json_state) > 0:
+                next_json_state = json.dumps(replay_list[1:], indent=4)
+                import_parameters_json = replay_list[0]
+                previous_json_state = previous_json_state.append(replay_list[0])
+        except:
+            pass
+
+    return [
+        import_parameters_json, 
+        json.dumps(next_json_state, indent=4), 
+        json.dumps(previous_json_state, indent=4)
+    ]
 
 
 @app.callback(Output('sychronization_teaching_links', 'children'),
