@@ -65,7 +65,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
-from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL
+from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -612,6 +612,12 @@ DATASELECTION_CARD = [
                     ),
                     dbc.Col(
                         dbc.Button("Advanced Import Options", block=True, id="advanced_import_modal_button"),
+                    ),
+                    dbc.Col(
+                        dbc.Button("Advanced Replay Options", block=True, id="advanced_replay_modal_button"),
+                    ),
+                    dbc.Col(
+                        dbc.Button("Replay Advance", block=True, id="replay_forward_button"),
                     ),
                 ]),
                 html.Br(),
@@ -1318,6 +1324,7 @@ BODY = dbc.Container(
         # Adding modals
         dbc.Row(SPECTRUM_DETAILS_MODAL),
         dbc.Row(ADVANCED_IMPORT_MODAL),
+        dbc.Row(ADVANCED_REPLAY_MODAL),
         dbc.Row(ADVANCED_VISUALIZATION_MODAL),
         
     ],
@@ -3069,14 +3076,14 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     return [provenance_link_object, json.dumps(full_json_settings, indent=4), qr_html_img]
 
-
+# This helps write the json string that we can use to load parameters in the whole page
 @app.callback([
-                Output('setting_json_area', 'value'),
-                Output('advanced_import_download_button', 'href'),
+                  Output('setting_json_area', 'value'),
+                  Output('advanced_import_download_button', 'href'),
               ],
               [
-                Input("page_parameters", "children"),
-                Input('upload-settings-json', 'contents'),
+                  Input("page_parameters", "children"),
+                  Input('upload-settings-json', 'contents'),
               ],
               [
                   State('upload-settings-json', 'filename'),
@@ -3097,6 +3104,14 @@ def create_param_json(page_parameters, filecontent, filename, filedate):
             new_params = json.dumps(file_setting_dict, indent=4)
 
     return [new_params, "/settingsdownload?settings_json={}".format(urllib.parse.quote(new_params))]
+
+
+@app.callback(Output('advanced_import_update_button', 'n_clicks'),
+              [
+                Input("replay_forward_button", "n_clicks"),
+              ])
+def advance_replay(replay_forward_button):
+    return replay_forward_button
 
 
 @app.callback(Output('sychronization_teaching_links', 'children'),
@@ -3477,6 +3492,13 @@ app.callback(
     [Input("advanced_import_modal_button", "n_clicks"), Input("advanced_import_modal_close", "n_clicks")],
     [State("advanced_import_modal", "is_open")],
 )(toggle_modal)
+
+app.callback(
+    Output("advanced_replay_modal", "is_open"),
+    [Input("advanced_replay_modal_button", "n_clicks"), Input("advanced_replay_modal_close", "n_clicks")],
+    [State("advanced_replay_modal", "is_open")],
+)(toggle_modal)
+
 
 #######################
 # Flask URLS

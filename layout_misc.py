@@ -359,3 +359,25 @@ ADVANCED_IMPORT_MODAL = [
     ),
 ]
 
+ADVANCED_REPLAY_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("GNPS Dashboard Replay"),
+            dbc.ModalBody([
+                dbc.Textarea(id="replay_json_area", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                # dbc.Row(
+                #     [
+                #         dbc.Col(
+                #             dbc.Button("Import These Settings JSON", block=True, id="advanced_import_update_button"),
+                #         ),
+                #     ]
+                # )
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_replay_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_replay_modal",
+        size="xl",
+    ),
+]
