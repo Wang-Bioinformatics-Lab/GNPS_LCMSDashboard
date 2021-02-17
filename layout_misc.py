@@ -315,40 +315,50 @@ ADVANCED_IMPORT_MODAL = [
         [
             dbc.ModalHeader("GNPS Dashboard Settings as JSON"),
             dbc.ModalBody([
-                dbc.Textarea(id="setting_json_area", className="mb-3", placeholder="JSON Settings", rows="20"),
-                dcc.Upload(
-                    id='upload-settings-json',
-                    children=html.Div([
-                        'Enter paste json settings or Drag and Drop file with existing settings',
-                        html.A(' or Select Files')
-                    ]),
-                    style={
-                        'width': '95%',
-                        'height': '60px',
-                        'lineHeight': '60px',
-                        'borderWidth': '1px',
-                        'borderStyle': 'dashed',
-                        'borderRadius': '5px',
-                        'textAlign': 'center',
-                        'margin': '10px'
-                    },
-                    multiple=False
-                ),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            dbc.Button("Import These Settings JSON", block=True, id="advanced_import_update_button"),
+                dbc.Row([
+                    dbc.Col([
+                        html.H5("Current Settings"),
+                        dbc.Textarea(id="setting_json_area", className="mb-3", placeholder="JSON Settings", rows="20"),
+                        dcc.Upload(
+                            id='upload-settings-json',
+                            children=html.Div([
+                                'Paste settings or Drag and Drop file with existing settings',
+                                html.A(' or Select Files')
+                            ]),
+                            style={
+                                'width': '95%',
+                                'height': '60px',
+                                'lineHeight': '60px',
+                                'borderWidth': '1px',
+                                'borderStyle': 'dashed',
+                                'borderRadius': '5px',
+                                'textAlign': 'center',
+                                'margin': '10px'
+                            },
+                            multiple=False
                         ),
-                        dbc.Col(
-                            html.A(
-                                dbc.Button("Download Settings as File", block=True),
-                                id="advanced_import_download_button",
-                                target="_blank",
-                                href="/settingsdownload"
-                            ),
-                        )
-                    ]
-                )
+                        html.Br(),
+                        dbc.Button("Import These JSON Settings", block=True, id="advanced_import_update_button"),
+                        html.Br(),
+                        html.A(
+                            dbc.Button("Download Settings as File", block=True),
+                            id="advanced_import_download_button",
+                            target="_blank",
+                            href="/settingsdownload"
+                        ),
+                    ]),
+                    dbc.Col([
+                        html.H5("Settings History"),
+                        dbc.Textarea(id="setting_json_area_history", className="mb-3", placeholder="JSON History Settings", rows="20"),
+                        html.Br(),
+                        html.A(
+                            dbc.Button("Link to Analysis History Replay", block=True),
+                            id="advanced_import_history_link",
+                            target="_blank",
+                            href="/"
+                        ),
+                    ])
+                ]),
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_import_modal_close", className="ml-auto")
@@ -359,3 +369,34 @@ ADVANCED_IMPORT_MODAL = [
     ),
 ]
 
+ADVANCED_REPLAY_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("GNPS Dashboard Replay"),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col([
+                        html.H5("Previous Replay JSON"),
+                        dbc.Textarea(id="replay_json_area_previous", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                        html.Div(id="replay_summary")
+                    ]),
+                    dbc.Col([
+                        html.H5("Next Replay JSON"),
+                        dbc.Textarea(id="replay_json_area", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                        html.A(
+                            dbc.Button("Link to this Replay", block=True),
+                            id="advanced_import_replay_link",
+                            target="_blank",
+                            href="/"
+                        ),
+                    ])
+                ])
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_replay_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_replay_modal",
+        size="xl",
+    ),
+]
