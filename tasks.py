@@ -92,7 +92,7 @@ def _task_cleanup():
 celery_instance.conf.beat_schedule = {
     "cleanup": {
         "task": "tasks._task_cleanup",
-        "schedule": 60
+        "schedule": 3600
     }
 }
 
