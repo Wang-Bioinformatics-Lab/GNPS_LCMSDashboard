@@ -47,7 +47,7 @@ services:
     volumes:
       - ./output:/app/output:rw
       - ./logs:/app/logs:rw
-      - ./temp:/app/temp
+      - ./temp:/app/temp:rw
     command: /app/run_worker_compute.sh
     restart: unless-stopped
     depends_on: 

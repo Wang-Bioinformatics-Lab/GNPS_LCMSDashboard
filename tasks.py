@@ -6,6 +6,7 @@ import feature_finding
 import xic
 import lcms_map
 import tic
+import glob
 from joblib import Memory
 
 memory = Memory("temp/memory-cache", verbose=0)
@@ -60,9 +61,47 @@ def task_featurefinding(filename, params):
 def task_computeheartbeat():
     return "Up"
 
+import datetime
+import sys
+@celery_instance.task(time_limit=480)
+def _task_cleanup():
+    all_temp_files = glob.glob("/app/temp/*")
+
+    MAX_TIME_SECONDS = 604800 # This is one week
+    #MAX_TIME_SECONDS = 60 # This is one minute
+
+    for filename in all_temp_files:
+        # Skipping local file uploads
+        if "mzspecLOCAL" in filename:
+            continue
+        
+        if os.path.isfile(filename):
+            file_stats = os.stat(filename)
+            access_time = file_stats.st_atime
+            access_datetime = datetime.datetime.fromtimestamp(access_time)
+            time_delta = datetime.datetime.now() - access_datetime
+
+            if time_delta.total_seconds() > MAX_TIME_SECONDS:
+                # Lets remove
+                print("REMOVING", filename)
+                os.remove(filename)
+
+    return "Cleanup"
+
+
+celery_instance.conf.beat_schedule = {
+    "cleanup": {
+        "task": "tasks._task_cleanup",
+        "schedule": 60
+    }
+}
+
 
 celery_instance.conf.task_routes = {
     'tasks._download_convert_file': {'queue': 'conversion'},
+    
+    'tasks._task_cleanup': {'queue': 'compute'},
+
     'tasks.task_lcms_aggregate': {'queue': 'compute'},
     'tasks.task_tic': {'queue': 'compute'},
     'tasks.task_xic': {'queue': 'compute'},
