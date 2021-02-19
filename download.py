@@ -198,7 +198,15 @@ def _resolve_usi_remotelink(usi):
     elif "ST" in usi_splits[1]:
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
     elif "PXD" in usi_splits[1]:
-        remote_link = _resolve_pxd_usi(usi)
+        # First lets try resolving it at MSV
+        remote_link = ""
+        try:
+            remote_link = _resolve_msv_usi(usi)
+        except:
+            pass
+        
+        if len(remote_link) == 0:
+            remote_link = _resolve_pxd_usi(usi)
 
     return remote_link
 

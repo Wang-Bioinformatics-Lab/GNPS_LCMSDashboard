@@ -43,4 +43,8 @@ def test_raw_filename():
     #     remote_link, local_filename = download._resolve_usi("mzspec:PXD007600:20150416_41_F1_S28_ZT_1_4.raw")
     # except:
     #     pass
+
+def test_converted_filename():
+    converted_filename = download._usi_to_local_filename("mzspec:PXD002854:20150414_QEp1_LC7_GaPI_SA_Serum_DT_03_150416181741.mzXML:scan:2308:[+314.188]-QQKPGQAPR/2") # originally deposited in pride but now in massive converted, so converted is not in pride
+
     
