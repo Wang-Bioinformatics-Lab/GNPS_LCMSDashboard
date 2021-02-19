@@ -3397,6 +3397,11 @@ def get_file_summary(usi, usi2):
         for tbody in row.children:
             usi = tbody.children[0].children
             download_remote_link = download._resolve_usi_remotelink(usi)
+
+            # Here we're going to convert massive downloads to a proxy
+            if "ftp://massive.ucsd.edu" in download_remote_link:
+                download_remote_link = "https://gnps-external.ucsd.edu/massiveftpproxy?ftppath={}".format(download_remote_link)
+
             tbody.children[-2].children = html.A(dbc.Button("Download", color="primary", className="mr-1", size="sm"), href=download_remote_link, target="_blank")
 
             image_link = "/mspreview?usi={}".format(usi)
