@@ -225,7 +225,7 @@ def _usi_to_ccms_path(usi):
 
     if "GNPS" in usi_splits[1]:
         if "TASK-" in usi_splits[2]:
-            return usi_splits[2].split("-")[-1]
+            return "-".join(usi_splits[2].split("-")[2:])
         elif "QUICKSTART-" in usi_splits[2]:
             return None
         elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
