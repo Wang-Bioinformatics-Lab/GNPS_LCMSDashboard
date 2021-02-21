@@ -56,6 +56,23 @@ services:
       - default
       - nginx-net
 
+  gnpslcms-worker-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gnpslcms-worker-sync
+    volumes:
+      - ./output:/app/output:rw
+      - ./logs:/app/logs:rw
+      - ./temp:/app/temp:rw
+    command: /app/run_worker_sync.sh
+    restart: unless-stopped
+    depends_on: 
+      - redis
+    networks:
+      - default
+      - nginx-net
+
   redis:
     image: redis
     networks:

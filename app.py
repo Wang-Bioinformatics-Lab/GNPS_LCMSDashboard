@@ -54,6 +54,8 @@ from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_ge
 from utils import MS_precisions
 import utils
 
+from sync import _sychronize_save_state, _sychronize_load_state
+
 import download
 import ms2
 import lcms_map
@@ -1401,34 +1403,11 @@ def _resolve_usi(usi, temp_folder="temp"):
             return tasks._download_convert_file(usi, temp_folder=temp_folder)
 
 
-def _sychronize_save_state(session_id, parameter_dict, redis_client, synchronization_token=None):
-    session_dict = _sychronize_load_state(session_id, redis_client)
 
-    db_token = session_dict.get("synchronization_token", None)
-
-    if db_token is not None:
-        if db_token != synchronization_token:
-            return
         
-        # tokens are equal, so lets make sure to keep saving it
-        parameter_dict["synchronization_token"] = synchronization_token
-
-    try:
-        redis_client.set(session_id, json.dumps(parameter_dict))
-    except:
-        pass
-    
-def _sychronize_load_state(session_id, redis_client):
-    session_state = {}
-
-    try:
-        session_state = json.loads(redis_client.get(session_id))
-    except:
-        pass
-
-    return session_state
-        
-    
+def _synchronize_collab_action(session_id, triggered_fields, full_params, synchronization_token=None):
+    if _is_worker_up():
+        result = tasks.task_collabsync.delay(session_id, triggered_fields, full_params, synchronization_token=synchronization_token)
 
 # This helps to update the ms2/ms1 plot
 @app.callback([
@@ -2079,9 +2058,10 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
         except:
             pass
 
-    xicmz = _get_param_from_url(search, "", "xicmz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
+    xic_mz = _get_param_from_url(search, "", "xic_mz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
+    xic_mz = _get_param_from_url(search, "", "xicmz", xic_mz, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
 
-    return xicmz
+    return xic_mz
 
 
 @cache.memoize()
@@ -3063,7 +3043,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, synchronization_type):
 
     url_params = {}
-    url_params["xicmz"] = xic_mz
+    url_params["xic_mz"] = xic_mz
     url_params["xic_formula"] = xic_formula
     url_params["xic_peptide"] = xic_peptide
     url_params["xic_tolerance"] = xic_tolerance
@@ -3120,7 +3100,12 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
         if len(sychronization_session_id) > 0:
             # Lets save this to redis
             _sychronize_save_state(sychronization_session_id, full_json_settings, redis_client, synchronization_token=synchronization_leader_token)
-            print("Saving", full_json_settings)
+
+    # For Live Synchronization
+    if synchronization_type == "COLLAB":
+        all_triggered_list = [p['prop_id'] for p in dash.callback_context.triggered]
+        if len(sychronization_session_id) > 0:
+            _synchronize_collab_action(sychronization_session_id, all_triggered_list, full_json_settings, synchronization_token=synchronization_leader_token)
 
     qr_html_img = dash.no_update
     try:
@@ -3147,6 +3132,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     # Removing Sync token for json area
     full_json_settings.pop("sychronization_session_id", None)
+
 
     return [provenance_link_object, json.dumps(full_json_settings, indent=4), qr_html_img]
 
@@ -3327,6 +3313,11 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
 
     leader_url = "/?{}".format(urllib.parse.urlencode(url_params))
 
+    url_params["synchronization_leader_token"] = synchronization_leader_token
+    url_params["synchronization_type"] = "COLLAB"
+
+    collab_url = "/?{}".format(urllib.parse.urlencode(url_params))
+
     follower_full_url = request.url.replace('/_dash-update-component', follower_url)
     follower_img = _generate_qrcode_img(follower_full_url)
 
@@ -3337,6 +3328,9 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
             ),
             dbc.Col(
                 dcc.Link(dbc.Button("Leader URL", block=True, color="primary", className="mr-1"), href=leader_url, target="_blank")
+            ),
+            dbc.Col(
+                dcc.Link(dbc.Button("Collab URL", block=True, color="primary", className="mr-1"), href=collab_url, target="_blank")
             ),
         ]),
         dbc.Row([
@@ -3583,26 +3577,24 @@ def check_token(synchronization_leader_newtoken_button, sychronization_session_i
               [
                   Input('synchronization_begin_button', 'n_clicks'),
                   Input('synchronization_stop_button', 'n_clicks'),
+                  Input('sychronization_set_type_button', 'n_clicks'),
                   Input('synchronization_type_dependency', 'children')
               ],
               [
                   State('synchronization_type', 'value'),
               ])
-def set_update_interval(synchronization_begin_button, synchronization_stop_button, synchronization_type_dependency, synchronization_type):
+def set_update_interval(synchronization_begin_button, synchronization_stop_button, sychronization_set_type_button, synchronization_type_dependency, synchronization_type):
     new_interval = 10000000 * 1000
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    print("TRIGGERED INTERVALUPDATE", triggered_id, file=sys.stderr)
-
     status_text = ""
-
     # If we click stop, lets not do anything anymore
     if "synchronization_stop_button" in triggered_id:
         status_text = "Sync Stopped"
         return [new_interval, status_text]
 
     # We know we're the follower, so lets act like it
-    if synchronization_type == "FOLLOWER":
+    if synchronization_type == "FOLLOWER" or synchronization_type == "COLLAB":
         new_interval = 5 * 1000
         status_text = "Sync Started"
 
@@ -3768,8 +3760,6 @@ def settingsdownload():
     import hashlib
     hash_value = int(hashlib.sha256(settings_json.encode('utf-8')).hexdigest(), 16) % 10**8
     output_filename = "settings_{}.json".format(hash_value)
-
-    print("output_filename", output_filename, hash_value, file=sys.stderr)
 
     return send_file(
         mem,
