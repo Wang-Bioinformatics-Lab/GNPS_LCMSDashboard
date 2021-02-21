@@ -7,12 +7,15 @@ import xic
 import lcms_map
 import tic
 import glob
+import redis
 from joblib import Memory
+from sync import _sychronize_save_state, _sychronize_load_state
 
 memory = Memory("temp/memory-cache", verbose=0)
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
+redis_client = redis.Redis(host='redis', port=6379, db=0)
 
 ##############################
 # Conversion
@@ -56,6 +59,20 @@ def task_featurefinding(filename, params):
     feature_df = feature_finding.perform_feature_finding(filename, params, timeout=80)
     return feature_df.to_dict(orient="records")
 
+@celery_instance.task(time_limit=1)
+def task_collabsync(session_id, triggered_fields, full_params, synchronization_token=None):
+    existing_params = _sychronize_load_state(session_id, redis_client)
+
+    # Here we only update if we see a single update field, to make sure to avoid initial loads the wipe out everything
+    if len(triggered_fields) == 1:
+        for field in triggered_fields:
+            try:
+                field_value = field.split(".")[0]
+                existing_params[field_value] = full_params[field_value]
+            except:
+                pass
+
+    _sychronize_save_state(session_id, existing_params, redis_client, synchronization_token=synchronization_token)
 
 @celery_instance.task(time_limit=60)
 def task_computeheartbeat():
@@ -107,4 +124,6 @@ celery_instance.conf.task_routes = {
     'tasks.task_xic': {'queue': 'compute'},
     'tasks.task_featurefinding': {'queue': 'compute'},
     'tasks.task_computeheartbeat': {'queue': 'compute'},
+
+    'tasks.task_collabsync': {'queue': 'sync'},
 }

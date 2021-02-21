@@ -54,6 +54,8 @@ from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_ge
 from utils import MS_precisions
 import utils
 
+from sync import _sychronize_save_state, _sychronize_load_state
+
 import download
 import ms2
 import lcms_map
@@ -1394,34 +1396,11 @@ def _resolve_usi(usi, temp_folder="temp"):
             return tasks._download_convert_file(usi, temp_folder=temp_folder)
 
 
-def _sychronize_save_state(session_id, parameter_dict, redis_client, synchronization_token=None):
-    session_dict = _sychronize_load_state(session_id, redis_client)
 
-    db_token = session_dict.get("synchronization_token", None)
-
-    if db_token is not None:
-        if db_token != synchronization_token:
-            return
         
-        # tokens are equal, so lets make sure to keep saving it
-        parameter_dict["synchronization_token"] = synchronization_token
-
-    try:
-        redis_client.set(session_id, json.dumps(parameter_dict))
-    except:
-        pass
-    
-def _sychronize_load_state(session_id, redis_client):
-    session_state = {}
-
-    try:
-        session_state = json.loads(redis_client.get(session_id))
-    except:
-        pass
-
-    return session_state
-        
-    
+def _synchronize_collab_action(session_id, triggered_fields, full_params, synchronization_token=None):
+    if _is_worker_up():
+        result = tasks.task_collabsync.delay(session_id, triggered_fields, full_params, synchronization_token=synchronization_token)
 
 # This helps to update the ms2/ms1 plot
 @app.callback([
@@ -3097,6 +3076,12 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
             _sychronize_save_state(sychronization_session_id, full_json_settings, redis_client, synchronization_token=synchronization_leader_token)
             print("Saving", full_json_settings)
 
+    # For Live Synchronization
+    if synchronization_type == "COLLAB":
+        all_triggered_list = [p['prop_id'] for p in dash.callback_context.triggered]
+        if len(sychronization_session_id) > 0:
+            _synchronize_collab_action(sychronization_session_id, all_triggered_list, full_json_settings, synchronization_token=synchronization_leader_token)
+
     qr_html_img = dash.no_update
     try:
         url = request.url.replace('/_dash-update-component', full_url)
@@ -3122,6 +3107,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     # Removing Sync token for json area
     full_json_settings.pop("sychronization_session_id", None)
+
 
     return [provenance_link_object, json.dumps(full_json_settings, indent=4), qr_html_img]
 

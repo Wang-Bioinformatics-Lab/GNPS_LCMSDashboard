@@ -144,6 +144,7 @@ SYCHRONIZATION_MODAL = [
                             id='synchronization_type',
                             options=[
                                 {'label': 'MANUAL (Default)', 'value': 'MANUAL'},
+                                {'label': 'COLLAB (Bidirectional sync)', 'value': 'COLLAB'},
                                 {'label': 'LEADER', 'value': 'LEADER'},
                                 {'label': 'FOLLOWER', 'value': 'FOLLOWER'},
                             ],

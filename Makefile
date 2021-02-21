@@ -6,7 +6,7 @@ server-compose-dev:
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml up
 
 server-compose-interactive:
-	docker-compose build
+	docker-compose build --parallel
 	docker-compose up
 
 server-compose:
