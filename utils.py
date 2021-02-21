@@ -47,9 +47,7 @@ def _calculate_file_stats(usi, local_filename):
         all_lines = str(out).replace("\\t", "\t").split("\\n")
         all_lines = [line for line in all_lines if len(line) > 10 ]
         updated_version = "\n".join(all_lines)
-        
-        print(updated_version, file=sys.stderr)
-        
+                
         data = io.StringIO(updated_version)
         df = pd.read_csv(data, sep="\t")
         

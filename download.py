@@ -207,6 +207,8 @@ def _resolve_usi_remotelink(usi):
         
         if len(remote_link) == 0:
             remote_link = _resolve_pxd_usi(usi)
+    else:
+        remote_link = ""
 
     return remote_link
 
