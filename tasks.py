@@ -70,13 +70,13 @@ def task_collabsync(session_id, triggered_fields, full_params, synchronization_t
         for field in triggered_fields:
             try:
                 field_value = field.split(".")[0]
-                print(field_value)
+                #print(field_value)
                 existing_params[field_value] = full_params[field_value]
             except:
                 pass
 
-    import json
-    print(json.dumps(existing_params, indent=4))
+    #import json
+    #print(json.dumps(existing_params, indent=4))
     _sychronize_save_state(session_id, existing_params, redis_client, synchronization_token=synchronization_token)
 
 @celery_instance.task(time_limit=60)

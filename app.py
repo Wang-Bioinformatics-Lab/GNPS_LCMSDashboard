@@ -3427,6 +3427,9 @@ def get_file_summary(usi, usi2):
             image_link = "/mspreview?usi={}".format(usi)
             tbody.children[-1].children = html.A(dbc.Button("Image", color="primary", className="mr-1", size="sm"), href=image_link, target="_blank")
 
+            # Replacing USI with just filename
+            tbody.children[0].children = download._get_usi_display_filename(usi)
+
     return [table]
 
 
