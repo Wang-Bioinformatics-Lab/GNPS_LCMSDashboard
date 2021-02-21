@@ -2526,21 +2526,23 @@ def _integrate_files(long_data_df, xic_integration_type):
                 Output("integration-boxplot", "children"),
                 Output('loading_xic_plot', 'children')
               ],
-              [Input('usi', 'value'), 
-              Input('usi2', 'value'), 
-              Input('xic_mz', 'value'), 
-              Input('xic_formula', 'value'), 
-              Input('xic_peptide', 'value'), 
-              Input('xic_tolerance', 'value'),
-              Input('xic_ppm_tolerance', 'value'),
-              Input('xic_tolerance_unit', 'value'),
-              Input('xic_rt_window', 'value'),
-              Input('xic_integration_type', 'value'),
-              Input('xic_norm', 'value'),
-              Input('xic_file_grouping', 'value'),
-              Input('polarity_filtering', 'value'),
-              Input('image_export_format', 'value'), 
-              Input("plot_theme", "value")])
+              [
+                  Input('usi', 'value'), 
+                  Input('usi2', 'value'), 
+                  Input('xic_mz', 'value'), 
+                Input('xic_formula', 'value'), 
+                Input('xic_peptide', 'value'), 
+                Input('xic_tolerance', 'value'),
+                Input('xic_ppm_tolerance', 'value'),
+                Input('xic_tolerance_unit', 'value'),
+                Input('xic_rt_window', 'value'),
+                Input('xic_integration_type', 'value'),
+                Input('xic_norm', 'value'),
+                Input('xic_file_grouping', 'value'),
+                Input('polarity_filtering', 'value'),
+                Input('image_export_format', 'value'), 
+                Input("plot_theme", "value")
+              ])
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -3413,6 +3415,7 @@ def get_file_summary(usi, usi2):
     stats_df = pd.DataFrame(all_file_stats)     
     stats_df["Download"] = "DOWNLOAD"
     stats_df["Image"] = "Image"
+
     table = dbc.Table.from_dataframe(stats_df, striped=True, bordered=True, hover=True, size="sm")
 
     # Adding Download Buttons instead of DOWNLOAD
