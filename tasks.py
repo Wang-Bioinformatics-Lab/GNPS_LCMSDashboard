@@ -63,15 +63,20 @@ def task_featurefinding(filename, params):
 def task_collabsync(session_id, triggered_fields, full_params, synchronization_token=None):
     existing_params = _sychronize_load_state(session_id, redis_client)
 
+    print("TRIGGERED FIELDS", triggered_fields)
+
     # Here we only update if we see a single update field, to make sure to avoid initial loads the wipe out everything
-    if len(triggered_fields) == 1:
+    if len(triggered_fields) <= 2:
         for field in triggered_fields:
             try:
                 field_value = field.split(".")[0]
+                print(field_value)
                 existing_params[field_value] = full_params[field_value]
             except:
                 pass
 
+    import json
+    print(json.dumps(existing_params, indent=4))
     _sychronize_save_state(session_id, existing_params, redis_client, synchronization_token=synchronization_token)
 
 @celery_instance.task(time_limit=60)

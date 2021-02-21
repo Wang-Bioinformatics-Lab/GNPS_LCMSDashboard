@@ -3075,7 +3075,6 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
         if len(sychronization_session_id) > 0:
             # Lets save this to redis
             _sychronize_save_state(sychronization_session_id, full_json_settings, redis_client, synchronization_token=synchronization_leader_token)
-            print("Saving", full_json_settings)
 
     # For Live Synchronization
     if synchronization_type == "COLLAB":

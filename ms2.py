@@ -7,6 +7,7 @@ import xmltodict
 import yaml
 from bs4 import BeautifulSoup
 from tqdm import tqdm
+from utils import _spectrum_generator
 
 def _get_ms2_peaks(usi, local_filename, scan_number):
     # Let's first try to get the spectrum from disk
@@ -44,8 +45,8 @@ def determine_scan_by_rt(usi, local_filename, rt, ms_level=1):
     # Understand parameters
     min_rt_delta = 1000
     closest_scan = 0
-    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-    for spec in tqdm(run):
+
+    for spec in tqdm(_spectrum_generator(local_filename, rt - 0.1, rt + 0.1)):
         if spec.ms_level == ms_level:
             try:
                 delta = abs(spec.scan_time_in_minutes() - rt)
