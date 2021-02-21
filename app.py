@@ -1910,8 +1910,8 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
     usi2 = ""
 
     if filecontent is not None:
-        if len(filecontent) > 100000000:
-            raise Exception
+        if len(filecontent) > 150000000: # Limit of 150MB
+            return ["Uploaded File too large", existing_usi2, "Uploaded File too large"]
 
         extension = os.path.splitext(filename)[1]
         original_filename = os.path.splitext(filename)[0]
