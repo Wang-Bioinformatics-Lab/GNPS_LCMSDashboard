@@ -2656,6 +2656,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     try:
         # Doing actual integration
         integral_df = _integrate_files(merged_df_long, xic_integration_type)
+        integral_df["USI"] = integral_df["USI"].apply(lambda x: download._get_usi_display_filename(x))
 
         # Creating a table
         table_graph = dash_table.DataTable(
