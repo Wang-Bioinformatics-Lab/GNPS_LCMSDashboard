@@ -208,8 +208,8 @@ DATASELECTION_CARD = [
                     dcc.Upload(
                         id='upload-data',
                         children=html.Div([
-                            'Enter USI Above or Drag and Drop your own file',
-                            html.A(' or Select Files')
+                            'Drag and Drop your own file',
+                            html.A(' or Select Files (120MB Max)')
                         ]),
                         style={
                             'width': '95%',
@@ -221,8 +221,15 @@ DATASELECTION_CARD = [
                             'textAlign': 'center',
                             'margin': '10px'
                         },
-                        multiple=False
+                        multiple=True,
+                        max_size=150000000 # 150MB
                     ),
+                    dcc.Loading(
+                        id="upload_status",
+                        children=[html.Div([html.Div(id="loading-output-3423")])],
+                        type="default",
+                    ),
+                    html.Hr(),
                     # Linkouts
                     dcc.Loading(
                         id="link-button",
@@ -1880,7 +1887,8 @@ def determine_url_only_parameters_synchronization(  search,
 @app.callback([
                 Output('usi', 'value'), 
                 Output('usi2', 'value'), 
-                Output('debug-output-2', 'children')
+                Output('debug-output-2', 'children'),
+                Output('upload_status', 'children'),
               ],
               [
                 Input('url', 'search'), 
@@ -1901,53 +1909,68 @@ def determine_url_only_parameters_synchronization(  search,
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
-                filename, filedate, sychronization_session_id,
+def update_usi(search, url_hash, filecontent_list, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
+                filename_list, filedate_list, sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
                 existing_usi2):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
-    if filecontent is not None:
-        if len(filecontent) > 150000000: # Limit of 150MB
-            return ["Uploaded File too large (120MB max)", existing_usi2, "Uploaded File too large"]
+    print("UPLOADING FILE", filename_list)
 
-        extension = os.path.splitext(filename)[1]
-        original_filename = os.path.splitext(filename)[0]
-        safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
-        if extension == ".mzML":
-            temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
-            data = filecontent.encode("utf8").split(b";base64,")[1]
+    if filename_list is not None:
+        usi = existing_usi
+        usi2 = existing_usi2
 
-            with open(temp_filename, "wb") as temp_file:
-                temp_file.write(base64.decodebytes(data))
+        upload_message = ""
+        total_files_uploaded = 0
 
-            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+        for i, filename in enumerate(filename_list):
+            filecontent = filecontent_list[i]
 
-            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+            print(len(filecontent))
 
-        if extension == ".mzXML":
-            temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
-            data = filecontent.encode("utf8").split(b";base64,")[1]
+            if len(filecontent) > 150000000: # Limit of 150MB
+                upload_message += "File Upload too big\n"
+                continue
+                #return ["Uploaded File too large (120MB max)", existing_usi2, "Uploaded File too large"]
 
-            with open(temp_filename, "wb") as temp_file:
-                temp_file.write(base64.decodebytes(data))
+            extension = os.path.splitext(filename)[1]
+            original_filename = os.path.splitext(filename)[0]
+            safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
+            if extension == ".mzML":
+                temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+                data = filecontent.encode("utf8").split(b";base64,")[1]
 
-            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+                with open(temp_filename, "wb") as temp_file:
+                    temp_file.write(base64.decodebytes(data))
 
-            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
-        if extension.lower() == ".cdf":
-            temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
-            data = filecontent.encode("utf8").split(b";base64,")[1]
+            if extension == ".mzXML":
+                temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
+                data = filecontent.encode("utf8").split(b";base64,")[1]
 
-            with open(temp_filename, "wb") as temp_file:
-                temp_file.write(base64.decodebytes(data))
+                with open(temp_filename, "wb") as temp_file:
+                    temp_file.write(base64.decodebytes(data))
 
-            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
-            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+            if extension.lower() == ".cdf":
+                temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+                data = filecontent.encode("utf8").split(b";base64,")[1]
+
+                with open(temp_filename, "wb") as temp_file:
+                    temp_file.write(base64.decodebytes(data))
+
+                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+            total_files_uploaded += 1
+
+        upload_message += "{} Files Uploaded".format(total_files_uploaded)
+        print("upload_message", upload_message)
+        return [usi.lstrip(), usi2.lstrip(), dash.no_update, upload_message]
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -1975,7 +1998,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
     usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict, old_value=existing_usi, no_change_default=dash.no_update)
     usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict, old_value=existing_usi2, no_change_default=dash.no_update)
 
-    return [usi, usi2, "Using URL USI"]
+    return [usi, usi2, "Using URL USI", dash.no_update]
     
 
 # Calculating which xic value to use
