@@ -137,7 +137,7 @@ SYCHRONIZATION_MODAL = [
                     ]
                 ),
                 html.Hr(),
-                html.H5("Teaching Sychronization (Beta)"),
+                html.H5("Dashboard Sychronization Type"),
                 dbc.Row([
                     dbc.Col(
                         dcc.Dropdown(
@@ -156,7 +156,9 @@ SYCHRONIZATION_MODAL = [
                             }
                         ),
                     ),
-                    dbc.Col()
+                    dbc.Col(
+                        dbc.Button("Set Synchronization", block=True, id="sychronization_set_type_button"),
+                    )
                 ]),
                 html.Hr(),
                 dbc.InputGroup(

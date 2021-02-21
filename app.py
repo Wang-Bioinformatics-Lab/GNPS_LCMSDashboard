@@ -2035,9 +2035,10 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
         except:
             pass
 
-    xicmz = _get_param_from_url(search, "", "xicmz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
+    xic_mz = _get_param_from_url(search, "", "xic_mz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
+    xic_mz = _get_param_from_url(search, "", "xicmz", xic_mz, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
 
-    return xicmz
+    return xic_mz
 
 
 @cache.memoize()
@@ -3017,7 +3018,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, synchronization_type):
 
     url_params = {}
-    url_params["xicmz"] = xic_mz
+    url_params["xic_mz"] = xic_mz
     url_params["xic_formula"] = xic_formula
     url_params["xic_peptide"] = xic_peptide
     url_params["xic_tolerance"] = xic_tolerance
@@ -3288,6 +3289,11 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
 
     leader_url = "/?{}".format(urllib.parse.urlencode(url_params))
 
+    url_params["synchronization_leader_token"] = synchronization_leader_token
+    url_params["synchronization_type"] = "COLLAB"
+
+    collab_url = "/?{}".format(urllib.parse.urlencode(url_params))
+
     follower_full_url = request.url.replace('/_dash-update-component', follower_url)
     follower_img = _generate_qrcode_img(follower_full_url)
 
@@ -3298,6 +3304,9 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
             ),
             dbc.Col(
                 dcc.Link(dbc.Button("Leader URL", block=True, color="primary", className="mr-1"), href=leader_url, target="_blank")
+            ),
+            dbc.Col(
+                dcc.Link(dbc.Button("Collab URL", block=True, color="primary", className="mr-1"), href=collab_url, target="_blank")
             ),
         ]),
         dbc.Row([
@@ -3543,19 +3552,17 @@ def check_token(synchronization_leader_newtoken_button, sychronization_session_i
               [
                   Input('synchronization_begin_button', 'n_clicks'),
                   Input('synchronization_stop_button', 'n_clicks'),
+                  Input('sychronization_set_type_button', 'n_clicks'),
                   Input('synchronization_type_dependency', 'children')
               ],
               [
                   State('synchronization_type', 'value'),
               ])
-def set_update_interval(synchronization_begin_button, synchronization_stop_button, synchronization_type_dependency, synchronization_type):
+def set_update_interval(synchronization_begin_button, synchronization_stop_button, sychronization_set_type_button, synchronization_type_dependency, synchronization_type):
     new_interval = 10000000 * 1000
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    print("TRIGGERED INTERVALUPDATE", triggered_id, file=sys.stderr)
-
     status_text = ""
-
     # If we click stop, lets not do anything anymore
     if "synchronization_stop_button" in triggered_id:
         status_text = "Sync Stopped"
