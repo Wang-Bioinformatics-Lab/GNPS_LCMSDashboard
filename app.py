@@ -3562,7 +3562,7 @@ def set_update_interval(synchronization_begin_button, synchronization_stop_butto
         return [new_interval, status_text]
 
     # We know we're the follower, so lets act like it
-    if synchronization_type == "FOLLOWER":
+    if synchronization_type == "FOLLOWER" or synchronization_type == "COLLAB":
         new_interval = 5 * 1000
         status_text = "Sync Started"
 
@@ -3728,8 +3728,6 @@ def settingsdownload():
     import hashlib
     hash_value = int(hashlib.sha256(settings_json.encode('utf-8')).hexdigest(), 16) % 10**8
     output_filename = "settings_{}.json".format(hash_value)
-
-    print("output_filename", output_filename, hash_value, file=sys.stderr)
 
     return send_file(
         mem,
