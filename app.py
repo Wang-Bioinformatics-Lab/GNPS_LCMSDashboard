@@ -3410,10 +3410,12 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
 
 
 @app.callback(Output('network-link-button', 'children'),
-              [Input('usi', 'value'), 
-              Input('usi2', 'value'), 
+              [
+                  Input('usi', 'value'), 
+                  Input('usi2', 'value'), 
               ])
 def create_networking_link(usi, usi2):
+
     full_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
 
     g1_list = []
