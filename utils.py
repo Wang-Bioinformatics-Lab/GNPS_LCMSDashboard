@@ -219,7 +219,13 @@ def _resolve_map_plot_selection(url_search, usi, local_filename,
     current_map_selection = system_map_selection
 
     if priority == "ui":
-        current_map_selection = ui_map_selection
+        # Special case when the ui gives you something and we should use or not use it
+        if "xaxis.autorange" in ui_map_selection:
+            current_map_selection = ui_map_selection
+        if "xaxis.range[0]" in ui_map_selection:
+            current_map_selection = ui_map_selection
+        if "autosize" in ui_map_selection:
+            pass
     if priority == "ui_update_range":
         current_map_selection = manual_map_selection
     if priority == "session":
