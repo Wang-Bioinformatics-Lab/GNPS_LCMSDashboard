@@ -1240,7 +1240,7 @@ BODY = dbc.Container(
         ),
         html.Div("", id="synchronization_type_dependency", style={"display":"none"}), # This is a hack to pass on a retrigger without causing infinite loops in the dependency chain
         html.Div("", id="page_parameters", style={"display":"none"}), # This is an intermediate dependency to hold the parameters so we make it easier to update them
-        html.Div("", id="auto_import_parameters", style={"display":"none"}),
+        html.Div("", id="auto_import_parameters", style={"display":"none"}), # This is a hidden area to set parameters to be loaded into the interface
 
         dbc.Row([
             dbc.Col(
@@ -1979,6 +1979,7 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 
     return [usi, usi2, "Using URL USI", dash.no_update]
     
+    
 
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
@@ -2715,46 +2716,56 @@ def determine_plot_zoom_bounds(url_search, usi,
                                 map_plot_rt_min, map_plot_rt_max, map_plot_mz_min, map_plot_mz_max, existing_map_plot_zoom, 
                                 sychronization_session_id, setting_json_area):
 
+    
+    print("ALL TRIGGERS", [p['prop_id'] for p in dash.callback_context.triggered], file=sys.stderr, flush=True)
+
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
-    remote_link, local_filename = _resolve_usi(usi_list[0])                         
+    remote_link, local_filename = _resolve_usi(usi_list[0])
 
-    # Figuring out the map plot selection
+    session_dict = {}
+
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            pass
+    
+    # We clicked the button so we are going to load from the text area
+    if "advanced_import_update_button" in triggered_id:
+        try:
+            session_dict = json.loads(setting_json_area)
+        except:
+            pass
+
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
+        except:
+            pass
+
+    priority = "url"
+
+    if "map-plot" in triggered_id:
+        priority = "ui"
+
     if "map_plot_update_range_button" in triggered_id:
-        # We clicked the button, so we should read the values out of the 
-        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, 
-                                                                                                            usi, 
-                                                                                                            local_filename, 
-                                                                                                            ui_map_selection=map_selection,
-                                                                                                            map_plot_rt_min=map_plot_rt_min,
-                                                                                                            map_plot_rt_max=map_plot_rt_max,
-                                                                                                            map_plot_mz_min=map_plot_mz_min,
-                                                                                                            map_plot_mz_max=map_plot_mz_max)
-    else:
-        session_dict = {}
+        priority = "ui_update_range"
+    
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id or "advanced_import_update_button" in triggered_id or "auto_import_parameters" in triggered_id:
+        priority = "session"
 
-        if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
-            try:
-                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
-            except:
-                pass
-        
-        # We clicked the button so we are going to load from the text area
-        if "advanced_import_update_button" in triggered_id:
-            try:
-                session_dict = json.loads(setting_json_area)
-            except:
-                pass
-
-        if "auto_import_parameters" in triggered_id:
-            try:
-                session_dict = json.loads(auto_import_parameters)
-            except:
-                pass
-
-        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection, session_dict=session_dict)
-
+    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, 
+                                                                                                        usi, 
+                                                                                                        local_filename, 
+                                                                                                        ui_map_selection=map_selection,
+                                                                                                        map_plot_rt_min=map_plot_rt_min,
+                                                                                                        map_plot_rt_max=map_plot_rt_max,
+                                                                                                        map_plot_mz_min=map_plot_mz_min,
+                                                                                                        map_plot_mz_max=map_plot_mz_max, 
+                                                                                                        session_dict=session_dict,
+                                                                                                        priority=priority)
 
     current_map_plot_zoom_string = json.dumps(current_map_selection)
 
@@ -2767,9 +2778,9 @@ def determine_plot_zoom_bounds(url_search, usi,
     except:
         pass
 
-    print("MAP SELECTION", map_selection, file=sys.stderr)
-    print("NEW SELECTION", current_map_selection, highlight_box, file=sys.stderr)
-    print("EXISTING PLOT ZOOM", existing_map_plot_zoom, file=sys.stderr)
+    print("MAP SELECTION", map_selection, file=sys.stderr, flush=True)
+    print("NEW SELECTION", current_map_selection, highlight_box, file=sys.stderr, flush=True)
+    print("EXISTING PLOT ZOOM", existing_map_plot_zoom, file=sys.stderr, flush=True)
 
     return [current_map_plot_zoom_string, highlight_box_string, min_rt, max_rt, min_mz, max_mz]
     
