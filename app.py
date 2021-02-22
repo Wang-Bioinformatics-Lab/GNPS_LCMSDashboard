@@ -177,6 +177,13 @@ DATASELECTION_CARD = [
                 html.H5("Data Selection"),
             ),
             dbc.Col(
+                dcc.Loading(
+                    id="upload_status",
+                    children=[html.Div([html.Div(id="loading-output-3423")])],
+                    type="default",
+                ),
+            ),
+            dbc.Col(
                 dbc.Button("Show/Hide", 
                     id="data_selection_show_hide_button", 
                     color="primary", size="sm", 
@@ -225,11 +232,6 @@ DATASELECTION_CARD = [
                         },
                         multiple=True,
                         max_size=150000000 # 150MB
-                    ),
-                    dcc.Loading(
-                        id="upload_status",
-                        children=[html.Div([html.Div(id="loading-output-3423")])],
-                        type="default",
                     ),
                     html.Hr(),
                     # Linkouts
@@ -1689,6 +1691,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   
                   State('sychronization_session_id', 'value'),
 
+                  State("comment", 'value'),
+
                   State('map_plot_color_scale', 'value'),
                   State('map_plot_quantization_level', 'value'),
                   
@@ -1738,6 +1742,8 @@ def determine_url_only_parameters(  search,
                                     existing_feature_finding_rt_tolerance,
 
                                     existing_sychronization_session_id,
+
+                                    existing_comment,
                                     
                                     existing_map_plot_color_scale,
                                     existing_map_plot_quantization_level):
@@ -1811,7 +1817,7 @@ def determine_url_only_parameters(  search,
     sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", default_session_id, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
 
     # Comment
-    comment = _get_param_from_url(search, "", "comment", dash.no_update, session_dict=session_dict, no_change_default=dash.no_update)
+    comment = _get_param_from_url(search, "", "comment", dash.no_update, session_dict=session_dict, old_value=existing_comment, no_change_default=dash.no_update)
 
     # Advanced Visualization Options
     map_plot_color_scale = _get_param_from_url(search, "", "map_plot_color_scale", dash.no_update, session_dict=session_dict, old_value=existing_map_plot_color_scale, no_change_default=dash.no_update)
