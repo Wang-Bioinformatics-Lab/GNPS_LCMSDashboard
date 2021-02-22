@@ -244,6 +244,14 @@ DATASELECTION_CARD = [
                         children=[html.Div([html.Div(id="loading-output-232")])],
                         type="default",
                     ),
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Comment", addon_type="prepend"),
+                            dbc.Textarea(id='comment', value=""),
+                        ],
+                        className="mb-3",
+                    ),
+                    html.Hr(),
                     html.H5(children='LCMS Viewer Options'),
                     dbc.Row([
                         dbc.Col(
@@ -1629,7 +1637,13 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("feature_finding_min_peak_rt", "value"),
                 Output("feature_finding_max_peak_rt", "value"),
                 Output("feature_finding_rt_tolerance", "value"),
-                Output("sychronization_session_id", "value")
+                Output("sychronization_session_id", "value"),
+
+                Output("comment", "value"),
+
+                Output("map_plot_color_scale", "value"),
+                Output("map_plot_quantization_level", "value"),
+                
               ],
               [
                   Input('url', 'search'), 
@@ -1674,6 +1688,10 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   State('feature_finding_rt_tolerance', 'value'),
                   
                   State('sychronization_session_id', 'value'),
+
+                  State('map_plot_color_scale', 'value'),
+                  State('map_plot_quantization_level', 'value'),
+                  
               ]
               )
 def determine_url_only_parameters(  search, 
@@ -1719,7 +1737,10 @@ def determine_url_only_parameters(  search,
                                     existing_feature_finding_max_peak_rt,
                                     existing_feature_finding_rt_tolerance,
 
-                                    existing_sychronization_session_id):
+                                    existing_sychronization_session_id,
+                                    
+                                    existing_map_plot_color_scale,
+                                    existing_map_plot_quantization_level):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     print("TRIGGERED URL PARSING", triggered_id, file=sys.stderr)
@@ -1789,6 +1810,13 @@ def determine_url_only_parameters(  search,
         default_session_id = existing_sychronization_session_id
     sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", default_session_id, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
 
+    # Comment
+    comment = _get_param_from_url(search, "", "comment", dash.no_update, session_dict=session_dict, no_change_default=dash.no_update)
+
+    # Advanced Visualization Options
+    map_plot_color_scale = _get_param_from_url(search, "", "map_plot_color_scale", dash.no_update, session_dict=session_dict, old_value=existing_map_plot_color_scale, no_change_default=dash.no_update)
+    map_plot_quantization_level = _get_param_from_url(search, "", "map_plot_quantization_level", dash.no_update, session_dict=session_dict, old_value=existing_map_plot_quantization_level, no_change_default=dash.no_update)
+
     # Formatting the types
     try:
         if xic_norm == "True":
@@ -1836,7 +1864,10 @@ def determine_url_only_parameters(  search,
             polarity_filtering2, 
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
-            sychronization_session_id]
+            sychronization_session_id,
+            comment,
+            map_plot_color_scale,
+            map_plot_quantization_level]
 
 
 @app.callback([ 
@@ -3042,7 +3073,12 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("feature_finding_rt_tolerance", "value"),
                 Input("sychronization_save_session_button", "n_clicks"),
                 Input("sychronization_session_id", "value"),
-                Input("synchronization_leader_token", "value")
+                Input("synchronization_leader_token", "value"),
+
+                Input("comment", "value"),
+
+                Input("map_plot_color_scale", "value"),
+                Input("map_plot_quantization_level", "value"),
               ],
               [
                   State('synchronization_type', 'value')
@@ -3052,7 +3088,10 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
-                sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, synchronization_type):
+                sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, 
+                comment,
+                map_plot_color_scale, map_plot_quantization_level,
+                synchronization_type):
 
     url_params = {}
     url_params["xic_mz"] = xic_mz
@@ -3093,6 +3132,13 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     # Sychronization Options
     url_params["sychronization_session_id"] = sychronization_session_id
+
+    # Comment
+    url_params["comment"] = comment
+
+    # Advanced Viz options
+    url_params["map_plot_color_scale"] = map_plot_color_scale
+    url_params["map_plot_quantization_level"] = map_plot_quantization_level
 
     hash_params = {}
     hash_params["usi"] = usi
