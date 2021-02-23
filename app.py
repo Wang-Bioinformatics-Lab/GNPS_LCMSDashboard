@@ -836,8 +836,8 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay USI", addon_type="prepend"),
-                            dbc.Input(id='overlay_usi', placeholder="Enter Overlay File USI"),
+                            dbc.InputGroupAddon("Overlay UDI", addon_type="prepend"),
+                            dbc.Input(id='overlay_usi', placeholder="Enter Overlay File UDI for GNPS"),
                         ],
                         className="mb-3",
                     ),
