@@ -1538,9 +1538,37 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         ints = [peak[1] for peak in peaks]
         neg_ints = [intensity * -1 for intensity in ints]
 
+        # Figuring out which labels to show
+        max_mz = max(mzs)
+        min_mz = min(mzs)
+        partitions = 5
+        mz_radius = (max_mz - min_mz) / partitions
+
+        labeled_peaks = set()
+        
+        for i in range(partitions):
+            try:
+                segment_min_mz = min_mz + mz_radius * i
+                segment_max_mz = min_mz + mz_radius * (i+1)
+
+                segment_peaks = [(mz, ints[i]) for i, mz in enumerate(mzs) if mz > segment_min_mz and mz < segment_max_mz]
+                sorted_segment_peaks = sorted(segment_peaks, key=lambda x: x[1], reverse=True)
+                segment_most_intense_peak = sorted_segment_peaks[0]
+
+                labeled_peaks.add(segment_most_intense_peak[0])
+            except:
+                pass
+
+        mzs_text = []
+        for mz in mzs:
+            if mz in labeled_peaks:
+                mzs_text.append("{:.2f}".format(mz))
+            else:
+                mzs_text.append("")
+
         interactive_fig = go.Figure(
             data=go.Scatter(x=mzs, y=ints, 
-                mode='markers',
+                mode='markers+text',
                 marker=dict(size=1),
                 error_y=dict(
                     symmetric=False,
@@ -1549,7 +1577,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                     width=0
                 ),
                 hoverinfo="x",
-                text=mzs
+                textposition="bottom right",
+                text=mzs_text
             )
         )
 
