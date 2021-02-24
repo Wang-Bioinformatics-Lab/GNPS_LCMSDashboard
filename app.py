@@ -2065,8 +2065,18 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
                     return existing_xic + ";" + str(mz_target)
 
                 return str(mz_target)
+
             # This is MS2
             elif clicked_target["curveNumber"] == 1:
+                mz_target = clicked_target["y"]
+
+                if len(existing_xic) > 0:
+                    return existing_xic + ";" + str(mz_target)
+
+                return str(mz_target)
+            
+            # This is Overlay/Feature Finding
+            elif clicked_target["curveNumber"] == 2:
                 mz_target = clicked_target["y"]
 
                 if len(existing_xic) > 0:
