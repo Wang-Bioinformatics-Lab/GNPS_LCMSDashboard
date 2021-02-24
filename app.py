@@ -2710,7 +2710,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 
         # Creating a box plot
         box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
-        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay", template=plot_theme)
+        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", points="all", height=box_height, boxmode="overlay", template=plot_theme)
+        box_fig.update_traces(pointpos=0)
         box_graph = dcc.Graph(figure=box_fig, config=graph_config)
     except:
         pass
