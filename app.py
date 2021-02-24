@@ -1531,35 +1531,40 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     spectrum_type = "MS"
     button_elements = []
 
+    # Drawing the spectrum object
+    mzs = [peak[0] for peak in peaks]
+    ints = [peak[1] for peak in peaks]
+    neg_ints = [intensity * -1 for intensity in ints]
+
+    # Figuring out which labels to show
+    mzs_text = ms2._get_ms_peak_labels(mzs, ints)
+
+    interactive_fig = go.Figure(
+        data=go.Scatter(x=mzs, y=ints, 
+            mode='markers+text',
+            marker=dict(size=1),
+            error_y=dict(
+                symmetric=False,
+                arrayminus=[0]*len(neg_ints),
+                array=neg_ints,
+                width=0
+            ),
+            hoverinfo="x",
+            textposition="top right",
+            text=mzs_text
+        )
+    )
+
+    interactive_fig.update_layout(title='{}'.format(ms2_identifier))
+    interactive_fig.update_layout(template=plot_theme)
+    interactive_fig.update_xaxes(title_text='m/z')
+    interactive_fig.update_yaxes(title_text='intensity')
+    interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
+    interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
+    interactive_fig.update_yaxes(range=[0, max(ints) * 1.1])
+
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
         spectrum_type = "MS2"
-
-        mzs = [peak[0] for peak in peaks]
-        ints = [peak[1] for peak in peaks]
-        neg_ints = [intensity * -1 for intensity in ints]
-
-        interactive_fig = go.Figure(
-            data=go.Scatter(x=mzs, y=ints, 
-                mode='markers',
-                marker=dict(size=1),
-                error_y=dict(
-                    symmetric=False,
-                    arrayminus=[0]*len(neg_ints),
-                    array=neg_ints,
-                    width=0
-                ),
-                hoverinfo="x",
-                text=mzs
-            )
-        )
-
-        interactive_fig.update_layout(title='{}'.format(ms2_identifier))
-        interactive_fig.update_layout(template=plot_theme)
-        interactive_fig.update_xaxes(title_text='m/z')
-        interactive_fig.update_yaxes(title_text='intensity')
-        interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
-        interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
-        interactive_fig.update_yaxes(range=[0, max(ints)])
 
         masst_dict = {}
         masst_dict["workflow"] = "SEARCH_SINGLE_SPECTRUM"
@@ -1573,36 +1578,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
         button_elements = [USI_button, html.Br(), masst_button]
 
-
     if "MS1" in ms2_identifier:
         spectrum_type = "MS1"
-
-        mzs = [peak[0] for peak in peaks]
-        ints = [peak[1] for peak in peaks]
-        neg_ints = [intensity * -1 for intensity in ints]
-
-        interactive_fig = go.Figure(
-            data=go.Scatter(x=mzs, y=ints, 
-                mode='markers',
-                marker=dict(size=1),
-                error_y=dict(
-                    symmetric=False,
-                    arrayminus=[0]*len(neg_ints),
-                    array=neg_ints,
-                    width=0
-                ),
-                hoverinfo="x",
-                text=mzs
-            )
-        )
-
-        interactive_fig.update_layout(title='{}'.format(ms2_identifier))
-        interactive_fig.update_layout(template=plot_theme)
-        interactive_fig.update_xaxes(title_text='m/z')
-        interactive_fig.update_yaxes(title_text='intensity')
-        interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
-        interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
-        interactive_fig.update_yaxes(range=[0, max(ints)])
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
 
