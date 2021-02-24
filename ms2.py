@@ -9,6 +9,35 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 from utils import _spectrum_generator
 
+def _get_ms_peak_labels(mzs, ints, partitions=8):
+    max_mz = max(mzs)
+    min_mz = min(mzs)
+    mz_radius = (max_mz - min_mz) / partitions
+
+    labeled_peaks = set()
+    
+    for i in range(partitions):
+        try:
+            segment_min_mz = min_mz + mz_radius * i
+            segment_max_mz = min_mz + mz_radius * (i+1)
+
+            segment_peaks = [(mz, ints[i]) for i, mz in enumerate(mzs) if mz >= segment_min_mz and mz <= segment_max_mz]
+            sorted_segment_peaks = sorted(segment_peaks, key=lambda x: x[1], reverse=True)
+            segment_most_intense_peak = sorted_segment_peaks[0]
+
+            labeled_peaks.add(segment_most_intense_peak[0])
+        except:
+            pass
+
+    mzs_text = []
+    for mz in mzs:
+        if mz in labeled_peaks:
+            mzs_text.append("{:.2f}".format(mz))
+        else:
+            mzs_text.append("")
+    
+    return mzs_text
+
 def _get_ms2_peaks(usi, local_filename, scan_number):
     # Let's first try to get the spectrum from disk
     precursor_mz = 0
