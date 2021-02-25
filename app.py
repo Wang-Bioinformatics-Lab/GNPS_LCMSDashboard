@@ -1196,7 +1196,10 @@ MIDDLE_DASHBOARD = [
                 id='map-plot',
                 figure=placeholder_map_plot,
                 config={
-                    'doubleClick': 'reset'
+                    'doubleClick': 'reset',
+                    'modeBarButtonsToRemove': [
+                        "toggleSpikelines"
+                    ]
                 }
             ),
             html.Br(),
