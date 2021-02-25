@@ -1539,6 +1539,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     # Figuring out which labels to show
     mzs_text = ms2._get_ms_peak_labels(mzs, ints)
 
+    print(mzs_text)
+
     interactive_fig = go.Figure(
         data=go.Scatter(x=mzs, y=ints, 
             mode='markers+text',
@@ -1561,7 +1563,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     interactive_fig.update_yaxes(title_text='intensity')
     interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
     interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
-    interactive_fig.update_yaxes(range=[0, max(ints) * 1.1])
+    interactive_fig.update_yaxes(range=[0, max(ints) * 1.2])
 
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
         spectrum_type = "MS2"
