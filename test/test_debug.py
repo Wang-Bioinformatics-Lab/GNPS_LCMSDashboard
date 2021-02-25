@@ -11,7 +11,9 @@ import download
 
 
 def test_scan_in_usi():
-    usi = "mzspec:MSV000086838:peak/ST001652/10_D6_CT1.mzXML"
-    remote_link, local_filename = download._resolve_usi(usi, cleanup=False)
+    usi = "mzspec:PXD023650:03552_GA1_P_041575_P00_A00_30min_R1.raw"
+    remote_link = download._resolve_usi_remotelink(usi)
+    print(remote_link)
 
+    remote_link, local_filename = download._resolve_usi(usi, cleanup=False)
     print(remote_link, local_filename)

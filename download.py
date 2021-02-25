@@ -96,7 +96,8 @@ def _resolve_msv_usi(usi):
         remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
     except:
         # We did not successfully look it up, this is the fallback try
-        remote_link = f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
+        # remote_link = f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
+        raise
 
     return remote_link
 
