@@ -66,7 +66,18 @@ def _usi_to_local_filename(usi):
 
 
 
-def _resolve_msv_usi(usi):
+def _resolve_msv_usi(usi, force_massive=False):
+    """
+    
+
+    Args:
+        usi ([type]): [description]
+        force_massive (bool, optional): [description]. Defaults to False, we try to create the url given the USI, usually for non mzML/RAW files, e.g. CDF files
+
+    Returns:
+        [type]: [description]
+    """
+
     usi_splits = usi.split(':')
 
     msv_usi = usi
@@ -96,7 +107,8 @@ def _resolve_msv_usi(usi):
         remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
     except:
         # We did not successfully look it up, this is the fallback try
-        # remote_link = f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
+        if force_massive:
+            return f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
         raise
 
     return remote_link
@@ -191,7 +203,7 @@ def _resolve_usi_remotelink(usi):
     usi_splits = usi.split(":")
     
     if "MSV" in usi_splits[1]:
-        remote_link = _resolve_msv_usi(usi)
+        remote_link = _resolve_msv_usi(usi, force_massive=True)
     elif "GNPS" in usi_splits[1]:
         remote_link = _resolve_gnps_usi(usi)
     elif "MTBLS" in usi_splits[1]:
