@@ -348,6 +348,7 @@ DATASELECTION_CARD = [
                                             {'label': 'Trivial', 'value': 'Trivial'},
                                             # {'label': 'TidyMS', 'value': 'TidyMS'},
                                             {'label': 'MZmine2 (Metabolomics)', 'value': 'MZmine2'},
+                                            {'label': 'MZmine3 test (Metabolomics)', 'value': 'MZmine3'},
                                             {'label': 'Dinosaur (Proteomics)', 'value': 'Dinosaur'},
                                         ],
                                         searchable=False,

@@ -21,6 +21,9 @@ def perform_feature_finding(filename, params, timeout=90):
 
     if params["type"] == "MZmine2":
         return _mzmine_feature_finding(filename, params["params"], timeout=timeout)
+
+    if params["type"] == "MZmine3":
+        return _mzmine3_feature_finding(filename, params["params"], timeout=timeout)
     
     if params["type"] == "Dinosaur":
         return _dinosaur_feature_finding(filename, timeout=timeout)
@@ -157,6 +160,95 @@ def _mzmine_feature_finding(filename, parameters, timeout=90):
     features_df['mz'] = mzmine_features_df['row m/z']
     features_df['i'] = mzmine_features_df['{} Peak area'.format(os.path.basename(filename))]
     features_df['rt'] = mzmine_features_df['row retention time']
+
+    return features_df
+
+
+def _mzmine3_feature_finding(filename, parameters, timeout=90):
+    import xmltodict
+    import os
+
+    batch_base = "feature_finding/batch_files/mzmine3_advanced.xml"
+
+    batch_xml = xmltodict.parse(open(batch_base).read())
+
+    all_batch_steps = batch_xml["batch"]["batchstep"]
+
+    ##Setting input files
+    for batch_step in all_batch_steps:
+        if batch_step["@method"] == "io.github.mzmine.modules.io.import_all_data_files.AllSpectralDataImportModule":
+            # Found loading module
+            batch_step["parameter"]["file"] = [os.path.abspath(filename)]
+
+    output_prefix = os.path.abspath(os.path.join("temp", "feature-finding", "{}_{}".format(os.path.basename(filename),
+                                                                                           str(uuid.uuid4()).replace(
+                                                                                               "-", ""))))
+    output_prefix = output_prefix.replace(".", "_")
+    # full table of all feature data types
+    output_ms2_csv_full = output_prefix + "_quant_full.csv"
+    output_ms2_csv = output_prefix + "_quant.csv"
+    output_ms2_mgf = output_prefix + ".mgf"
+    filled_batch = output_prefix + "_filled_batch.xml"
+
+    # Subsituting inputs and outputs
+    batch_text = xmltodict.unparse(batch_xml, pretty=True)
+    # output file names
+    batch_text = batch_text.replace("GNPSEXPORTPREFIX", output_prefix)
+    batch_text = batch_text.replace("FEATUREFINDING_PPMTOLERANCE", str(parameters["feature_finding_ppm"]))
+    batch_text = batch_text.replace("FEATUREFINDING_NOISELEVEL", str(parameters["feature_finding_noise"]))
+    # TODO define MS2 noise level
+    batch_text = batch_text.replace("MS2_NOISELEVEL", "0")
+    batch_text = batch_text.replace("FEATUREFINDING_MINABSOLUTEHEIGHT",
+                                    str(float(parameters["feature_finding_noise"]) * 3.0))
+
+    batch_text = batch_text.replace("FEATUREFINDING_MINPEAKDURATION", str(parameters["feature_finding_min_peak_rt"]))
+    batch_text = batch_text.replace("FEATUREFINDING_MAXPEAKDURATION", str(parameters["feature_finding_max_peak_rt"]))
+
+    batch_text = batch_text.replace("FEATUREFINDING_RTTOLERANCE", str(parameters["feature_finding_rt_tolerance"]))
+
+    # TODO set deisotoping parameters
+    batch_text = batch_text.replace("FILTER_MIN_ISOTOPES_ACTIVE", "true") # true / false
+    batch_text = batch_text.replace("MIN_ISOTOPES", "2")
+
+    # TODO define expected width of peaks for local minimum search
+
+    with open(filled_batch, "w") as o:
+        o.write(batch_text)
+
+    # TODO change to real version
+    # Figuring out how to launch MZmine via script
+    # currently its installed from a .deb file
+    cmd = "/opt/mzmine/bin/MZmine -b {}".format(filled_batch)
+
+    # load config (preferences)
+    mzmine_config = os.path.join("feature_finding/mzmine3/", "mzmine3.conf")
+    if not os.path.exists(mzmine_config):
+        cmd = cmd + " -p {}".format(mzmine_config)
+
+    print(cmd)
+    _call_feature_finding_tool(cmd, timeout=timeout)
+
+    mzmine_features_df = pd.read_csv(output_ms2_csv)
+    mzmine_features_df_full = pd.read_csv(output_ms2_csv_full)
+
+    features_df = pd.DataFrame()
+    # read FeatureListRow values
+    features_df['mz'] = mzmine_features_df_full['m/z']
+    features_df['area'] = mzmine_features_df_full['Area']
+    features_df['rt'] = mzmine_features_df_full['RT']
+    # additional fields
+    features_df['rt min'] = mzmine_features_df_full['RT range:min']
+    features_df['rt max'] = mzmine_features_df_full['RT range:max']
+    features_df['height'] = mzmine_features_df_full['Height']
+    features_df['#MS2 scans'] = mzmine_features_df_full['Fragment scans']
+    features_df['charge'] = mzmine_features_df_full['Charge']
+
+    # read Feature (RawDataFile specific) data
+    features_df['asymmetry'] = mzmine_features_df_full['DATAFILE:{}:Asymmetry'.format(os.path.basename(filename))]
+    features_df['fwhm'] = mzmine_features_df_full['DATAFILE:{}:FWHM'.format(os.path.basename(filename))]
+    features_df['tailing'] = mzmine_features_df_full['DATAFILE:{}:Tailing'.format(os.path.basename(filename))]
+    # features_df['m/z min'] = mzmine_features_df_full['m/z range:min']
+    # features_df['m/z max'] = mzmine_features_df_full['m/z range:max']
 
     return features_df
 

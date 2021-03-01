@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?><batch>
+    <batchstep method="io.github.mzmine.modules.io.import_all_data_files.AllSpectralDataImportModule">
+        <parameter name="File names">
+            <file>INPUT FILES</file>
+        </parameter>
+        <parameter name="Advanced import" selected="true">
+            <parameter name="MS1 detector (Advanced)" selected="true" selected_item="Centroid">
+                <module name="Centroid">
+                    <parameter name="Noise level">FEATUREFINDING_NOISELEVEL</parameter>
+                </module>
+                <module name="Exact mass">
+                    <parameter name="Noise level"/>
+                </module>
+                <module name="Local maxima">
+                    <parameter name="Noise level"/>
+                </module>
+                <module name="Recursive threshold">
+                    <parameter name="Noise level"/>
+                    <parameter name="Min m/z peak width"/>
+                    <parameter name="Max m/z peak width"/>
+                </module>
+                <module name="Wavelet transform">
+                    <parameter name="Noise level"/>
+                    <parameter name="Scale level"/>
+                    <parameter name="Wavelet window size (%)"/>
+                </module>
+            </parameter>
+            <parameter name="MS2 detector (Advanced)" selected="true" selected_item="Centroid">
+                <module name="Centroid">
+                    <parameter name="Noise level">MS2_NOISELEVEL</parameter>
+                </module>
+                <module name="Exact mass">
+                    <parameter name="Noise level"/>
+                </module>
+                <module name="Local maxima">
+                    <parameter name="Noise level"/>
+                </module>
+                <module name="Recursive threshold">
+                    <parameter name="Noise level"/>
+                    <parameter name="Min m/z peak width"/>
+                    <parameter name="Max m/z peak width"/>
+                </module>
+                <module name="Wavelet transform">
+                    <parameter name="Noise level"/>
+                    <parameter name="Scale level"/>
+                    <parameter name="Wavelet window size (%)"/>
+                </module>
+            </parameter>
+        </parameter>
+    </batchstep>
+    <batchstep method="io.github.mzmine.modules.dataprocessing.featdet_adapchromatogrambuilder.ModularADAPChromatogramBuilderModule">
+        <parameter name="Raw data files" type="BATCH_LAST_FILES"/>
+        <parameter name="Scans">
+            <ms_level>1</ms_level>
+        </parameter>
+        <parameter name="Min group size in # of scans">4</parameter>
+        <parameter name="Group intensity threshold">FEATUREFINDING_NOISELEVEL</parameter>
+        <parameter name="Min highest intensity">FEATUREFINDING_MINABSOLUTEHEIGHT</parameter>
+        <parameter name="m/z tolerance">
+            <absolutetolerance>0.005</absolutetolerance>
+            <ppmtolerance>FEATUREFINDING_PPMTOLERANCE</ppmtolerance>
+        </parameter>
+        <parameter name="Suffix">chromatograms</parameter>
+    </batchstep>
+    <batchstep method="io.github.mzmine.modules.dataprocessing.featdet_chromatogramdeconvolution.minimumsearch.MinimumSearchFeatureResolverModule">
+        <parameter name="Feature lists" type="BATCH_LAST_FEATURELISTS"/>
+        <parameter name="Suffix">deconvoluted</parameter>
+        <parameter measure="AUTO" name="m/z center calculation" weighting="NONE">CenterFunction</parameter>
+        <parameter name="Remove original feature list">true</parameter>
+        <parameter name="MS/MS scan pairing" selected="true">
+            <parameter name="Retention time tolerance" unit="MINUTES">0.12</parameter>
+            <parameter name="m/z tolerance">
+                <absolutetolerance>0.2</absolutetolerance>
+                <ppmtolerance>10.0</ppmtolerance>
+            </parameter>
+            <parameter name="Limit by RT edges">false</parameter>
+        </parameter>
+        <parameter name="Dimension">Retention time</parameter>
+        <parameter name="Chromatographic threshold">0.80</parameter>
+        <parameter name="Search minimum in RT range (min)">0.08</parameter>
+        <parameter name="Minimum relative height">0.0</parameter>
+        <parameter name="Minimum absolute height">FEATUREFINDING_MINABSOLUTEHEIGHT</parameter>
+        <parameter name="Min ratio of peak top/edge">1.5</parameter>
+        <parameter name="Peak duration range (min)">
+            <min>FEATUREFINDING_MINPEAKDURATION</min>
+            <max>FEATUREFINDING_MAXPEAKDURATION</max>
+        </parameter>
+    </batchstep>
+    <batchstep method="io.github.mzmine.modules.dataprocessing.filter_featurefilter.FeatureFilterModule">
+        <parameter name="Feature lists" type="BATCH_LAST_FEATURELISTS"/>
+        <parameter name="Name suffix">filtered</parameter>
+        <parameter name="Duration" selected="true">
+            <min>0.0</min>
+            <max>FEATUREFINDING_MAXPEAKDURATION</max>
+        </parameter>
+        <parameter name="Area" selected="false">
+            <min>0.0</min>
+            <max>1.0E7</max>
+        </parameter>
+        <parameter name="Height" selected="false">
+            <min>0.0</min>
+            <max>1.0E7</max>
+        </parameter>
+        <parameter name="# data points" selected="true">
+            <min>4</min>
+            <max>1000000</max>
+        </parameter>
+        <parameter name="FWHM" selected="false">
+            <min>0.0</min>
+            <max>2.0</max>
+        </parameter>
+        <parameter name="Tailing factor" selected="false">
+            <min>0.5</min>
+            <max>2.0</max>
+        </parameter>
+        <parameter name="Asymmetry factor" selected="false">
+            <min>0.5</min>
+            <max>2.0</max>
+        </parameter>
+        <parameter name="Keep only features with MS/MS scan">false</parameter>
+        <parameter name="Remove source feature list after filtering">true</parameter>
+    </batchstep>
+    <batchstep method="io.github.mzmine.modules.dataprocessing.filter_isotopegrouper.IsotopeGrouperModule">
+        <parameter name="Feature lists" type="BATCH_LAST_FEATURELISTS"/>
+        <parameter name="Name suffix">deisotoped</parameter>
+        <parameter name="m/z tolerance">
+            <absolutetolerance>0.002</absolutetolerance>
+            <ppmtolerance>FEATUREFINDING_PPMTOLERANCE</ppmtolerance>
+        </parameter>
+        <parameter name="Retention time tolerance" unit="MINUTES">FEATUREFINDING_RTTOLERANCE</parameter>
+        <parameter name="Mobility tolerance" selected="false"/>
+        <parameter name="Monotonic shape">true</parameter>
+        <parameter name="Maximum charge">3</parameter>
+        <parameter name="Representative isotope">Most intense</parameter>
+        <parameter name="Remove original peaklist">true</parameter>
+    </batchstep>
+    <batchstep method="io.github.mzmine.modules.dataprocessing.filter_rowsfilter.RowsFilterModule">
+        <parameter name="Feature lists" type="BATCH_LAST_FEATURELISTS"/>
+        <parameter name="Name suffix">2iso</parameter>
+        <parameter name="Minimum features in a row" selected="true">1.0</parameter>
+        <parameter name="Minimum features in an isotope pattern" selected="FILTER_MIN_ISOTOPES_ACTIVE">MIN_ISOTOPES</parameter>
+        <parameter name="m/z" selected="false"/>
+        <parameter name="Retention time" selected="false"/>
+        <parameter name="features duration range" selected="false">
+            <min>0.0</min>
+            <max>10.0</max>
+        </parameter>
+        <parameter name="Chromatographic FWHM" selected="false">
+            <min>0.0</min>
+            <max>1.0</max>
+        </parameter>
+        <parameter name="Charge" selected="false"/>
+        <parameter name="Kendrick mass defect" selected="false">
+            <parameter name="Kendrick mass defect">
+                <min>0.0</min>
+                <max>1.0</max>
+            </parameter>
+            <parameter name="Kendrick mass base"/>
+            <parameter name="Shift">0.0</parameter>
+            <parameter name="Charge">1</parameter>
+            <parameter name="Divisor">1</parameter>
+            <parameter name="Use Remainder of Kendrick mass">false</parameter>
+        </parameter>
+        <parameter name="Parameter">No parameters defined</parameter>
+        <parameter name="Only identified?">false</parameter>
+        <parameter name="Text in identity" selected="false"/>
+        <parameter name="Text in comment" selected="false"/>
+        <parameter name="Keep or remove rows">Keep rows that match all criteria</parameter>
+        <parameter name="Keep only feature with MS2 scan (GNPS)">false</parameter>
+        <parameter name="Reset the feature number ID">false</parameter>
+        <parameter name="Remove source feature list after filtering">true</parameter>
+    </batchstep>
+    <batchstep method="io.github.mzmine.modules.io.export_gnps.fbmn.GnpsFbmnExportAndSubmitModule">
+        <parameter name="Feature lists" type="BATCH_LAST_FEATURELISTS"/>
+        <parameter name="Filename">
+            <current_file>GNPSEXPORTPREFIX</current_file>
+            <last_file>GNPSEXPORTPREFIX</last_file>
+        </parameter>
+        <parameter name="Merge MS/MS (experimental)" selected="false">
+            <parameter name="Select spectra to merge">across samples</parameter>
+            <parameter name="m/z merge mode">weighted average (remove outliers)</parameter>
+            <parameter name="intensity merge mode">sum intensities</parameter>
+            <parameter name="Expected mass deviation">
+                <absolutetolerance>0.001</absolutetolerance>
+                <ppmtolerance>5.0</ppmtolerance>
+            </parameter>
+            <parameter name="Cosine threshold (%)">0.7</parameter>
+            <parameter name="Feature count threshold (%)">0.2</parameter>
+            <parameter name="Isolation window offset (m/z)">0.0</parameter>
+            <parameter name="Isolation window width (m/z)">3.0</parameter>
+        </parameter>
+        <parameter name="Filter rows">ALL</parameter>
+        <parameter name="Feature intensity">Feature height</parameter>
+        <parameter name="Submit to GNPS" selected="false">
+            <parameter name="Meta data file" selected="false"/>
+            <parameter name="Presets">HIGHRES</parameter>
+            <parameter name="Job title"></parameter>
+            <parameter name="Email"></parameter>
+            <parameter name="Username"></parameter>
+            <parameter name="Password"></parameter>
+            <parameter name="Open website">false</parameter>
+        </parameter>
+        <parameter name="Open folder">false</parameter>
+    </batchstep>
+</batch>
