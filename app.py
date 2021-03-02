@@ -2554,7 +2554,6 @@ def _integrate_files(long_data_df, xic_integration_type):
                 Input("plot_theme", "value")
               ])
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
-
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     print("TRIGGERED XIC PLOT", triggered_id, file=sys.stderr)
 
@@ -2632,6 +2631,10 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             rt_max = rt_value + 0.5
         except:
             pass
+
+    # Exiting if we don't have any valid XIC values
+    if len(all_xic_values) == 0:
+        return [placeholder_xic_plot, graph_config, dash.no_update, dash.no_update, dash.no_update]
 
     # Performing XIC for all USI in the list
     merged_df_long, ms2_data = _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
