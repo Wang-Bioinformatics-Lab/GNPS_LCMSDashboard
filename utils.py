@@ -47,10 +47,10 @@ def _calculate_file_stats(usi, local_filename):
         all_lines = str(out).replace("\\t", "\t").split("\\n")
         all_lines = [line for line in all_lines if len(line) > 10 ]
         updated_version = "\n".join(all_lines)
-                
+
         data = io.StringIO(updated_version)
         df = pd.read_csv(data, sep="\t")
-        
+
         record = df.to_dict(orient='records')[0]
 
         fields = ["Vendor", "Model", "MS1s", "MS2s"]
@@ -61,7 +61,7 @@ def _calculate_file_stats(usi, local_filename):
                 response_dict[field] = "N/A"
     except:
         pass
-    
+
     return response_dict
 
 # Gets Positive and Negative return values, or None
@@ -73,9 +73,9 @@ def _get_scan_polarity(spec):
             polarity = "Negative"
         if spec["positive scan"] is True:
             polarity = "Positive"
-    except:    
+    except:
         pass
-     
+
     return polarity
 
 # Given URL, will try to parse and get key
@@ -113,8 +113,8 @@ def _get_param_from_url(search, url_hash, param_key, default, session_dict={}, o
         return no_change_default
     return param_value
 
-def _resolve_map_plot_selection(url_search, usi, local_filename, 
-                ui_map_selection=None, 
+def _resolve_map_plot_selection(url_search, usi, local_filename,
+                ui_map_selection=None,
                 map_plot_rt_min="",
                 map_plot_rt_max="",
                 map_plot_mz_min="",
@@ -138,7 +138,7 @@ def _resolve_map_plot_selection(url_search, usi, local_filename,
 
     system_map_selection = {}
     manual_map_selection = {}
-    
+
 
     highlight_box = None
 
@@ -159,7 +159,7 @@ def _resolve_map_plot_selection(url_search, usi, local_filename,
             if scan_number == 1:
                 # Lets get out of here and not set anything
                 raise Exception
-            
+
             run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
             spec = run[scan_number]
             rt = spec.scan_time_in_minutes()
@@ -279,7 +279,7 @@ def _find_lcms_rt(filename, rt_query):
         # Jump out early
         if jump_point == 0:
             break
-        
+
         if jump_point == run.get_spectrum_count():
             break
 
@@ -325,11 +325,40 @@ def _spectrum_generator(filename, min_rt, max_rt):
 
 # Getting the Overlay data
 def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover):
+
+    def _ss_table_filtered(task,view,query):
+        def _ss_table_filename(task, view):
+            url = 'https://proteomics2.ucsd.edu/ProteoSAFe/result_json.jsp?task={}&view={}'.format(task, view)
+            r = requests.get(url)
+            if r.status_code == 200:
+                return r.json()['blockData']['file']
+            else:
+                return None
+        def _encode_for_proteosafe(query):
+            return urllib.parse.quote_plus(urllib.parse.quote_plus('#' + json.dumps(query).replace(' ','')))
+        filename = _ss_table_filename(task, view)
+        url = []
+        url.append('https://proteomics2.ucsd.edu/ProteoSAFe/QueryResult?task={}'.format(task))
+        url.append('file={}'.format(filename))
+        if query:
+            url.append('query={}'.format(_encode_for_proteosafe(query)))
+            url.append('pageSize=-1')
+        return requests.get('&'.join(url))
+
     overlay_usi_splits = overlay_usi.split(":")
     file_path = overlay_usi_splits[2].split("-")[-1]
     task = overlay_usi_splits[2].split("-")[1]
-    url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
-    overlay_df = pd.read_csv(url, sep=None, nrows=400000)
+
+    if overlay_usi_splits[0] == 'mzspec:PROTEOSAFE:TASK_SS':
+        query = None
+        if len(overlay_filter_column) > 0:
+            if len(overlay_filter_value) > 0:
+                query = {overlay_filter_column + '_input':overlay_filter_value}
+        r = _ss_table_filtered(task, view, query)
+        overlay_df = pd.DataFrame(r.json()['row_data'])
+    else:
+        url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
+        overlay_df = pd.read_csv(url, sep=None, nrows=400000)
 
     # Adding mz
     if len(overlay_mz) > 0 and overlay_mz in overlay_df:
@@ -347,11 +376,11 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
     # Adding Size
     if len(overlay_size) > 0 and overlay_size in overlay_df:
         overlay_df["size"] = overlay_df[overlay_size]
-    
+
     # Adding Color
     if len(overlay_color) > 0 and overlay_color in overlay_df:
         overlay_df["color"] = overlay_df[overlay_color]
-    
+
     # Adding Label
     if len(overlay_hover) > 0 and overlay_hover in overlay_df:
         overlay_df["hover"] = overlay_df[overlay_hover]
