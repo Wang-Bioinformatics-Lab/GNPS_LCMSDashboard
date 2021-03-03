@@ -2443,6 +2443,7 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
             xic_df_list.append(xic_dict)
 
     else:
+        # Only run in development setting
         for usi_element in usi_list:
             if len(usi_list) == 1 and len(all_xic_values) == 1:
                 GET_MS2 = True
