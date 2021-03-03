@@ -149,12 +149,37 @@ def _xic_file_fast(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
     return xic_df, {}
 
 def chromatograms_list(local_filename):
-    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-
     run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions, skip_chromatogram=False)
+
+    all_chromatograms = []
 
     for entry in run:
         if isinstance(entry, pymzml.spec.Chromatogram):
+            all_chromatograms.append(entry.ID)
             print(entry.ID)
+            print(entry.peaks)
+            #for peak in entry.peaks():
+            #    print(peak)
+            
             # for time, intensity in entry.peaks:
             #     print(time, intensity)
+
+    return all_chromatograms
+
+def get_chromatogram(local_filename, chromatogram_id):
+    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions, skip_chromatogram=False)
+
+    all_int = []
+    all_rt = []
+    for entry in run:
+        if isinstance(entry, pymzml.spec.Chromatogram):
+            for peak in entry.peaks():
+               all_rt.append(peak[0])
+               all_int.append(abs(float(peak[1])))
+            
+
+    xic_df = pd.DataFrame()
+    xic_df["rt"] = all_rt
+    xic_df["Chrom {}".format(chromatogram_id)] = all_int
+
+    return xic_df
