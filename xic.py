@@ -147,3 +147,14 @@ def _xic_file_fast(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
         shutil.rmtree(temp_result_folder)
 
     return xic_df, {}
+
+def chromatograms_list(local_filename):
+    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
+    run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions, skip_chromatogram=False)
+
+    for entry in run:
+        if isinstance(entry, pymzml.spec.Chromatogram):
+            print(entry.ID)
+            # for time, intensity in entry.peaks:
+            #     print(time, intensity)
