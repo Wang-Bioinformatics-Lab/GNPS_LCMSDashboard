@@ -68,6 +68,7 @@ from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL
+from layout_xic_options import ADVANCED_XIC_MODAL
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -199,7 +200,10 @@ DATASELECTION_CARD = [
         dbc.CardBody(dbc.Row(
             [   ## Left Panel
                 dbc.Col([
-                    html.H5(children='File Selection'),
+                    dbc.Row(
+                        dbc.Col(html.H5(children='File Selection')),
+                    ),
+                    html.Hr(),
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
@@ -388,7 +392,20 @@ DATASELECTION_CARD = [
                 ], className="col-sm"),
                 ## Right Panel
                 dbc.Col([
-                    html.H5(children='XIC Options'),
+                    dbc.Row([
+                        dbc.Col(html.H5(children='XIC Options')),
+                        dbc.Col(
+                            dbc.Button("Advanced XIC Options", 
+                                id="advanced_xic_modal_button", 
+                                color="info", size="sm", 
+                                className="mr-1", 
+                                style={
+                                    "float" : "right"
+                                }
+                            ),
+                        ),
+                    ]),
+                    html.Hr(),
                     dbc.Row([
                         dbc.Col(
                             dbc.InputGroup(
@@ -1368,6 +1385,7 @@ BODY = dbc.Container(
         dbc.Row(ADVANCED_IMPORT_MODAL),
         dbc.Row(ADVANCED_REPLAY_MODAL),
         dbc.Row(ADVANCED_VISUALIZATION_MODAL),
+        dbc.Row(ADVANCED_XIC_MODAL),
         
     ],
     fluid=True,
@@ -2488,8 +2506,18 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
             pass
 
     merged_df_long = pd.concat(df_long_list)
+
     return merged_df_long, ms2_data
 
+def _perform_chromatogram_extraction(usi_list, chromatogram_list):
+    usi = usi_list[0]
+    remote_link, local_filename = _resolve_usi(usi)
+
+    for chromatogram_value in chromatogram_list:
+        chromatogram_df = xic.get_chromatogram(local_filename, chromatogram_value)
+        print(chromatogram_df, file=sys.stderr, flush=True)
+
+    return None
 
 def _is_worker_up():
     """Gives us utility function to tell is celery is up and running
@@ -2528,6 +2556,27 @@ def _integrate_files(long_data_df, xic_integration_type):
 
     return grouped_df
 
+##################################
+# XIC Chromatogram Options
+##################################
+@app.callback(Output('chromatogram_options', 'options'),
+              [
+                  Input('usi', 'value'), 
+                  Input('usi2', 'value'), 
+              ])
+def create_chromatogram_options(usi, usi2):
+    all_usi = usi.split("\n")
+    remote_link, local_filename = _resolve_usi(all_usi[0])
+
+    chromatogram_list = tasks.task_chromatogram_options(local_filename)
+
+    options = []
+    for term in chromatogram_list:
+        options.append({'label': term, 'value': term})
+
+    return options
+
+
 # Creating XIC plot
 @app.callback([
                 Output('xic-plot', 'figure'), 
@@ -2540,20 +2589,21 @@ def _integrate_files(long_data_df, xic_integration_type):
                   Input('usi', 'value'), 
                   Input('usi2', 'value'), 
                   Input('xic_mz', 'value'), 
-                Input('xic_formula', 'value'), 
-                Input('xic_peptide', 'value'), 
-                Input('xic_tolerance', 'value'),
-                Input('xic_ppm_tolerance', 'value'),
-                Input('xic_tolerance_unit', 'value'),
-                Input('xic_rt_window', 'value'),
-                Input('xic_integration_type', 'value'),
-                Input('xic_norm', 'value'),
-                Input('xic_file_grouping', 'value'),
-                Input('polarity_filtering', 'value'),
-                Input('image_export_format', 'value'), 
-                Input("plot_theme", "value")
+                  Input('xic_formula', 'value'), 
+                  Input('xic_peptide', 'value'), 
+                  Input('xic_tolerance', 'value'),
+                  Input('xic_ppm_tolerance', 'value'),
+                  Input('xic_tolerance_unit', 'value'),
+                  Input('xic_rt_window', 'value'),
+                  Input('xic_integration_type', 'value'),
+                  Input('xic_norm', 'value'),
+                  Input('xic_file_grouping', 'value'),
+                  Input("chromatogram_options", "value"),
+                  Input('polarity_filtering', 'value'),
+                  Input('image_export_format', 'value'), 
+                  Input("plot_theme", "value"),
               ])
-def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, chromatogram_list, polarity_filter, export_format, plot_theme):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     print("TRIGGERED XIC PLOT", triggered_id, file=sys.stderr)
 
@@ -2633,11 +2683,17 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             pass
 
     # Exiting if we don't have any valid XIC values
-    if len(all_xic_values) == 0:
+    if len(all_xic_values) == 0 and len(chromatogram_list) == 0:
         return [placeholder_xic_plot, graph_config, dash.no_update, dash.no_update, dash.no_update]
 
-    # Performing XIC for all USI in the list
-    merged_df_long, ms2_data = _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+    merged_df_long = pd.DataFrame()
+    if len(all_xic_values) > 0:
+        # Performing XIC for all USI in the list
+        merged_df_long, ms2_data = _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+
+    # Looking at chromatograms only if a single file exists
+    if len(usi_list) == 1 and len(chromatogram_list) > 0:
+        _perform_chromatogram_extraction(usi_list, chromatogram_list)
 
     # Limit the plotting USIs, but not the integrals below
     plotting_df = merged_df_long
@@ -3405,6 +3461,7 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
 
 
 
+
 @app.callback(Output('network-link-button', 'children'),
               [
                   Input('usi', 'value'), 
@@ -3543,6 +3600,7 @@ def get_overlay_options(overlay_usi):
         options.append({"label": column, "value": column})
 
     return [options, options, options]
+
 
 
 
@@ -3758,6 +3816,13 @@ app.callback(
     [Input("advanced_replay_modal_button", "n_clicks"), Input("advanced_replay_modal_close", "n_clicks")],
     [State("advanced_replay_modal", "is_open")],
 )(toggle_modal)
+
+app.callback(
+    Output("advanced_xic_modal", "is_open"),
+    [Input("advanced_xic_modal_button", "n_clicks"), Input("advanced_xic_modal_close", "n_clicks")],
+    [State("advanced_xic_modal", "is_open")],
+)(toggle_modal)
+
 
 # Helping to toggle the panels
 def toggle_panel(n1, is_open):

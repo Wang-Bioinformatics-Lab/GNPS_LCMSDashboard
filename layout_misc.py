@@ -9,9 +9,8 @@ from dash.dependencies import Input, Output, State
 import dash_daq as daq
 
 # Plotly Imports
-
 import plotly.express as px
-import plotly.graph_objects as go 
+import plotly.graph_objects as go
 
 EXAMPLE_DASHBOARD = [
     dbc.CardHeader(html.H5("Example Exploration Dashboards")),

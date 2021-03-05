@@ -156,13 +156,6 @@ def chromatograms_list(local_filename):
     for entry in run:
         if isinstance(entry, pymzml.spec.Chromatogram):
             all_chromatograms.append(entry.ID)
-            print(entry.ID)
-            print(entry.peaks)
-            #for peak in entry.peaks():
-            #    print(peak)
-            
-            # for time, intensity in entry.peaks:
-            #     print(time, intensity)
 
     return all_chromatograms
 
@@ -177,7 +170,6 @@ def get_chromatogram(local_filename, chromatogram_id):
                all_rt.append(peak[0])
                all_int.append(abs(float(peak[1])))
             
-
     xic_df = pd.DataFrame()
     xic_df["rt"] = all_rt
     xic_df["Chrom {}".format(chromatogram_id)] = all_int
