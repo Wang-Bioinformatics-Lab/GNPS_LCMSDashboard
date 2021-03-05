@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?><batch>
     <batchstep method="io.github.mzmine.modules.io.import_all_data_files.AllSpectralDataImportModule">
         <parameter name="File names">
-            <file>INPUT FILES</file>
+            FILE_PLACEHOLDER
         </parameter>
         <parameter name="Advanced import" selected="true">
             <parameter name="MS1 detector (Advanced)" selected="true" selected_item="Centroid">

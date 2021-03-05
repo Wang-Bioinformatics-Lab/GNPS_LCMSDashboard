@@ -9,6 +9,7 @@ def perform_feature_finding(filename, params, timeout=90):
     """
     Do stuff for feature finding
     """
+    print("Running feature finding {}".format(params["type"]))
 
     if params["type"] == "Test":
         return _test_feature_finding(filename)
@@ -106,6 +107,8 @@ def _tidyms_feature_finding(filename):
 def _mzmine_feature_finding(filename, parameters, timeout=90):
     import xmltodict
     import os
+    
+    print("Running MZmine 2 feature finding")
 
     batch_base = "feature_finding/batch_files/Generic_Batchbase.xml"
 
@@ -167,18 +170,8 @@ def _mzmine_feature_finding(filename, parameters, timeout=90):
 def _mzmine3_feature_finding(filename, parameters, timeout=90):
     import xmltodict
     import os
-
-    batch_base = "feature_finding/batch_files/mzmine3_advanced.xml"
-
-    batch_xml = xmltodict.parse(open(batch_base).read())
-
-    all_batch_steps = batch_xml["batch"]["batchstep"]
-
-    ##Setting input files
-    for batch_step in all_batch_steps:
-        if batch_step["@method"] == "io.github.mzmine.modules.io.import_all_data_files.AllSpectralDataImportModule":
-            # Found loading module
-            batch_step["parameter"]["file"] = [os.path.abspath(filename)]
+    
+    print("Running MZmine 3 feature finding")
 
     output_prefix = os.path.abspath(os.path.join("temp", "feature-finding", "{}_{}".format(os.path.basename(filename),
                                                                                            str(uuid.uuid4()).replace(
@@ -191,7 +184,12 @@ def _mzmine3_feature_finding(filename, parameters, timeout=90):
     filled_batch = output_prefix + "_filled_batch.xml"
 
     # Subsituting inputs and outputs
+    batch_base = "feature_finding/batch_files/mzmine3_advanced.xml"
+    batch_xml = xmltodict.parse(open(batch_base).read())
     batch_text = xmltodict.unparse(batch_xml, pretty=True)
+    # set files
+    batch_text = batch_text.replace("FILE_PLACEHOLDER", "<file>{}</file>".format(os.path.abspath(filename)))
+    
     # output file names
     batch_text = batch_text.replace("GNPSEXPORTPREFIX", output_prefix)
     batch_text = batch_text.replace("FEATUREFINDING_PPMTOLERANCE", str(parameters["feature_finding_ppm"]))
@@ -221,11 +219,11 @@ def _mzmine3_feature_finding(filename, parameters, timeout=90):
     cmd = "/opt/mzmine/bin/MZmine -b {}".format(filled_batch)
 
     # load config (preferences)
-    mzmine_config = os.path.join("feature_finding/mzmine3/", "mzmine3.conf")
+    mzmine_config = os.path.join("feature_finding/mzmine3", "mzmine3.conf")
     if not os.path.exists(mzmine_config):
         cmd = cmd + " -p {}".format(mzmine_config)
 
-    print(cmd)
+    # print(cmd)
     _call_feature_finding_tool(cmd, timeout=timeout)
 
     mzmine_features_df = pd.read_csv(output_ms2_csv)
@@ -233,9 +231,12 @@ def _mzmine3_feature_finding(filename, parameters, timeout=90):
 
     features_df = pd.DataFrame()
     # read FeatureListRow values
+    features_df['id'] = mzmine_features_df_full['ID']
     features_df['mz'] = mzmine_features_df_full['m/z']
-    features_df['area'] = mzmine_features_df_full['Area']
     features_df['rt'] = mzmine_features_df_full['RT']
+    features_df['area'] = mzmine_features_df_full['Area']
+    # TODO replace "i" everywhere by intensity or similar?
+    features_df['i'] = mzmine_features_df_full['Area']
     # additional fields
     features_df['rt min'] = mzmine_features_df_full['RT range:min']
     features_df['rt max'] = mzmine_features_df_full['RT range:max']

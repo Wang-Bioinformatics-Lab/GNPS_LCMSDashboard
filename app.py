@@ -23,7 +23,7 @@ import werkzeug
 from flask_caching import Cache
 
 # Misc Library
-
+import logging
 import sys
 import os
 import io
@@ -2210,6 +2210,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
 
             lcms_fig.add_trace(_intermediate_fig)
         except:
+            logging.exception("Error in feature finding")
             pass
 
     return lcms_fig, features_df
@@ -3698,7 +3699,7 @@ def toggle_collapse_filters(show_filters):
     [Input("feature_finding_type", "value")],
 )
 def toggle_collapse_feature_finding(feature_finding_type):
-    if feature_finding_type == "MZmine2":
+    if feature_finding_type == "MZmine2" or feature_finding_type == "MZmine3":
         return [True]
     return [False]
 
