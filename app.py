@@ -424,16 +424,7 @@ DATASELECTION_CARD = [
                                 ],
                                 className="mb-3",
                             ),
-                        ),
-                        dbc.Col(
-                            dbc.InputGroup(
-                                [
-                                    dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
-                                    dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC", value=""),
-                                ],
-                                className="mb-3",
-                            ),
-                        ),
+                        )
                     ]),
                     dbc.Row([
                         dbc.Col(
@@ -2513,11 +2504,14 @@ def _perform_chromatogram_extraction(usi_list, chromatogram_list):
     usi = usi_list[0]
     remote_link, local_filename = _resolve_usi(usi)
 
+    df_list = []
     for chromatogram_value in chromatogram_list:
         chromatogram_df = xic.get_chromatogram(local_filename, chromatogram_value)
-        print(chromatogram_df, file=sys.stderr, flush=True)
+        chromatogram_df["USI"] = usi
+        df_list.append(chromatogram_df)
 
-    return None
+    merged_df = pd.concat(df_list)
+    return merged_df
 
 def _is_worker_up():
     """Gives us utility function to tell is celery is up and running
@@ -2693,7 +2687,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 
     # Looking at chromatograms only if a single file exists
     if len(usi_list) == 1 and len(chromatogram_list) > 0:
-        _perform_chromatogram_extraction(usi_list, chromatogram_list)
+        chrom_df = _perform_chromatogram_extraction(usi_list, chromatogram_list)
+        merged_df_long = pd.concat([merged_df_long, chrom_df])
 
     # Limit the plotting USIs, but not the integrals below
     plotting_df = merged_df_long

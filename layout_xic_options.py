@@ -18,6 +18,17 @@ ADVANCED_XIC_MODAL = [
             dbc.ModalHeader("XIC Options"),
             dbc.ModalBody([
                 dbc.Row([
+                    dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
+                                    dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                ]),
+                dbc.Row([
                     dbc.Col([
                         html.H5("mzML Chromatograms"),
                         dcc.Dropdown(
