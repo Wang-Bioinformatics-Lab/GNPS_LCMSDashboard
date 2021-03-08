@@ -77,7 +77,9 @@ EXAMPLE_DASHBOARD = [
 
             html.A("LCMS from Metabolights", href="/?usi=mzspec:MTBLS1124:QC07.mzML"),
             html.Br(),
-            html.A("LCMS from Metabolomics Workbench that include MS/MS", href="/?usi=mzspec:ST000763:20160411_MB_CS00000074-1_P.mzXML"),
+            html.A("LCMS from Metabolomics Workbench Native", href="/?usi=mzspec:ST001709:Sample_01___neg.mzXML"),
+            html.Br(),
+            html.A("LCMS from Metabolomics Workbench Imported into GNPS", href="/?usi=mzspec:ST000763:20160411_MB_CS00000074-1_P.mzXML"),
             html.Br(),
             html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML#%7B%7D"),
             html.Br(),

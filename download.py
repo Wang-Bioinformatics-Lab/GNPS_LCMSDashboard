@@ -11,6 +11,9 @@ import urllib.parse
 from tqdm import tqdm
 from time import sleep
 
+from download_msv import _resolve_msv_usi
+from download_workbench import _resolve_metabolomicsworkbench_usi
+
 def _get_usi_display_filename(usi):
     usi_splits = usi.split(":")
 
@@ -65,54 +68,6 @@ def _usi_to_local_filename(usi):
 
 
 
-
-def _resolve_msv_usi(usi, force_massive=False):
-    """
-    
-
-    Args:
-        usi ([type]): [description]
-        force_massive (bool, optional): [description]. Defaults to False, we try to create the url given the USI, usually for non mzML/RAW files, e.g. CDF files
-
-    Returns:
-        [type]: [description]
-    """
-
-    usi_splits = usi.split(':')
-
-    msv_usi = usi
-    if len(usi.split(":")) == 3:
-        msv_usi = "{}:scan:1".format(usi)
-    
-    lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
-    lookup_request = requests.get(lookup_url)
-
-    try:
-        resolution_json = lookup_request.json()
-
-        remote_path = None
-        
-        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
-        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
-        raw_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1].lower() == ".raw"]
-
-        if len(mzML_resolutions) > 0:
-            remote_path = mzML_resolutions[0]["file_descriptor"]
-        elif len(mzXML_resolutions) > 0:
-            remote_path = mzXML_resolutions[0]["file_descriptor"]
-        elif len(raw_resolutions) > 0:
-            remote_path = raw_resolutions[0]["file_descriptor"]
-
-        # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
-    except:
-        # We did not successfully look it up, this is the fallback try
-        if force_massive:
-            return f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
-        raise
-
-    return remote_link
-
 def _resolve_gnps_usi(usi):
     usi_splits = usi.split(':')
 
@@ -148,23 +103,7 @@ def _resolve_mtbls_usi(usi):
 
     return remote_link
 
-def _resolve_metabolomicsworkbench_usi(usi):
-    usi_splits = usi.split(':')
 
-    # First looking 
-    dataset_accession = usi_splits[1]
-    filename = usi_splits[2]
-        
-    # Query Accession
-    url = "https://massive.ucsd.edu/ProteoSAFe/QueryDatasets?task=N%2FA&file=&pageSize=30&offset=0&query=%257B%2522full_search_input%2522%253A%2522%2522%252C%2522table_sort_history%2522%253A%2522createdMillis_dsc%2522%252C%2522query%2522%253A%257B%257D%252C%2522title_input%2522%253A%2522{}%2522%257D&target=&_=1606254845533".format(dataset_accession)
-    r = requests.get(url)
-    data_json = r.json()
-
-    msv_accession = data_json["row_data"][0]["dataset"]
-
-    msv_usi = "mzspec:{}:{}:scan:1".format(msv_accession, filename)
-
-    return _resolve_msv_usi(msv_usi)
 
 def _resolve_pxd_usi(usi):
     usi_splits = usi.split(':')
