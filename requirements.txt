@@ -51,5 +51,3 @@ joblib
 bs4
 qrcode
 flask_limiter
-datashader
-celery
