@@ -70,9 +70,50 @@ We aim to provide several APIs to programmatically get data.
 
 ## Development
 
+### How to install and debug locally 
+1. Fork the GNPS Dashboard repository
+2. Install Python 3
+3. Install all packages from the requirements.txt
+4. Start the dashboard locally (defaults to http://localhost:5000)
+
+**Example shell code**
+```shell
+# make sure to have Python 3
+python3 --version
+
+# if not available install python
+sudo apt-get install -y python3 python3-dev python3-pip
+sudo apt install build-essential 
+sudo apt install python3-testresources
+
+# install requirements
+python3 -m pip install -r requirements.txt
+
+# packages that are not in the requirements.txt
+python3 -m pip install datashader
+
+# run or debug the dashboard with Python 3 on http://localhost:5000
+python3 ./app.py
+
+# on problem, maybe install the following (tested on Windows 10 with WSL2 Ubuntu) 
+sudo apt-get install libffi-dev
+```
+
+
+### Run from conda
+
+
 ### Supporting new data sources
 
 Since we utilize a USI to find datasets, there are a limited number of locations we can grab data from. If you want to provide a new data source, you'll have to implement the following
 
 1. USI Specification that denotes what the resource is and how to get data
 1. Update the code in ```download.py```, specifically in ```_resolve_usi_remotelink``` to implement how to get the remote URL for your new USI. 
+
+
+### Useful links for developers
+**Dash and plotly documentations**
+- Components: https://dash.plotly.com/dash-core-components 
+- Callbacks: https://dash.plotly.com/basic-callbacks 
+- Plotly express: https://plotly.com/python/plotly-express/ 
+- Plotly: https://plotly.com/python/ 
