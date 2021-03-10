@@ -1,9 +1,5 @@
 ## GNPS LCMS Visualization Dashboard
 
-We typitcally will deploy this locally. To bring everything up
-
-```server-compose```
-
 ### URL Parameters
 
 1. usi
@@ -70,38 +66,51 @@ We aim to provide several APIs to programmatically get data.
 
 ## Development
 
-### How to install and debug locally 
+There are several ways to get GNPS Dashboard working locally, our preferred and recommended way is using docker/docker-compose as it provides a more consistent experience. 
+
+The initial steps are identical:
+
 1. Fork the GNPS Dashboard repository
-2. Install Python 3
+2. Clone down to your system
+
+### Docker 
+
+To get everything up and running, we've created a make target for you to get docker up and running:
+
+```
+make server-compose-interactive
+```
+
+The requirements on your locally system are:
+
+1. Docker
+2. Docker Compose
+
+This will bring the server up on http://localhost:6548. 
+
+### Conda
+
+1. Install Python3 within conda
 3. Install all packages from the requirements.txt
-4. Start the dashboard locally (defaults to http://localhost:5000)
+4. Install packages via conda
+5. Start the dashboard locally (defaults to http://localhost:5000)
 
-**Example shell code**
-```shell
-# make sure to have Python 3
-python3 --version
+**Example shell**
 
-# if not available install python
-sudo apt-get install -y python3 python3-dev python3-pip
-sudo apt install build-essential 
-sudo apt install python3-testresources
+```
+# make sure to have Python3 installed via conda (preferably 3.8)
+conda install -c conda-forge datashader
+conda install -c conda-forge openjdk
 
 # install requirements
-python3 -m pip install -r requirements.txt
+pip install -r requirements.txt
 
-# packages that are not in the requirements.txt
-python3 -m pip install datashader
-
-# run or debug the dashboard with Python 3 on http://localhost:5000
-python3 ./app.py
+# run or debug the GNPS Dashboard with Python 3 on http://localhost:5000
+python ./app.py
 
 # on problem, maybe install the following (tested on Windows 10 with WSL2 Ubuntu) 
 sudo apt-get install libffi-dev
 ```
-
-
-### Run from conda
-
 
 ### Supporting new data sources
 
@@ -113,6 +122,7 @@ Since we utilize a USI to find datasets, there are a limited number of locations
 
 ### Useful links for developers
 **Dash and plotly documentations**
+
 - Components: https://dash.plotly.com/dash-core-components 
 - Callbacks: https://dash.plotly.com/basic-callbacks 
 - Plotly express: https://plotly.com/python/plotly-express/ 
