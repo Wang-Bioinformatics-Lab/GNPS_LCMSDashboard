@@ -11,6 +11,9 @@ import urllib.parse
 from tqdm import tqdm
 from time import sleep
 
+from download_msv import _resolve_msv_usi
+from download_workbench import _resolve_metabolomicsworkbench_usi
+
 def _get_usi_display_filename(usi):
     usi_splits = usi.split(":")
 
@@ -65,41 +68,6 @@ def _usi_to_local_filename(usi):
 
 
 
-
-def _resolve_msv_usi(usi):
-    usi_splits = usi.split(':')
-
-    msv_usi = usi
-    if len(usi.split(":")) == 3:
-        msv_usi = "{}:scan:1".format(usi)
-    
-    lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
-    lookup_request = requests.get(lookup_url)
-
-    try:
-        resolution_json = lookup_request.json()
-
-        remote_path = None
-        
-        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
-        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
-        raw_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1].lower() == ".raw"]
-
-        if len(mzML_resolutions) > 0:
-            remote_path = mzML_resolutions[0]["file_descriptor"]
-        elif len(mzXML_resolutions) > 0:
-            remote_path = mzXML_resolutions[0]["file_descriptor"]
-        elif len(raw_resolutions) > 0:
-            remote_path = raw_resolutions[0]["file_descriptor"]
-
-        # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
-    except:
-        # We did not successfully look it up, this is the fallback try
-        remote_link = f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
-
-    return remote_link
-
 def _resolve_gnps_usi(usi):
     usi_splits = usi.split(':')
 
@@ -135,23 +103,7 @@ def _resolve_mtbls_usi(usi):
 
     return remote_link
 
-def _resolve_metabolomicsworkbench_usi(usi):
-    usi_splits = usi.split(':')
 
-    # First looking 
-    dataset_accession = usi_splits[1]
-    filename = usi_splits[2]
-        
-    # Query Accession
-    url = "https://massive.ucsd.edu/ProteoSAFe/QueryDatasets?task=N%2FA&file=&pageSize=30&offset=0&query=%257B%2522full_search_input%2522%253A%2522%2522%252C%2522table_sort_history%2522%253A%2522createdMillis_dsc%2522%252C%2522query%2522%253A%257B%257D%252C%2522title_input%2522%253A%2522{}%2522%257D&target=&_=1606254845533".format(dataset_accession)
-    r = requests.get(url)
-    data_json = r.json()
-
-    msv_accession = data_json["row_data"][0]["dataset"]
-
-    msv_usi = "mzspec:{}:{}:scan:1".format(msv_accession, filename)
-
-    return _resolve_msv_usi(msv_usi)
 
 def _resolve_pxd_usi(usi):
     usi_splits = usi.split(':')
@@ -190,7 +142,7 @@ def _resolve_usi_remotelink(usi):
     usi_splits = usi.split(":")
     
     if "MSV" in usi_splits[1]:
-        remote_link = _resolve_msv_usi(usi)
+        remote_link = _resolve_msv_usi(usi, force_massive=True)
     elif "GNPS" in usi_splits[1]:
         remote_link = _resolve_gnps_usi(usi)
     elif "MTBLS" in usi_splits[1]:
@@ -198,7 +150,17 @@ def _resolve_usi_remotelink(usi):
     elif "ST" in usi_splits[1]:
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
     elif "PXD" in usi_splits[1]:
-        remote_link = _resolve_pxd_usi(usi)
+        # First lets try resolving it at MSV
+        remote_link = ""
+        try:
+            remote_link = _resolve_msv_usi(usi)
+        except:
+            pass
+        
+        if len(remote_link) == 0:
+            remote_link = _resolve_pxd_usi(usi)
+    else:
+        remote_link = ""
 
     return remote_link
 
@@ -225,7 +187,7 @@ def _usi_to_ccms_path(usi):
 
     if "GNPS" in usi_splits[1]:
         if "TASK-" in usi_splits[2]:
-            return usi_splits[2].split("-")[-1]
+            return "-".join(usi_splits[2].split("-")[2:])
         elif "QUICKSTART-" in usi_splits[2]:
             return None
         elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
@@ -256,7 +218,7 @@ def _resolve_exists_local(usi, temp_folder="temp"):
 
 
 # Returns remote_link and local filepath
-def _resolve_usi(usi, temp_folder="temp"):
+def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     usi_splits = usi.split(":")
 
     converted_local_filename = os.path.join(temp_folder, _usi_to_local_filename(usi))
@@ -306,7 +268,7 @@ def _resolve_usi(usi, temp_folder="temp"):
 
     # Cleanup
     try:
-        if local_filename != converted_local_filename:
+        if local_filename != converted_local_filename and cleanup:
             os.remove(local_filename)
     except:
         pass
@@ -338,11 +300,14 @@ def _convert_mzML(input_mzXML, output_mzML):
     This will convert mzXML and mzML to mzML
     """
 
+    # These are old versions of the convert
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'msLevel 1' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense' --filter 'MS2Denoise 0 4000'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
-    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense' --filter 'msLevel 1-4'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {}".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+
+    conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense' --filter 'msLevel 1-4'".format(input_mzXML, output_mzML, os.path.dirname(output_mzML))
+
     conversion_ret_code = os.system(conversion_cmd)
 
     # Checking the conversion only if the source is mzXML
@@ -471,7 +436,7 @@ def _convert_cdf_to_mzML(input_cdf, output_mzML):
                         
                         out.write_spectrum(
                             _mz_array, _i_array,
-                            id=i, params=[
+                            id=str(i), params=[
                                 "MS1 Spectrum",
                                 {"ms level": 1},
                                 {"total ion current": sum(_i_array)}

@@ -68,6 +68,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo LCMS - Q Exactive - Proteomics - Deep Proteome - mzML from MassIVE", href='/?xicmz=&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B"autosize"%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=mzspec%3AGNPS%3ATASK-5ecfcf81cb3c471698995b194d8246a0-f.benpullman%2F_cluster%2Ffeatures%2F29_tissues_colon_01308_H02_P013387_B00_N16_R1.tsv&overlay_mz=m%2Fz&overlay_rt=Retention+time&overlay_color=&overlay_size=&overlay_filter_column=&overlay_filter_value=&feature_finding_type=Off#%7B"usi":%20"mzspec:MSV000083508:01308_H02_P013387_B00_N16_R1%5Cn",%20"usi2":%20""%7D'),
             html.Br(),
+            html.A("Thermo LCMS - Q Exactive - Proteomics - mzXML from MassIVE, imported from PRIDE", href='/?usi=mzspec:PXD002854:20150414_QEp1_LC7_GaPI_SA_Serum_DT_03_150416181741.mzXML:scan:2308:[+314.188]-QQKPGQAPR/2'),
+            html.Br(),
             html.Br(),
 
             html.H5("Different Data Sources Examples - LC/MS Metabolomics"),
@@ -75,7 +77,9 @@ EXAMPLE_DASHBOARD = [
 
             html.A("LCMS from Metabolights", href="/?usi=mzspec:MTBLS1124:QC07.mzML"),
             html.Br(),
-            html.A("LCMS from Metabolomics Workbench that include MS/MS", href="/?usi=mzspec:ST000763:20160411_MB_CS00000074-1_P.mzXML"),
+            html.A("LCMS from Metabolomics Workbench Native", href="/?usi=mzspec:ST001709:Sample_01___neg.mzXML"),
+            html.Br(),
+            html.A("LCMS from Metabolomics Workbench Imported into GNPS", href="/?usi=mzspec:ST000763:20160411_MB_CS00000074-1_P.mzXML"),
             html.Br(),
             html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML#%7B%7D"),
             html.Br(),
@@ -135,13 +139,14 @@ SYCHRONIZATION_MODAL = [
                     ]
                 ),
                 html.Hr(),
-                html.H5("Teaching Sychronization (Beta)"),
+                html.H5("Dashboard Sychronization Type"),
                 dbc.Row([
                     dbc.Col(
                         dcc.Dropdown(
                             id='synchronization_type',
                             options=[
                                 {'label': 'MANUAL (Default)', 'value': 'MANUAL'},
+                                {'label': 'COLLAB (Bidirectional sync)', 'value': 'COLLAB'},
                                 {'label': 'LEADER', 'value': 'LEADER'},
                                 {'label': 'FOLLOWER', 'value': 'FOLLOWER'},
                             ],
@@ -153,7 +158,9 @@ SYCHRONIZATION_MODAL = [
                             }
                         ),
                     ),
-                    dbc.Col()
+                    dbc.Col(
+                        dbc.Button("Set Synchronization", block=True, id="sychronization_set_type_button"),
+                    )
                 ]),
                 html.Hr(),
                 dbc.InputGroup(
@@ -315,46 +322,88 @@ ADVANCED_IMPORT_MODAL = [
         [
             dbc.ModalHeader("GNPS Dashboard Settings as JSON"),
             dbc.ModalBody([
-                dbc.Textarea(id="setting_json_area", className="mb-3", placeholder="JSON Settings", rows="20"),
-                dcc.Upload(
-                    id='upload-settings-json',
-                    children=html.Div([
-                        'Enter paste json settings or Drag and Drop file with existing settings',
-                        html.A(' or Select Files')
-                    ]),
-                    style={
-                        'width': '95%',
-                        'height': '60px',
-                        'lineHeight': '60px',
-                        'borderWidth': '1px',
-                        'borderStyle': 'dashed',
-                        'borderRadius': '5px',
-                        'textAlign': 'center',
-                        'margin': '10px'
-                    },
-                    multiple=False
-                ),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            dbc.Button("Import These Settings JSON", block=True, id="advanced_import_update_button"),
+                dbc.Row([
+                    dbc.Col([
+                        html.H5("Current Settings"),
+                        dbc.Textarea(id="setting_json_area", className="mb-3", placeholder="JSON Settings", rows="20"),
+                        dcc.Upload(
+                            id='upload-settings-json',
+                            children=html.Div([
+                                'Paste settings or Drag and Drop file with existing settings',
+                                html.A(' or Select Files')
+                            ]),
+                            style={
+                                'width': '95%',
+                                'height': '60px',
+                                'lineHeight': '60px',
+                                'borderWidth': '1px',
+                                'borderStyle': 'dashed',
+                                'borderRadius': '5px',
+                                'textAlign': 'center',
+                                'margin': '10px'
+                            },
+                            multiple=False
                         ),
-                        dbc.Col(
-                            html.A(
-                                dbc.Button("Download Settings as File", block=True),
-                                id="advanced_import_download_button",
-                                target="_blank",
-                                href="/settingsdownload"
-                            ),
-                        )
-                    ]
-                )
+                        html.Br(),
+                        dbc.Button("Import These JSON Settings", block=True, id="advanced_import_update_button"),
+                        html.Br(),
+                        html.A(
+                            dbc.Button("Download Settings as File", block=True),
+                            id="advanced_import_download_button",
+                            target="_blank",
+                            href="/settingsdownload"
+                        ),
+                    ]),
+                    dbc.Col([
+                        html.H5("Settings History"),
+                        dbc.Textarea(id="setting_json_area_history", className="mb-3", placeholder="JSON History Settings", rows="20"),
+                        html.Br(),
+                        html.A(
+                            dbc.Button("Link to Analysis History Replay", block=True),
+                            id="advanced_import_history_link",
+                            target="_blank",
+                            href="/"
+                        ),
+                    ])
+                ]),
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_import_modal_close", className="ml-auto")
             ),
         ],
         id="advanced_import_modal",
+        size="xl",
+    ),
+]
+
+ADVANCED_REPLAY_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("GNPS Dashboard Replay"),
+            dbc.ModalBody([
+                dbc.Row([
+                    dbc.Col([
+                        html.H5("Previous Replay JSON"),
+                        dbc.Textarea(id="replay_json_area_previous", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                        html.Div(id="replay_summary")
+                    ]),
+                    dbc.Col([
+                        html.H5("Next Replay JSON"),
+                        dbc.Textarea(id="replay_json_area", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
+                        html.A(
+                            dbc.Button("Link to this Replay", block=True),
+                            id="advanced_import_replay_link",
+                            target="_blank",
+                            href="/"
+                        ),
+                    ])
+                ])
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_replay_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_replay_modal",
         size="xl",
     ),
 ]

@@ -60,10 +60,19 @@ mzspec:MSV000085852:QC_2
 
 ## API
 
-We provide several APIs to programmatically get data
+We aim to provide several APIs to programmatically get data.
 
 
 ### Image Preview of MS run
 ```
 /mspreview?usi=<usi>
 ```
+
+## Development
+
+### Supporting new data sources
+
+Since we utilize a USI to find datasets, there are a limited number of locations we can grab data from. If you want to provide a new data source, you'll have to implement the following
+
+1. USI Specification that denotes what the resource is and how to get data
+1. Update the code in ```download.py```, specifically in ```_resolve_usi_remotelink``` to implement how to get the remote URL for your new USI. 

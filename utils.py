@@ -47,9 +47,7 @@ def _calculate_file_stats(usi, local_filename):
         all_lines = str(out).replace("\\t", "\t").split("\\n")
         all_lines = [line for line in all_lines if len(line) > 10 ]
         updated_version = "\n".join(all_lines)
-        
-        print(updated_version, file=sys.stderr)
-        
+                
         data = io.StringIO(updated_version)
         df = pd.read_csv(data, sep="\t")
         
@@ -121,7 +119,8 @@ def _resolve_map_plot_selection(url_search, usi, local_filename,
                 map_plot_rt_max="",
                 map_plot_mz_min="",
                 map_plot_mz_max="",
-                session_dict={}):
+                session_dict={},
+                priority="url"):
     """
     This resolves the map plot selection, given url
 
@@ -137,12 +136,15 @@ def _resolve_map_plot_selection(url_search, usi, local_filename,
         [type]: [description]
     """
 
-    current_map_selection = {}
+    system_map_selection = {}
+    manual_map_selection = {}
+    
+
     highlight_box = None
 
     # Lets start off with taking the url bounds
     try:
-        current_map_selection = json.loads(_get_param_from_url(url_search, "", "map_plot_zoom", "{}", session_dict=session_dict))
+        system_map_selection = json.loads(_get_param_from_url(url_search, "", "map_plot_zoom", "{}", session_dict=session_dict))
     except:
         pass
 
@@ -170,11 +172,11 @@ def _resolve_map_plot_selection(url_search, usi, local_filename,
             max_mz = mz + 3
 
             # If this is already set in the URL, we don't overwrite
-            if len(current_map_selection) == 0 or "autosize" in current_map_selection:
-                current_map_selection["xaxis.range[0]"] = min_rt
-                current_map_selection["xaxis.range[1]"] = max_rt
-                current_map_selection["yaxis.range[0]"] = min_mz
-                current_map_selection["yaxis.range[1]"] = max_mz
+            if len(system_map_selection) == 0 or "autosize" in system_map_selection:
+                system_map_selection["xaxis.range[0]"] = min_rt
+                system_map_selection["xaxis.range[1]"] = max_rt
+                system_map_selection["yaxis.range[0]"] = min_mz
+                system_map_selection["yaxis.range[1]"] = max_mz
 
             highlight_box = {}
             highlight_box["left"] = rt - 0.01
@@ -184,47 +186,50 @@ def _resolve_map_plot_selection(url_search, usi, local_filename,
     except:
         pass
 
-    # We have to do a bit of convoluted object, if {'autosize': True}, that means loading from the URL
-    try:
-        # Force an override if user input is detected in map_selection
-        if "xaxis.autorange" in ui_map_selection:
-            current_map_selection = ui_map_selection
-        if "xaxis.range[0]" in ui_map_selection:
-            current_map_selection = ui_map_selection
-        if "autosize" in ui_map_selection:
-            pass
-    except:
-        pass
-
     # If the entries are set, then we will override the UI map selection
     try:
         min_rt = float(map_plot_rt_min)
         # Check if the values one by one, are not default
         if min_rt > 0:
-            current_map_selection["xaxis.range[0]"] = min_rt
+            manual_map_selection["xaxis.range[0]"] = min_rt
     except:
         pass
     try:
         max_rt = float(map_plot_rt_max)
         # Check if the values one by one, are not default
         if max_rt < 1000000:
-            current_map_selection["xaxis.range[1]"] = max_rt
+            manual_map_selection["xaxis.range[1]"] = max_rt
     except:
         pass
     try:
         min_mz = float(map_plot_mz_min)
         # Check if the values one by one, are not default
         if min_mz > 0:
-            current_map_selection["yaxis.range[0]"] = min_mz
+            manual_map_selection["yaxis.range[0]"] = min_mz
     except:
         pass
     try:
         max_mz = float(map_plot_mz_max)
         # Check if the values one by one, are not default
         if max_mz < 1000000:
-            current_map_selection["yaxis.range[1]"] = max_mz
+            manual_map_selection["yaxis.range[1]"] = max_mz
     except:
         pass
+
+    current_map_selection = system_map_selection
+
+    if priority == "ui":
+        # Special case when the ui gives you something and we should use or not use it
+        if "xaxis.autorange" in ui_map_selection:
+            current_map_selection = ui_map_selection
+        if "xaxis.range[0]" in ui_map_selection:
+            current_map_selection = ui_map_selection
+        if "autosize" in ui_map_selection:
+            pass
+    if priority == "ui_update_range":
+        current_map_selection = manual_map_selection
+    if priority == "session":
+        current_map_selection = system_map_selection
 
     # Getting values for rt and mz
     try:
@@ -324,7 +329,7 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
     file_path = overlay_usi_splits[2].split("-")[-1]
     task = overlay_usi_splits[2].split("-")[1]
     url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
-    overlay_df = pd.read_csv(url, sep=None, nrows=20000)
+    overlay_df = pd.read_csv(url, sep=None, nrows=400000)
 
     # Adding mz
     if len(overlay_mz) > 0 and overlay_mz in overlay_df:

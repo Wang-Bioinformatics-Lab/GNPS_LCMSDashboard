@@ -1,0 +1,13 @@
+version: '3'
+services:
+  gnpslcms-dash:
+    environment:
+      VIRTUAL_HOST: mingwangbeta.ucsd.edu
+      VIRTUAL_PORT: 6548
+      LETSENCRYPT_HOST: mingwangbeta.ucsd.edu
+      LETSENCRYPT_EMAIL: miw023@ucsd.edu
+
+networks:
+  nginx-net:
+    external:
+      name: nginx-net

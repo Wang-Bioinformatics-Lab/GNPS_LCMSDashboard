@@ -6,12 +6,16 @@ import feature_finding
 import xic
 import lcms_map
 import tic
+import glob
+import redis
 from joblib import Memory
+from sync import _sychronize_save_state, _sychronize_load_state
 
 memory = Memory("temp/memory-cache", verbose=0)
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
+redis_client = redis.Redis(host='redis', port=6379, db=0)
 
 ##############################
 # Conversion
@@ -55,17 +59,76 @@ def task_featurefinding(filename, params):
     feature_df = feature_finding.perform_feature_finding(filename, params, timeout=80)
     return feature_df.to_dict(orient="records")
 
+@celery_instance.task(time_limit=1)
+def task_collabsync(session_id, triggered_fields, full_params, synchronization_token=None):
+    existing_params = _sychronize_load_state(session_id, redis_client)
+
+    print("TRIGGERED FIELDS", triggered_fields)
+
+    # Here we only update if we see a single update field, to make sure to avoid initial loads the wipe out everything
+    if len(triggered_fields) <= 2:
+        for field in triggered_fields:
+            try:
+                field_value = field.split(".")[0]
+                #print(field_value)
+                existing_params[field_value] = full_params[field_value]
+            except:
+                pass
+
+    #import json
+    #print(json.dumps(existing_params, indent=4))
+    _sychronize_save_state(session_id, existing_params, redis_client, synchronization_token=synchronization_token)
 
 @celery_instance.task(time_limit=60)
 def task_computeheartbeat():
     return "Up"
 
+import datetime
+import sys
+@celery_instance.task(time_limit=480)
+def _task_cleanup():
+    all_temp_files = glob.glob("/app/temp/*")
+
+    MAX_TIME_SECONDS = 604800 # This is one week
+    #MAX_TIME_SECONDS = 60 # This is one minute
+
+    for filename in all_temp_files:
+        # Skipping local file uploads
+        if "mzspecLOCAL" in filename:
+            continue
+        
+        if os.path.isfile(filename):
+            file_stats = os.stat(filename)
+            access_time = file_stats.st_atime
+            access_datetime = datetime.datetime.fromtimestamp(access_time)
+            time_delta = datetime.datetime.now() - access_datetime
+
+            if time_delta.total_seconds() > MAX_TIME_SECONDS:
+                # Lets remove
+                print("REMOVING", filename)
+                os.remove(filename)
+
+    return "Cleanup"
+
+
+celery_instance.conf.beat_schedule = {
+    "cleanup": {
+        "task": "tasks._task_cleanup",
+        "schedule": 3600
+    }
+}
+
 
 celery_instance.conf.task_routes = {
     'tasks._download_convert_file': {'queue': 'conversion'},
+    
+    'tasks._task_cleanup': {'queue': 'compute'},
+
     'tasks.task_lcms_aggregate': {'queue': 'compute'},
     'tasks.task_tic': {'queue': 'compute'},
     'tasks.task_xic': {'queue': 'compute'},
     'tasks.task_featurefinding': {'queue': 'compute'},
     'tasks.task_computeheartbeat': {'queue': 'compute'},
+
+    'tasks.task_collabsync': {'queue': 'sync'},
 }

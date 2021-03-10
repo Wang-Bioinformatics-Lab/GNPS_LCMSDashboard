@@ -44,6 +44,7 @@ import base64
 import redis
 from molmass import Formula
 from pyteomics import mass
+from datetime import datetime
 
 # Project Imports
 
@@ -53,20 +54,33 @@ from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_ge
 from utils import MS_precisions
 import utils
 
+from sync import _sychronize_save_state, _sychronize_load_state
+
 import download
 import ms2
 import lcms_map
 import tasks
 from formula_utils import get_adduct_mass
 import xic
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
-from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL
+from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 TEMPFOLDER = "./temp"
+
+server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
+
+limiter = Limiter(
+    server,
+    key_func=get_remote_address,
+    default_limits=["10000 per hour"]
+)
 
 # Optionally turn on caching
 if __name__ == "__main__":
@@ -144,7 +158,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.32", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.40", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
                 dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
                 dbc.NavItem(id="dataset_files_nav"),
@@ -158,473 +172,516 @@ NAVBAR = dbc.Navbar(
 
 DATASELECTION_CARD = [
     dbc.CardHeader([
-        html.H5("Data Selection"),
-    ]),
-    dbc.CardBody(dbc.Row(
-        [   ## Left Panel
-            dbc.Col([
-                html.H5(children='File Selection'),
-                dbc.InputGroup(
-                    [
-                        dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
-                        dbc.Textarea(id='usi', placeholder="Enter GNPS File USI"),
-                    ],
-                    className="mb-3",
+        dbc.Row([
+            dbc.Col(
+                html.H5("Data Selection"),
+            ),
+            dbc.Col(
+                dcc.Loading(
+                    id="upload_status",
+                    children=[html.Div([html.Div(id="loading-output-3423")])],
+                    type="default",
                 ),
-                dbc.InputGroup(
-                    [
-                        dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
-                        dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
-                    ],
-                    className="mb-3",
-                ),
-                dcc.Upload(
-                    id='upload-data',
-                    children=html.Div([
-                        'Enter USI Above or Drag and Drop your own file',
-                        html.A(' or Select Files')
-                    ]),
+            ),
+            dbc.Col(
+                dbc.Button("Show/Hide", 
+                    id="data_selection_show_hide_button", 
+                    color="primary", size="sm", 
+                    className="mr-1", 
                     style={
-                        'width': '95%',
-                        'height': '60px',
-                        'lineHeight': '60px',
-                        'borderWidth': '1px',
-                        'borderStyle': 'dashed',
-                        'borderRadius': '5px',
-                        'textAlign': 'center',
-                        'margin': '10px'
-                    },
-                    multiple=False
+                        "float" : "right"
+                    }
                 ),
-                # Linkouts
-                dcc.Loading(
-                    id="link-button",
-                    children=[html.Div([html.Div(id="loading-output-9")])],
-                    type="default",
-                ),
-                html.Br(),
-                dcc.Loading(
-                    id="network-link-button",
-                    children=[html.Div([html.Div(id="loading-output-232")])],
-                    type="default",
-                ),
-                html.H5(children='LCMS Viewer Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"160px", "margin-left": "25px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_ms2_markers',
-                                        value=True,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"160px", "margin-left": "25px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_lcms_1st_map',
-                                        value=True,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"160px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_lcms_2nd_map',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show Filters", html_for="show_filters", width=5.8, style={"width":"160px", "margin-left": "25px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_filters',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Feature Finding", width=4.8, style={"width":"140px"}),
-                                dcc.Dropdown(
-                                    id='feature_finding_type',
-                                    options=[
-                                        {'label': 'Off', 'value': 'Off'},
-                                        {'label': 'Test', 'value': 'Test'},
-                                        {'label': 'Trivial', 'value': 'Trivial'},
-                                        # {'label': 'TidyMS', 'value': 'TidyMS'},
-                                        {'label': 'MZmine2 (Metabolomics)', 'value': 'MZmine2'},
-                                        {'label': 'Dinosaur (Proteomics)', 'value': 'Dinosaur'},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="Off",
-                                    style={
-                                        "width":"50%"
-                                    }
-                                )
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                    )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show Overlay", html_for="show_overlay", width=5.8, style={"width":"160px", "margin-left": "25px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_overlay',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                    dbc.Col(),
-                ]),
-            ], className="col-sm"),
-            ## Right Panel
-            dbc.Col([
-                html.H5(children='XIC Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
-                                dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
-                                dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
-                                dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Tolerance (Da)", addon_type="prepend"),
-                                dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Tolerance (ppm)", addon_type="prepend"),
-                                dbc.Input(id='xic_ppm_tolerance', placeholder="Enter Da Tolerance", value="10"),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("XIC Tolerance Unit", width=4.8, style={"width":"150px"}),
-                                dcc.Dropdown(
-                                    id='xic_tolerance_unit',
-                                    options=[
-                                        {'label': 'Da', 'value': 'Da'},
-                                        {'label': 'ppm', 'value': 'ppm'}
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="Da",
-                                    style={
-                                        "width":"40%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                    )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("XIC Retention Time View/Integration Limits", addon_type="prepend"),
-                                dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2 or 1.5)", value=""),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("XIC Integration", width=4.8, style={"width":"120px"}),
-                                dcc.Dropdown(
-                                    id='xic_integration_type',
-                                    options=[
-                                        {'label': 'MS1 Sum', 'value': 'MS1SUM'},
-                                        {'label': 'AUC', 'value': 'AUC'},
-                                        {'label': 'MAXPEAKHEIGHT', 'value': 'MAXPEAKHEIGHT'},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="AUC",
-                                    style={
-                                        "width":"50%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                    )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='xic_norm',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                        )),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("XIC Grouping", width=4.8, style={"width":"120px"}),
-                                dcc.Dropdown(
-                                    id='xic_file_grouping',
-                                    options=[
-                                        {'label': 'By File', 'value': 'FILE'},
-                                        {'label': 'By m/z', 'value': 'MZ'},
-                                        {'label': 'By Group', 'value': 'GROUP'}
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="FILE",
-                                    style={
-                                        "width":"50%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                    )),
-                ]),
-                html.H5(children='MS2 Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.InputGroup(
-                            [
-                                dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
-                                dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
-                            ],
-                            className="mb-3",
-                        ),
-                    ),
-                ]),
-                html.H5(children='TIC Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
-                                dcc.Dropdown(
-                                    id='tic_option',
-                                    options=[
-                                        {'label': 'TIC', 'value': 'TIC'},
-                                        {'label': 'BPI', 'value': 'BPI'}
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="TIC",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                        )
-                    ),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Show Multiple TICs", width=4.8, style={"width":"150px"}),
-                                dbc.Col(
-                                    daq.ToggleSwitch(
-                                        id='show_multiple_tic',
-                                        value=False,
-                                        size=50,
-                                        style={
-                                            "marginTop": "4px",
-                                            "width": "100px"
-                                        }
-                                    )
-                                ),
-                            ],
-                            row=True,
-                            className="mb-3",
-                            style={"margin-left": "4px"}
-                        ),
-                    ),
-                ]),
-                html.H5(children='Rendering Options'),
-                dbc.Row([
-                    dbc.Col(
-                        dcc.Dropdown(
-                            id='image_export_format',
-                            options=[
-                                {'label': 'SVG', 'value': 'svg'},
-                                {'label': 'PNG', 'value': 'png'},
-                            ],
-                            searchable=False,
-                            clearable=False,
-                            value="svg",
-                            style={
-                                "width":"150px"
-                            }
-                        )  
-                    ),
-                    dbc.Col(
-                        dbc.FormGroup(
-                            [
-                                dbc.Label("Style", width=2, style={"width":"150px"}),
-                                dcc.Dropdown(
-                                    id='plot_theme',
-                                    options=[
-                                        {'label': 'plotly_white', 'value': 'plotly_white'},
-                                        {'label': 'ggplot2', 'value': 'ggplot2'},
-                                        {'label': 'simple_white', 'value': 'simple_white'},
-                                        {'label': 'seaborn', 'value': 'seaborn'},
-                                        {'label': 'plotly', 'value': 'plotly'},
-                                        {'label': 'plotly_dark', 'value': 'plotly_dark'},
-                                        {'label': 'presentation', 'value': 'presentation'},
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="simple_white",
-                                    style={
-                                        "width":"60%"
-                                    }
-                                )  
-                            ],
-                            row=True,
-                            className="mb-3",
-                        )),
-                ]),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.Button("Advanced Visualization Options", block=True, id="advanced_visualization_modal_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Advanced Import Options", block=True, id="advanced_import_modal_button"),
-                    ),
-                ]),
-                html.Br(),
-                dbc.Row([
-                    dbc.Col(
-                        dbc.Button("Sync Options", block=True, color="info", id="sychronization_options_modal_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Sync Initiate (Follower)", block=True, color="success", id="synchronization_begin_button"),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Sync Terminate (Follower)", block=True, color="danger", id="synchronization_stop_button"),
-                    ),
-                ]),
-                html.Br(),
-                dbc.Row([
-                    dbc.Col(),
-                    dbc.Col(
-                        html.Div(id="synchronization_status")
-                    ),
-                    dbc.Col(),
-                ])
-            ], className="col-sm")
+            )
         ])
-    )
+    ]),
+    dbc.Collapse(
+        dbc.CardBody(dbc.Row(
+            [   ## Left Panel
+                dbc.Col([
+                    html.H5(children='File Selection'),
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
+                            dbc.Textarea(id='usi', placeholder="Enter GNPS File USI"),
+                        ],
+                        className="mb-3",
+                    ),
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
+                            dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
+                        ],
+                        className="mb-3",
+                    ),
+                    dcc.Upload(
+                        id='upload-data',
+                        children=html.Div([
+                            'Drag and Drop your own file',
+                            html.A(' or Select Files (120MB Max)')
+                        ]),
+                        style={
+                            'width': '95%',
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                            'margin': '10px'
+                        },
+                        multiple=True,
+                        max_size=150000000 # 150MB
+                    ),
+                    html.Hr(),
+                    # Linkouts
+                    dcc.Loading(
+                        id="link-button",
+                        children=[html.Div([html.Div(id="loading-output-9")])],
+                        type="default",
+                    ),
+                    html.Br(),
+                    dcc.Loading(
+                        id="network-link-button",
+                        children=[html.Div([html.Div(id="loading-output-232")])],
+                        type="default",
+                    ),
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Comment", addon_type="prepend"),
+                            dbc.Textarea(id='comment', value=""),
+                        ],
+                        className="mb-3",
+                    ),
+                    html.Hr(),
+                    html.H5(children='LCMS Viewer Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"160px", "margin-left": "25px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_ms2_markers',
+                                            value=True,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"160px", "margin-left": "25px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_lcms_1st_map',
+                                            value=True,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"160px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_lcms_2nd_map',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show Filters", html_for="show_filters", width=5.8, style={"width":"160px", "margin-left": "25px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_filters',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Feature Finding", width=4.8, style={"width":"140px"}),
+                                    dcc.Dropdown(
+                                        id='feature_finding_type',
+                                        options=[
+                                            {'label': 'Off', 'value': 'Off'},
+                                            {'label': 'Test', 'value': 'Test'},
+                                            {'label': 'Trivial', 'value': 'Trivial'},
+                                            # {'label': 'TidyMS', 'value': 'TidyMS'},
+                                            {'label': 'MZmine2 (Metabolomics)', 'value': 'MZmine2'},
+                                            {'label': 'Dinosaur (Proteomics)', 'value': 'Dinosaur'},
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="Off",
+                                        style={
+                                            "width":"50%"
+                                        }
+                                    )
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                        )),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show Overlay", html_for="show_overlay", width=5.8, style={"width":"160px", "margin-left": "25px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_overlay',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                        dbc.Col(),
+                    ]),
+                ], className="col-sm"),
+                ## Right Panel
+                dbc.Col([
+                    html.H5(children='XIC Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
+                                    dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
+                                    dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
+                                    dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Tolerance (Da)", addon_type="prepend"),
+                                    dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Tolerance (ppm)", addon_type="prepend"),
+                                    dbc.Input(id='xic_ppm_tolerance', placeholder="Enter Da Tolerance", value="10"),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("XIC Tolerance Unit", width=4.8, style={"width":"150px"}),
+                                    dcc.Dropdown(
+                                        id='xic_tolerance_unit',
+                                        options=[
+                                            {'label': 'Da', 'value': 'Da'},
+                                            {'label': 'ppm', 'value': 'ppm'}
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="Da",
+                                        style={
+                                            "width":"40%"
+                                        }
+                                    )  
+                                ],
+                                row=True,
+                                className="mb-3",
+                        )),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("XIC Retention Time View/Integration Limits", addon_type="prepend"),
+                                    dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2 or 1.5)", value=""),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                    ]),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("XIC Integration", width=4.8, style={"width":"120px"}),
+                                    dcc.Dropdown(
+                                        id='xic_integration_type',
+                                        options=[
+                                            {'label': 'MS1 Sum', 'value': 'MS1SUM'},
+                                            {'label': 'AUC', 'value': 'AUC'},
+                                            {'label': 'MAXPEAKHEIGHT', 'value': 'MAXPEAKHEIGHT'},
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="AUC",
+                                        style={
+                                            "width":"50%"
+                                        }
+                                    )  
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                        )),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='xic_norm',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                            )),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("XIC Grouping", width=4.8, style={"width":"120px"}),
+                                    dcc.Dropdown(
+                                        id='xic_file_grouping',
+                                        options=[
+                                            {'label': 'By File', 'value': 'FILE'},
+                                            {'label': 'By m/z', 'value': 'MZ'},
+                                            {'label': 'By Group', 'value': 'GROUP'}
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="FILE",
+                                        style={
+                                            "width":"50%"
+                                        }
+                                    )  
+                                ],
+                                row=True,
+                                className="mb-3",
+                        )),
+                    ]),
+                    html.H5(children='MS2 Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.InputGroup(
+                                [
+                                    dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
+                                    dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
+                                ],
+                                className="mb-3",
+                            ),
+                        ),
+                    ]),
+                    html.H5(children='TIC Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
+                                    dcc.Dropdown(
+                                        id='tic_option',
+                                        options=[
+                                            {'label': 'TIC', 'value': 'TIC'},
+                                            {'label': 'BPI', 'value': 'BPI'}
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="TIC",
+                                        style={
+                                            "width":"60%"
+                                        }
+                                    )
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                            )
+                        ),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show Multiple TICs", width=4.8, style={"width":"150px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_multiple_tic',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                                style={"margin-left": "4px"}
+                            ),
+                        ),
+                    ]),
+                    html.H5(children='Rendering Options'),
+                    dbc.Row([
+                        dbc.Col(
+                            dcc.Dropdown(
+                                id='image_export_format',
+                                options=[
+                                    {'label': 'SVG', 'value': 'svg'},
+                                    {'label': 'PNG', 'value': 'png'},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="svg",
+                                style={
+                                    "width":"150px"
+                                }
+                            )  
+                        ),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Style", width=2, style={"width":"150px"}),
+                                    dcc.Dropdown(
+                                        id='plot_theme',
+                                        options=[
+                                            {'label': 'plotly_white', 'value': 'plotly_white'},
+                                            {'label': 'ggplot2', 'value': 'ggplot2'},
+                                            {'label': 'simple_white', 'value': 'simple_white'},
+                                            {'label': 'seaborn', 'value': 'seaborn'},
+                                            {'label': 'plotly', 'value': 'plotly'},
+                                            {'label': 'plotly_dark', 'value': 'plotly_dark'},
+                                            {'label': 'presentation', 'value': 'presentation'},
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="simple_white",
+                                        style={
+                                            "width":"60%"
+                                        }
+                                    )  
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )),
+                    ]),
+                    html.H5(children='Advanced Panels'),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Visualization Options", block=True, id="advanced_visualization_modal_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Import Options", block=True, id="advanced_import_modal_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Replay Options", block=True, id="advanced_replay_modal_button"),
+                        )
+                    ]),
+                    html.Br(),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Sync Options", block=True, color="info", id="sychronization_options_modal_button"),
+                        ),
+                        dbc.Col([
+                            dbc.Button("Sync Initiate (Follower)", block=True, color="success", id="synchronization_begin_button"),
+                            html.Div(id="synchronization_status")
+                        ]),
+                        dbc.Col(
+                            dbc.Button("Sync Terminate (Follower)", block=True, color="danger", id="synchronization_stop_button"),
+                        ),
+                    ]),
+                    html.Br(),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Replay Advance", block=True, id="replay_forward_button"),
+                        ),
+                        dbc.Col(
+                            dbc.Button("Replay Rewind", block=True, id="replay_backward_button"),
+                        ),
+                        dbc.Col(),
+                    ])
+                ], className="col-sm")
+            ])
+        ),
+        id="data_selection_collapse",
+        is_open=True
+    ),
+    
 ]
 
 DATASLICE_CARD = [
@@ -779,8 +836,8 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay USI", addon_type="prepend"),
-                            dbc.Input(id='overlay_usi', placeholder="Enter Overlay File USI"),
+                            dbc.InputGroupAddon("Overlay UDI", addon_type="prepend"),
+                            dbc.Input(id='overlay_usi', placeholder="Enter Overlay File UDI for GNPS"),
                         ],
                         className="mb-3",
                     ),
@@ -988,7 +1045,23 @@ DEBUG_CARD = [
             dcc.Loading(
                 id="qrcode",
                 type="default"
-            )
+            ),
+            html.Hr(),
+            html.H5("Privacy Policy"),
+            dcc.Markdown('''
+In order to be transparent in the usage of this tool, we track the following data
+
+1. IP Addresses
+1. Data selected and visualization options
+1. Website that directed you to tool (if applicable)
+
+It is our intention with the collected data to keep the specific data private but aggregate for research purposes. These purposes include and be limited to:
+
+1. Understanding user behavior and learning how people explore and interact with mass spectrometry
+2. Finding bugs and improving the platform
+3. Aggregating user interactions and publish findings regarding which features and analysis workflows are useful to users
+4. Usage reporting for grant and manuscript purposes
+                ''')
         ]
     )
 ]
@@ -1123,7 +1196,10 @@ MIDDLE_DASHBOARD = [
                 id='map-plot',
                 figure=placeholder_map_plot,
                 config={
-                    'doubleClick': 'reset'
+                    'doubleClick': 'reset',
+                    'modeBarButtonsToRemove': [
+                        "toggleSpikelines"
+                    ]
                 }
             ),
             html.Br(),
@@ -1177,7 +1253,7 @@ BODY = dbc.Container(
         ),
         html.Div("", id="synchronization_type_dependency", style={"display":"none"}), # This is a hack to pass on a retrigger without causing infinite loops in the dependency chain
         html.Div("", id="page_parameters", style={"display":"none"}), # This is an intermediate dependency to hold the parameters so we make it easier to update them
-
+        html.Div("", id="auto_import_parameters", style={"display":"none"}), # This is a hidden area to set parameters to be loaded into the interface
 
         dbc.Row([
             dbc.Col(
@@ -1264,7 +1340,7 @@ BODY = dbc.Container(
                         html.Br(),
                         dbc.Card(EXAMPLE_DASHBOARD),
                         html.Br(),
-                        dbc.Card(SYCHRONIZATION_MODAL)
+                        dbc.Card(SYCHRONIZATION_MODAL),
                     ],
                         #className="w-50"
                     ),
@@ -1290,6 +1366,7 @@ BODY = dbc.Container(
         # Adding modals
         dbc.Row(SPECTRUM_DETAILS_MODAL),
         dbc.Row(ADVANCED_IMPORT_MODAL),
+        dbc.Row(ADVANCED_REPLAY_MODAL),
         dbc.Row(ADVANCED_VISUALIZATION_MODAL),
         
     ],
@@ -1339,34 +1416,11 @@ def _resolve_usi(usi, temp_folder="temp"):
             return tasks._download_convert_file(usi, temp_folder=temp_folder)
 
 
-def _sychronize_save_state(session_id, parameter_dict, redis_client, synchronization_token=None):
-    session_dict = _sychronize_load_state(session_id, redis_client)
 
-    db_token = session_dict.get("synchronization_token", None)
-
-    if db_token is not None:
-        if db_token != synchronization_token:
-            return
         
-        # tokens are equal, so lets make sure to keep saving it
-        parameter_dict["synchronization_token"] = synchronization_token
-
-    try:
-        redis_client.set(session_id, json.dumps(parameter_dict))
-    except:
-        pass
-    
-def _sychronize_load_state(session_id, redis_client):
-    session_state = {}
-
-    try:
-        session_state = json.loads(redis_client.get(session_id))
-    except:
-        pass
-
-    return session_state
-        
-    
+def _synchronize_collab_action(session_id, triggered_fields, full_params, synchronization_token=None):
+    if _is_worker_up():
+        result = tasks.task_collabsync.delay(session_id, triggered_fields, full_params, synchronization_token=synchronization_token)
 
 # This helps to update the ms2/ms1 plot
 @app.callback([
@@ -1435,23 +1489,9 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
         usi_first = usi.split("\n")[0]
         remote_link, local_filename = _resolve_usi(usi_first)
 
-        # Understand parameters
-        min_rt_delta = 1000
-        closest_scan = 0
-        run = pymzml.run.Reader(local_filename, MS_precisions=MS_precisions)
-        for spec in tqdm(run):
-            if spec.ms_level == 1:
-                try:
-                    delta = abs(spec.scan_time_in_minutes() - rt_target)
-                    if delta < min_rt_delta:
-                        closest_scan = spec.ID
-                        min_rt_delta = delta
-                except:
-                    pass
+        closest_scan = ms2.determine_scan_by_rt(usi_first, local_filename, rt_target)
 
-        return ["MS1:" + str(closest_scan)]
-
-    
+        return ["MS1:{}".format(closest_scan)]
 
 
 # This helps to update the ms2/ms1 plot
@@ -1494,35 +1534,42 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     spectrum_type = "MS"
     button_elements = []
 
+    # Drawing the spectrum object
+    mzs = [peak[0] for peak in peaks]
+    ints = [peak[1] for peak in peaks]
+    neg_ints = [intensity * -1 for intensity in ints]
+
+    # Figuring out which labels to show
+    mzs_text = ms2._get_ms_peak_labels(mzs, ints)
+
+    print(mzs_text)
+
+    interactive_fig = go.Figure(
+        data=go.Scatter(x=mzs, y=ints, 
+            mode='markers+text',
+            marker=dict(size=1),
+            error_y=dict(
+                symmetric=False,
+                arrayminus=[0]*len(neg_ints),
+                array=neg_ints,
+                width=0
+            ),
+            hoverinfo="x",
+            textposition="top right",
+            text=mzs_text
+        )
+    )
+
+    interactive_fig.update_layout(title='{}'.format(ms2_identifier))
+    interactive_fig.update_layout(template=plot_theme)
+    interactive_fig.update_xaxes(title_text='m/z')
+    interactive_fig.update_yaxes(title_text='intensity')
+    interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
+    interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
+    interactive_fig.update_yaxes(range=[0, max(ints) * 1.2])
+
     if "MS2" in ms2_identifier or "MS3" in ms2_identifier:
         spectrum_type = "MS2"
-
-        mzs = [peak[0] for peak in peaks]
-        ints = [peak[1] for peak in peaks]
-        neg_ints = [intensity * -1 for intensity in ints]
-
-        interactive_fig = go.Figure(
-            data=go.Scatter(x=mzs, y=ints, 
-                mode='markers',
-                marker=dict(size=1),
-                error_y=dict(
-                    symmetric=False,
-                    arrayminus=[0]*len(neg_ints),
-                    array=neg_ints,
-                    width=0
-                ),
-                hoverinfo="x",
-                text=mzs
-            )
-        )
-
-        interactive_fig.update_layout(title='{}'.format(ms2_identifier))
-        interactive_fig.update_layout(template=plot_theme)
-        interactive_fig.update_xaxes(title_text='m/z')
-        interactive_fig.update_yaxes(title_text='intensity')
-        interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
-        interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
-        interactive_fig.update_yaxes(range=[0, max(ints)])
 
         masst_dict = {}
         masst_dict["workflow"] = "SEARCH_SINGLE_SPECTRUM"
@@ -1536,36 +1583,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
         button_elements = [USI_button, html.Br(), masst_button]
 
-
     if "MS1" in ms2_identifier:
         spectrum_type = "MS1"
-
-        mzs = [peak[0] for peak in peaks]
-        ints = [peak[1] for peak in peaks]
-        neg_ints = [intensity * -1 for intensity in ints]
-
-        interactive_fig = go.Figure(
-            data=go.Scatter(x=mzs, y=ints, 
-                mode='markers',
-                marker=dict(size=1),
-                error_y=dict(
-                    symmetric=False,
-                    arrayminus=[0]*len(neg_ints),
-                    array=neg_ints,
-                    width=0
-                ),
-                hoverinfo="x",
-                text=mzs
-            )
-        )
-
-        interactive_fig.update_layout(title='{}'.format(ms2_identifier))
-        interactive_fig.update_layout(template=plot_theme)
-        interactive_fig.update_xaxes(title_text='m/z')
-        interactive_fig.update_yaxes(title_text='intensity')
-        interactive_fig.update_xaxes(showline=True, linewidth=1, linecolor='black')
-        interactive_fig.update_yaxes(showline=True, linewidth=1, linecolor='black')
-        interactive_fig.update_yaxes(range=[0, max(ints)])
 
         USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
 
@@ -1602,13 +1621,20 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("feature_finding_min_peak_rt", "value"),
                 Output("feature_finding_max_peak_rt", "value"),
                 Output("feature_finding_rt_tolerance", "value"),
-                Output("sychronization_session_id", "value")
+                Output("sychronization_session_id", "value"),
+
+                Output("comment", "value"),
+
+                Output("map_plot_color_scale", "value"),
+                Output("map_plot_quantization_level", "value"),
+                
               ],
               [
                   Input('url', 'search'), 
                   Input('sychronization_load_session_button', 'n_clicks'),
                   Input('sychronization_interval', 'n_intervals'),
-                  Input('advanced_import_update_button', "n_clicks")
+                  Input('advanced_import_update_button', "n_clicks"),
+                  Input('auto_import_parameters', 'children')
               ],
               [
                   State('sychronization_session_id', 'value'),
@@ -1646,12 +1672,19 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   State('feature_finding_rt_tolerance', 'value'),
                   
                   State('sychronization_session_id', 'value'),
+
+                  State("comment", 'value'),
+
+                  State('map_plot_color_scale', 'value'),
+                  State('map_plot_quantization_level', 'value'),
+                  
               ]
               )
 def determine_url_only_parameters(  search, 
                                     sychronization_load_session_button_click, 
                                     sychronization_interval, 
                                     advanced_import_update_button, 
+                                    auto_import_parameters,
                                     sychronization_session_id,
 
                                     setting_json_area,
@@ -1690,7 +1723,12 @@ def determine_url_only_parameters(  search,
                                     existing_feature_finding_max_peak_rt,
                                     existing_feature_finding_rt_tolerance,
 
-                                    existing_sychronization_session_id):
+                                    existing_sychronization_session_id,
+
+                                    existing_comment,
+                                    
+                                    existing_map_plot_color_scale,
+                                    existing_map_plot_quantization_level):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     print("TRIGGERED URL PARSING", triggered_id, file=sys.stderr)
@@ -1710,6 +1748,12 @@ def determine_url_only_parameters(  search,
     if "advanced_import_update_button" in triggered_id:
         try:
             session_dict = json.loads(setting_json_area)
+        except:
+            pass
+
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
         except:
             pass
 
@@ -1753,6 +1797,13 @@ def determine_url_only_parameters(  search,
     if len(existing_sychronization_session_id) > 0:
         default_session_id = existing_sychronization_session_id
     sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", default_session_id, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
+
+    # Comment
+    comment = _get_param_from_url(search, "", "comment", dash.no_update, session_dict=session_dict, old_value=existing_comment, no_change_default=dash.no_update)
+
+    # Advanced Visualization Options
+    map_plot_color_scale = _get_param_from_url(search, "", "map_plot_color_scale", dash.no_update, session_dict=session_dict, old_value=existing_map_plot_color_scale, no_change_default=dash.no_update)
+    map_plot_quantization_level = _get_param_from_url(search, "", "map_plot_quantization_level", dash.no_update, session_dict=session_dict, old_value=existing_map_plot_quantization_level, no_change_default=dash.no_update)
 
     # Formatting the types
     try:
@@ -1801,7 +1852,10 @@ def determine_url_only_parameters(  search,
             polarity_filtering2, 
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
-            sychronization_session_id]
+            sychronization_session_id,
+            comment,
+            map_plot_color_scale,
+            map_plot_quantization_level]
 
 
 @app.callback([ 
@@ -1831,7 +1885,8 @@ def determine_url_only_parameters_synchronization(  search,
 @app.callback([
                 Output('usi', 'value'), 
                 Output('usi2', 'value'), 
-                Output('debug-output-2', 'children')
+                Output('debug-output-2', 'children'),
+                Output('upload_status', 'children'),
               ],
               [
                 Input('url', 'search'), 
@@ -1840,6 +1895,7 @@ def determine_url_only_parameters_synchronization(  search,
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
+                Input('auto_import_parameters', 'children')
               ],
               [
                   State('upload-data', 'filename'),
@@ -1851,53 +1907,68 @@ def determine_url_only_parameters_synchronization(  search,
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, filecontent, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button,
-                filename, filedate, sychronization_session_id,
+def update_usi(search, url_hash, filecontent_list, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
+                filename_list, filedate_list, sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
                 existing_usi2):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
-    if filecontent is not None:
-        if len(filecontent) > 100000000:
-            raise Exception
+    print("UPLOADING FILE", filename_list)
 
-        extension = os.path.splitext(filename)[1]
-        original_filename = os.path.splitext(filename)[0]
-        safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
-        if extension == ".mzML":
-            temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
-            data = filecontent.encode("utf8").split(b";base64,")[1]
+    if filename_list is not None:
+        usi = existing_usi
+        usi2 = existing_usi2
 
-            with open(temp_filename, "wb") as temp_file:
-                temp_file.write(base64.decodebytes(data))
+        upload_message = ""
+        total_files_uploaded = 0
 
-            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+        for i, filename in enumerate(filename_list):
+            filecontent = filecontent_list[i]
 
-            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+            print(len(filecontent))
 
-        if extension == ".mzXML":
-            temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
-            data = filecontent.encode("utf8").split(b";base64,")[1]
+            if len(filecontent) > 150000000: # Limit of 150MB
+                upload_message += "File Upload too big\n"
+                continue
+                #return ["Uploaded File too large (120MB max)", existing_usi2, "Uploaded File too large"]
 
-            with open(temp_filename, "wb") as temp_file:
-                temp_file.write(base64.decodebytes(data))
+            extension = os.path.splitext(filename)[1]
+            original_filename = os.path.splitext(filename)[0]
+            safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
+            if extension == ".mzML":
+                temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+                data = filecontent.encode("utf8").split(b";base64,")[1]
 
-            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+                with open(temp_filename, "wb") as temp_file:
+                    temp_file.write(base64.decodebytes(data))
 
-            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
-        if extension.lower() == ".cdf":
-            temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
-            data = filecontent.encode("utf8").split(b";base64,")[1]
+            if extension == ".mzXML":
+                temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
+                data = filecontent.encode("utf8").split(b";base64,")[1]
 
-            with open(temp_filename, "wb") as temp_file:
-                temp_file.write(base64.decodebytes(data))
+                with open(temp_filename, "wb") as temp_file:
+                    temp_file.write(base64.decodebytes(data))
 
-            usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
-            return [usi, usi2, "FILE Uploaded {}".format(filename)]
+            if extension.lower() == ".cdf":
+                temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+                data = filecontent.encode("utf8").split(b";base64,")[1]
+
+                with open(temp_filename, "wb") as temp_file:
+                    temp_file.write(base64.decodebytes(data))
+
+                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+            total_files_uploaded += 1
+
+        upload_message += "{} Files Uploaded".format(total_files_uploaded)
+        print("upload_message", upload_message)
+        return [usi.lstrip(), usi2.lstrip(), dash.no_update, upload_message]
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -1915,11 +1986,18 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
         except:
             pass
 
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
+        except:
+            pass
+
     # Resolving USI
     usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict, old_value=existing_usi, no_change_default=dash.no_update)
     usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict, old_value=existing_usi2, no_change_default=dash.no_update)
 
-    return [usi, usi2, "Using URL USI"]
+    return [usi, usi2, "Using URL USI", dash.no_update]
+    
     
 
 # Calculating which xic value to use
@@ -1930,6 +2008,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
+                Input('auto_import_parameters', 'children'),
                 Input('xicmz_clear_button', "n_clicks"),
               ], 
               [
@@ -1938,7 +2017,7 @@ def update_usi(search, url_hash, filecontent, sychronization_load_session_button
 
                   State('setting_json_area', 'value'),
               ])
-def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, xicmz_clear_button,
+def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, xicmz_clear_button,
                         existing_xic, sychronization_session_id, setting_json_area):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -1968,8 +2047,18 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
                     return existing_xic + ";" + str(mz_target)
 
                 return str(mz_target)
+
             # This is MS2
             elif clicked_target["curveNumber"] == 1:
+                mz_target = clicked_target["y"]
+
+                if len(existing_xic) > 0:
+                    return existing_xic + ";" + str(mz_target)
+
+                return str(mz_target)
+            
+            # This is Overlay/Feature Finding
+            elif clicked_target["curveNumber"] == 2:
                 mz_target = clicked_target["y"]
 
                 if len(existing_xic) > 0:
@@ -1993,9 +2082,16 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
         except:
             pass
 
-    xicmz = _get_param_from_url(search, "", "xicmz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
+        except:
+            pass
 
-    return xicmz
+    xic_mz = _get_param_from_url(search, "", "xic_mz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
+    xic_mz = _get_param_from_url(search, "", "xicmz", xic_mz, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
+
+    return xic_mz
 
 
 @cache.memoize()
@@ -2440,23 +2536,24 @@ def _integrate_files(long_data_df, xic_integration_type):
                 Output("integration-boxplot", "children"),
                 Output('loading_xic_plot', 'children')
               ],
-              [Input('usi', 'value'), 
-              Input('usi2', 'value'), 
-              Input('xic_mz', 'value'), 
-              Input('xic_formula', 'value'), 
-              Input('xic_peptide', 'value'), 
-              Input('xic_tolerance', 'value'),
-              Input('xic_ppm_tolerance', 'value'),
-              Input('xic_tolerance_unit', 'value'),
-              Input('xic_rt_window', 'value'),
-              Input('xic_integration_type', 'value'),
-              Input('xic_norm', 'value'),
-              Input('xic_file_grouping', 'value'),
-              Input('polarity_filtering', 'value'),
-              Input('image_export_format', 'value'), 
-              Input("plot_theme", "value")])
+              [
+                  Input('usi', 'value'), 
+                  Input('usi2', 'value'), 
+                  Input('xic_mz', 'value'), 
+                Input('xic_formula', 'value'), 
+                Input('xic_peptide', 'value'), 
+                Input('xic_tolerance', 'value'),
+                Input('xic_ppm_tolerance', 'value'),
+                Input('xic_tolerance_unit', 'value'),
+                Input('xic_rt_window', 'value'),
+                Input('xic_integration_type', 'value'),
+                Input('xic_norm', 'value'),
+                Input('xic_file_grouping', 'value'),
+                Input('polarity_filtering', 'value'),
+                Input('image_export_format', 'value'), 
+                Input("plot_theme", "value")
+              ])
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, polarity_filter, export_format, plot_theme):
-
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     print("TRIGGERED XIC PLOT", triggered_id, file=sys.stderr)
 
@@ -2535,6 +2632,10 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         except:
             pass
 
+    # Exiting if we don't have any valid XIC values
+    if len(all_xic_values) == 0:
+        return [placeholder_xic_plot, graph_config, dash.no_update, dash.no_update, dash.no_update]
+
     # Performing XIC for all USI in the list
     merged_df_long, ms2_data = _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
@@ -2588,6 +2689,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     try:
         # Doing actual integration
         integral_df = _integrate_files(merged_df_long, xic_integration_type)
+        integral_df["USI"] = integral_df["USI"].apply(lambda x: download._get_usi_display_filename(x))
 
         # Creating a table
         table_graph = dash_table.DataTable(
@@ -2603,7 +2705,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 
         # Creating a box plot
         box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
-        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", height=box_height, boxmode="overlay", template=plot_theme)
+        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", points="all", height=box_height, boxmode="overlay", template=plot_theme)
+        box_fig.update_traces(pointpos=0)
         box_graph = dcc.Graph(figure=box_fig, config=graph_config)
     except:
         pass
@@ -2627,6 +2730,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
+                Input('auto_import_parameters', 'children'),
               ],
               [ 
                 State("map_plot_rt_min", 'value'),
@@ -2641,44 +2745,60 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 State('setting_json_area', 'value'),
               ])
 def determine_plot_zoom_bounds(url_search, usi, 
-                                map_selection, map_plot_update_range_button, sychronization_load_session_button, sychronization_interval, advanced_import_update_button,
+                                map_selection, map_plot_update_range_button, sychronization_load_session_button, sychronization_interval, advanced_import_update_button, auto_import_parameters,
                                 map_plot_rt_min, map_plot_rt_max, map_plot_mz_min, map_plot_mz_max, existing_map_plot_zoom, 
                                 sychronization_session_id, setting_json_area):
+
+    
+    print("ALL TRIGGERS", [p['prop_id'] for p in dash.callback_context.triggered], file=sys.stderr, flush=True)
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     usi_list = usi.split("\n")
-    remote_link, local_filename = _resolve_usi(usi_list[0])                         
+    remote_link, local_filename = _resolve_usi(usi_list[0])
 
-    # Figuring out the map plot selection
+    session_dict = {}
+
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            pass
+    
+    # We clicked the button so we are going to load from the text area
+    if "advanced_import_update_button" in triggered_id:
+        try:
+            session_dict = json.loads(setting_json_area)
+        except:
+            pass
+
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
+        except:
+            pass
+
+    priority = "url"
+
+    if "map-plot" in triggered_id:
+        priority = "ui"
+
     if "map_plot_update_range_button" in triggered_id:
-        # We clicked the button, so we should read the values out of the 
-        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, 
-                                                                                                            usi, 
-                                                                                                            local_filename, 
-                                                                                                            ui_map_selection=map_selection,
-                                                                                                            map_plot_rt_min=map_plot_rt_min,
-                                                                                                            map_plot_rt_max=map_plot_rt_max,
-                                                                                                            map_plot_mz_min=map_plot_mz_min,
-                                                                                                            map_plot_mz_max=map_plot_mz_max)
-    else:
-        session_dict = {}
+        priority = "ui_update_range"
+    
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id or "advanced_import_update_button" in triggered_id or "auto_import_parameters" in triggered_id:
+        priority = "session"
 
-        if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
-            try:
-                session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
-            except:
-                pass
-        
-        # We clicked the button so we are going to load from the text area
-        if "advanced_import_update_button" in triggered_id:
-            try:
-                session_dict = json.loads(setting_json_area)
-            except:
-                pass
-
-        current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, usi, local_filename, ui_map_selection=map_selection, session_dict=session_dict)
-
+    current_map_selection, highlight_box, min_rt, max_rt, min_mz, max_mz = _resolve_map_plot_selection(url_search, 
+                                                                                                        usi, 
+                                                                                                        local_filename, 
+                                                                                                        ui_map_selection=map_selection,
+                                                                                                        map_plot_rt_min=map_plot_rt_min,
+                                                                                                        map_plot_rt_max=map_plot_rt_max,
+                                                                                                        map_plot_mz_min=map_plot_mz_min,
+                                                                                                        map_plot_mz_max=map_plot_mz_max, 
+                                                                                                        session_dict=session_dict,
+                                                                                                        priority=priority)
 
     current_map_plot_zoom_string = json.dumps(current_map_selection)
 
@@ -2691,9 +2811,9 @@ def determine_plot_zoom_bounds(url_search, usi,
     except:
         pass
 
-    print("MAP SELECTION", map_selection, file=sys.stderr)
-    print("NEW SELECTION", current_map_selection, highlight_box, file=sys.stderr)
-    print("EXISTING PLOT ZOOM", existing_map_plot_zoom, file=sys.stderr)
+    print("MAP SELECTION", map_selection, file=sys.stderr, flush=True)
+    print("NEW SELECTION", current_map_selection, highlight_box, file=sys.stderr, flush=True)
+    print("EXISTING PLOT ZOOM", existing_map_plot_zoom, file=sys.stderr, flush=True)
 
     return [current_map_plot_zoom_string, highlight_box_string, min_rt, max_rt, min_mz, max_mz]
     
@@ -2915,7 +3035,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 @app.callback([
                 Output('link-button', 'children'),
                 Output('page_parameters', 'children'),
-                Output('qrcode', 'children')
+                Output('qrcode', 'children'),
               ],  
               [
                 Input('usi', 'value'), 
@@ -2955,7 +3075,12 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("feature_finding_rt_tolerance", "value"),
                 Input("sychronization_save_session_button", "n_clicks"),
                 Input("sychronization_session_id", "value"),
-                Input("synchronization_leader_token", "value")
+                Input("synchronization_leader_token", "value"),
+
+                Input("comment", "value"),
+
+                Input("map_plot_color_scale", "value"),
+                Input("map_plot_quantization_level", "value"),
               ],
               [
                   State('synchronization_type', 'value')
@@ -2965,10 +3090,13 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
-                sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, synchronization_type):
+                sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, 
+                comment,
+                map_plot_color_scale, map_plot_quantization_level,
+                synchronization_type):
 
     url_params = {}
-    url_params["xicmz"] = xic_mz
+    url_params["xic_mz"] = xic_mz
     url_params["xic_formula"] = xic_formula
     url_params["xic_peptide"] = xic_peptide
     url_params["xic_tolerance"] = xic_tolerance
@@ -3007,6 +3135,13 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     # Sychronization Options
     url_params["sychronization_session_id"] = sychronization_session_id
 
+    # Comment
+    url_params["comment"] = comment
+
+    # Advanced Viz options
+    url_params["map_plot_color_scale"] = map_plot_color_scale
+    url_params["map_plot_quantization_level"] = map_plot_quantization_level
+
     hash_params = {}
     hash_params["usi"] = usi
     hash_params["usi2"] = usi2
@@ -3025,7 +3160,12 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
         if len(sychronization_session_id) > 0:
             # Lets save this to redis
             _sychronize_save_state(sychronization_session_id, full_json_settings, redis_client, synchronization_token=synchronization_leader_token)
-            print("Saving", full_json_settings)
+
+    # For Live Synchronization
+    if synchronization_type == "COLLAB":
+        all_triggered_list = [p['prop_id'] for p in dash.callback_context.triggered]
+        if len(sychronization_session_id) > 0:
+            _synchronize_collab_action(sychronization_session_id, all_triggered_list, full_json_settings, synchronization_token=synchronization_leader_token)
 
     qr_html_img = dash.no_update
     try:
@@ -3034,28 +3174,50 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     except:
         pass
 
+    # Saving the data to logs area
+    try:
+        log_filename = "./logs/params/{}.json".format(str(uuid.uuid4()))
+        import copy
+        to_save_settings = copy.deepcopy(full_json_settings)
+        to_save_settings["ip"] = request.remote_addr
+
+        now = datetime.now()
+        date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
+        to_save_settings["timestamp"] = date_time
+
+        with open(log_filename, "w") as o:
+            o.write(json.dumps(to_save_settings))
+    except:
+        pass
+
     # Removing Sync token for json area
     full_json_settings.pop("sychronization_session_id", None)
 
+
     return [provenance_link_object, json.dumps(full_json_settings, indent=4), qr_html_img]
 
-
+# This helps write the json string that we can use to load parameters in the whole page
 @app.callback([
-                Output('setting_json_area', 'value'),
-                Output('advanced_import_download_button', 'href'),
+                  Output('setting_json_area', 'value'),
+                  Output('setting_json_area_history', 'value'),
+                  Output('advanced_import_history_link', 'href'),
+                  Output('advanced_import_download_button', 'href'),
               ],
               [
-                Input("page_parameters", "children"),
-                Input('upload-settings-json', 'contents'),
+                  Input("page_parameters", "children"),
+                  Input('upload-settings-json', 'contents'),
               ],
               [
+                  State('setting_json_area_history', 'value'),
                   State('upload-settings-json', 'filename'),
                   State('upload-settings-json', 'last_modified'),
               ])
-def create_param_json(page_parameters, filecontent, filename, filedate):
+def create_param_json(page_parameters, filecontent, existing_setting_json_area_history, filename, filedate):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     new_params = page_parameters
+    history_text = dash.no_update
+    history_link = dash.no_update
 
     # Checking if we're doing stuff
     if "upload-settings-json" in triggered_id:
@@ -3066,7 +3228,131 @@ def create_param_json(page_parameters, filecontent, filename, filedate):
             
             new_params = json.dumps(file_setting_dict, indent=4)
 
-    return [new_params, "/settingsdownload?settings_json={}".format(urllib.parse.quote(new_params))]
+    if "page_parameters" in triggered_id:
+        # Updating the history
+        history_list = []
+        try:
+            history_list = json.loads(existing_setting_json_area_history)
+        except:
+            pass
+        history_list.append(json.loads(page_parameters))
+        history_text = json.dumps(history_list, indent=4)
+
+        hash_params = {}
+        hash_params["replay_list"] = history_list
+        history_link = "/#{}".format(urllib.parse.quote(json.dumps(hash_params)))
+
+    return [
+        new_params, 
+        history_text,
+        history_link,
+        "/settingsdownload?settings_json={}".format(urllib.parse.quote(new_params))
+    ]
+
+
+@app.callback([
+                Output("auto_import_parameters", "children"),
+                Output("replay_json_area", "value"),
+                Output("replay_json_area_previous", "value"),
+              ],
+              [
+                  Input('url', 'hash'),
+                  Input("replay_forward_button", "n_clicks"),
+                  Input("replay_backward_button", "n_clicks"),
+              ],
+              [
+                  State("replay_json_area", "value"),
+                  State("replay_json_area_previous", "value")
+              ])
+def advance_replay(url_hash, replay_forward_button, replay_backward_button, replay_json_area, replay_json_area_previous):
+    import_parameters_json = dash.no_update
+    next_json_state = []
+    previous_json_state = []
+
+    try:
+        next_json_state = json.loads(replay_json_area)
+    except:
+        pass
+        
+    try:
+        previous_json_state = json.loads(replay_json_area_previous)
+    except:
+        pass
+    
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    if "url" in triggered_id:
+        try:
+            hash_dict = json.loads(urllib.parse.unquote(url_hash[1:]))
+            next_json_state = hash_dict["replay_list"]
+        except:
+            pass
+
+    if "replay_forward_button" in triggered_id:
+        try:
+            if len(next_json_state) > 0:
+                import_parameters_json = json.dumps(next_json_state[0], indent=4)
+                previous_json_state.append(next_json_state[0])
+                next_json_state = next_json_state[1:]
+        except:
+            pass
+
+
+    if "replay_backward_button" in triggered_id:
+        try:
+            if len(previous_json_state) > 0:
+                import_parameters_json = json.dumps(previous_json_state[-1], indent=4)
+                next_json_state.insert(0, previous_json_state[-1])
+                previous_json_state = previous_json_state[:-1]
+        except:
+            pass
+
+    return [
+        import_parameters_json, 
+        json.dumps(next_json_state, indent=4),
+        json.dumps(previous_json_state, indent=4)
+    ]
+
+
+@app.callback([
+                Output("advanced_import_replay_link", "href")
+              ],
+              [
+                  Input('replay_json_area', 'value'),
+              ])
+def create_replay_link(replay_json_area,):
+    
+    hash_params = {}
+    hash_params["replay_list"] = json.loads(replay_json_area)
+    replay_link = "/#{}".format(urllib.parse.quote(json.dumps(hash_params)))
+
+    return [replay_link]
+
+
+@app.callback([
+                Output("replay_summary", "children")
+              ],
+              [
+                  Input('replay_json_area', 'value'),
+                  Input('replay_json_area_previous', 'value')
+              ])
+def create_replay_link(replay_json_area, replay_json_area_previous):
+    replay_list = []
+    replay_previous_list = []
+
+    try:
+        replay_list = json.loads(replay_json_area)
+    except:
+        pass
+    
+    try:
+        replay_previous_list = json.loads(replay_json_area_previous)
+    except:
+        pass
+
+    return ["{} total replay steps and {} previous steps".format(len(replay_list), len(replay_previous_list))]
+
+
 
 
 @app.callback(Output('sychronization_teaching_links', 'children'),
@@ -3087,6 +3373,11 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
 
     leader_url = "/?{}".format(urllib.parse.urlencode(url_params))
 
+    url_params["synchronization_leader_token"] = synchronization_leader_token
+    url_params["synchronization_type"] = "COLLAB"
+
+    collab_url = "/?{}".format(urllib.parse.urlencode(url_params))
+
     follower_full_url = request.url.replace('/_dash-update-component', follower_url)
     follower_img = _generate_qrcode_img(follower_full_url)
 
@@ -3097,6 +3388,9 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
             ),
             dbc.Col(
                 dcc.Link(dbc.Button("Leader URL", block=True, color="primary", className="mr-1"), href=leader_url, target="_blank")
+            ),
+            dbc.Col(
+                dcc.Link(dbc.Button("Collab URL", block=True, color="primary", className="mr-1"), href=collab_url, target="_blank")
             ),
         ]),
         dbc.Row([
@@ -3112,10 +3406,12 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
 
 
 @app.callback(Output('network-link-button', 'children'),
-              [Input('usi', 'value'), 
-              Input('usi2', 'value'), 
+              [
+                  Input('usi', 'value'), 
+                  Input('usi2', 'value'), 
               ])
 def create_networking_link(usi, usi2):
+
     full_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
 
     g1_list = []
@@ -3175,6 +3471,7 @@ def get_file_summary(usi, usi2):
     stats_df = pd.DataFrame(all_file_stats)     
     stats_df["Download"] = "DOWNLOAD"
     stats_df["Image"] = "Image"
+
     table = dbc.Table.from_dataframe(stats_df, striped=True, bordered=True, hover=True, size="sm")
 
     # Adding Download Buttons instead of DOWNLOAD
@@ -3182,10 +3479,18 @@ def get_file_summary(usi, usi2):
         for tbody in row.children:
             usi = tbody.children[0].children
             download_remote_link = download._resolve_usi_remotelink(usi)
+
+            # Here we're going to convert massive downloads to a proxy
+            if "ftp://massive.ucsd.edu" in download_remote_link:
+                download_remote_link = "https://gnps-external.ucsd.edu/massiveftpproxy?ftppath={}".format(download_remote_link)
+
             tbody.children[-2].children = html.A(dbc.Button("Download", color="primary", className="mr-1", size="sm"), href=download_remote_link, target="_blank")
 
             image_link = "/mspreview?usi={}".format(usi)
             tbody.children[-1].children = html.A(dbc.Button("Image", color="primary", className="mr-1", size="sm"), href=image_link, target="_blank")
+
+            # Replacing USI with just filename
+            tbody.children[0].children = download._get_usi_display_filename(usi)
 
     return [table]
 
@@ -3337,26 +3642,24 @@ def check_token(synchronization_leader_newtoken_button, sychronization_session_i
               [
                   Input('synchronization_begin_button', 'n_clicks'),
                   Input('synchronization_stop_button', 'n_clicks'),
+                  Input('sychronization_set_type_button', 'n_clicks'),
                   Input('synchronization_type_dependency', 'children')
               ],
               [
                   State('synchronization_type', 'value'),
               ])
-def set_update_interval(synchronization_begin_button, synchronization_stop_button, synchronization_type_dependency, synchronization_type):
+def set_update_interval(synchronization_begin_button, synchronization_stop_button, sychronization_set_type_button, synchronization_type_dependency, synchronization_type):
     new_interval = 10000000 * 1000
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    print("TRIGGERED INTERVALUPDATE", triggered_id, file=sys.stderr)
-
     status_text = ""
-
     # If we click stop, lets not do anything anymore
     if "synchronization_stop_button" in triggered_id:
         status_text = "Sync Stopped"
         return [new_interval, status_text]
 
     # We know we're the follower, so lets act like it
-    if synchronization_type == "FOLLOWER":
+    if synchronization_type == "FOLLOWER" or synchronization_type == "COLLAB":
         new_interval = 5 * 1000
         status_text = "Sync Started"
 
@@ -3423,6 +3726,8 @@ def toggle_modal(n1, n2, is_open):
         return not is_open
     return is_open
 
+
+
 app.callback(
     Output("spectrum_details_modal", "is_open"),
     [Input("spectrum_details_modal_button", "n_clicks"), Input("spectrum_details_modal_close", "n_clicks")],
@@ -3447,6 +3752,26 @@ app.callback(
     [Input("advanced_import_modal_button", "n_clicks"), Input("advanced_import_modal_close", "n_clicks")],
     [State("advanced_import_modal", "is_open")],
 )(toggle_modal)
+
+app.callback(
+    Output("advanced_replay_modal", "is_open"),
+    [Input("advanced_replay_modal_button", "n_clicks"), Input("advanced_replay_modal_close", "n_clicks")],
+    [State("advanced_replay_modal", "is_open")],
+)(toggle_modal)
+
+# Helping to toggle the panels
+def toggle_panel(n1, is_open):
+    if n1:
+        return not is_open
+    return is_open
+
+
+app.callback(
+    Output("data_selection_collapse", "is_open"),
+    [Input("data_selection_show_hide_button", "n_clicks")],
+    [State("data_selection_collapse", "is_open")],
+)(toggle_panel)
+
 
 #######################
 # Flask URLS
@@ -3500,8 +3825,6 @@ def settingsdownload():
     import hashlib
     hash_value = int(hashlib.sha256(settings_json.encode('utf-8')).hexdigest(), 16) % 10**8
     output_filename = "settings_{}.json".format(hash_value)
-
-    print("output_filename", output_filename, hash_value, file=sys.stderr)
 
     return send_file(
         mem,
