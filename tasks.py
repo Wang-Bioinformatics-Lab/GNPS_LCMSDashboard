@@ -20,7 +20,7 @@ redis_client = redis.Redis(host='redis', port=6379, db=0)
 ##############################
 # Conversion
 ##############################
-@celery_instance.task(time_limit=240)
+@celery_instance.task(time_limit=480)
 def _download_convert_file(usi, temp_folder="temp"):
     """
         This function does the serialization of downloading files
