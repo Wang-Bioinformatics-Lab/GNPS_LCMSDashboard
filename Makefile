@@ -1,6 +1,9 @@
 server-compose-build-nocache:
 	docker-compose build --no-cache
 
+server-compose-build:
+	docker-compose build
+
 server-compose-dev:
 	docker-compose build --parallel
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml up
