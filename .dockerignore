@@ -2,3 +2,5 @@ temp
 test
 logs
 notebook
+feature_finding
+__pycache__*
