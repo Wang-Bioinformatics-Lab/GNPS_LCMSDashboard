@@ -71,7 +71,8 @@ There are several ways to get GNPS Dashboard working locally, our preferred and 
 The initial steps are identical:
 
 1. Fork the GNPS Dashboard repository
-2. Clone down to your system
+1. Clone down to your system
+1. Download Feature Finding tools (Dinosaur and MZmine 2) with get scripts
 
 ### Docker 
 
