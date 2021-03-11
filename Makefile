@@ -17,6 +17,7 @@ attach:
 	docker exec -i -t gnpslcms-dash /bin/bash
 
 clear-cache:
+	sudo rm temp/* || true
 	sudo rm temp/flask-cache/*
-	sudo rm temp/memory-cache/*
+	sudo rm temp/memory-cache/joblib/ -rf
 	sudo rm temp/image_previews/*.png
