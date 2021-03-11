@@ -2515,17 +2515,26 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
 
     return merged_df_long, ms2_data
 
-def _perform_chromatogram_extraction(usi_list, chromatogram_list):
+def _perform_chromatogram_extraction(usi_list, chromatogram_list, rt_min, rt_max):
     usi = usi_list[0]
-    remote_link, local_filename = _resolve_usi(usi)
 
     df_list = []
-    for chromatogram_value in chromatogram_list:
-        chromatogram_df = xic.get_chromatogram(local_filename, chromatogram_value)
-        chromatogram_df["USI"] = usi
-        df_list.append(chromatogram_df)
+    for usi in usi_list:
+        remote_link, local_filename = _resolve_usi(usi)
+
+        for chromatogram_value in chromatogram_list:
+            try:
+                chromatogram_df = xic.get_chromatogram(local_filename, chromatogram_value)
+                chromatogram_df["USI"] = usi
+                df_list.append(chromatogram_df)
+            except:
+                pass
 
     merged_df = pd.concat(df_list)
+
+    merged_df = merged_df[merged_df["rt"] < rt_max]
+    merged_df = merged_df[merged_df["rt"] > rt_min]
+
     return merged_df
 
 def _is_worker_up():
@@ -2701,8 +2710,9 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         merged_df_long, ms2_data = _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
 
     # Looking at chromatograms only if a single file exists
-    if len(usi_list) == 1 and len(chromatogram_list) > 0:
-        chrom_df = _perform_chromatogram_extraction(usi_list, chromatogram_list)
+    if len(chromatogram_list) > 0:
+        chrom_df = _perform_chromatogram_extraction(usi_list, chromatogram_list, rt_min, rt_max)
+        chrom_df["GROUP"] = "TOP"
         merged_df_long = pd.concat([merged_df_long, chrom_df])
 
     # Limit the plotting USIs, but not the integrals below
@@ -2719,17 +2729,17 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             height = 400
             fig = px.scatter(plotting_df, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
         else:
-            height = 400 * len(all_xic_values)
+            height = 400 * (len(all_xic_values) + len(chromatogram_list))
             fig = px.scatter(plotting_df, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
     else:
         if xic_file_grouping == "FILE":
             height = 400 * len(plot_usi_list)
             fig = px.scatter(plotting_df, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=plot_theme)
         elif xic_file_grouping == "MZ":
-            height = 400 * len(all_xic_values)
+            height = 400 * (len(all_xic_values) + len(chromatogram_list))
             fig = px.scatter(plotting_df, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=plot_theme)
         elif xic_file_grouping == "GROUP":
-            height = 400 * len(all_xic_values)
+            height = 400 * (len(all_xic_values) + len(chromatogram_list))
             fig = px.scatter(plotting_df, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme)
 
     # Making these scatter plots into lines
