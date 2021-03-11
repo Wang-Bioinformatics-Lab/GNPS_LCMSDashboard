@@ -1,9 +1,5 @@
 ## GNPS LCMS Visualization Dashboard
 
-We typitcally will deploy this locally. To bring everything up
-
-```server-compose```
-
 ### URL Parameters
 
 1. usi
@@ -70,9 +66,64 @@ We aim to provide several APIs to programmatically get data.
 
 ## Development
 
+There are several ways to get GNPS Dashboard working locally, our preferred and recommended way is using docker/docker-compose as it provides a more consistent experience. 
+
+The initial steps are identical:
+
+1. Fork the GNPS Dashboard repository
+2. Clone down to your system
+
+### Docker 
+
+To get everything up and running, we've created a make target for you to get docker up and running:
+
+```
+make server-compose-interactive
+```
+
+The requirements on your local system are:
+
+1. Docker
+2. Docker Compose
+
+This will bring the server up on http://localhost:6548. 
+
+### Conda
+
+1. Install Python3 within conda
+3. Install all packages from the requirements.txt
+4. Install packages via conda
+5. Start the dashboard locally (defaults to http://localhost:5000)
+
+**Example shell**
+
+```shell
+# make sure to have Python3 installed via conda (preferably 3.8)
+conda install -c conda-forge datashader
+conda install -c conda-forge openjdk
+
+# install requirements
+pip install -r requirements.txt
+
+# run or debug the GNPS Dashboard with Python 3 on http://localhost:5000
+python ./app.py
+
+# on problem, maybe install the following (tested on Windows 10 with WSL2 Ubuntu) 
+sudo apt-get install libffi-dev
+```
+
 ### Supporting new data sources
 
 Since we utilize a USI to find datasets, there are a limited number of locations we can grab data from. If you want to provide a new data source, you'll have to implement the following
 
 1. USI Specification that denotes what the resource is and how to get data
 1. Update the code in ```download.py```, specifically in ```_resolve_usi_remotelink``` to implement how to get the remote URL for your new USI. 
+
+
+### Useful links for developers
+**Dash and plotly documentations**
+
+- Components: https://dash.plotly.com/dash-core-components 
+- Callbacks: https://dash.plotly.com/basic-callbacks 
+- Plotly express: https://plotly.com/python/plotly-express/ 
+- Plotly: https://plotly.com/python/ 
