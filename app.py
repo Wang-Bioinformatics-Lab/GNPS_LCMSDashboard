@@ -2515,7 +2515,7 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
 
     return merged_df_long, ms2_data
 
-def _perform_chromatogram_extraction(usi_list, chromatogram_list):
+def _perform_chromatogram_extraction(usi_list, chromatogram_list, rt_min, rt_max):
     usi = usi_list[0]
     remote_link, local_filename = _resolve_usi(usi)
 
@@ -2526,6 +2526,10 @@ def _perform_chromatogram_extraction(usi_list, chromatogram_list):
         df_list.append(chromatogram_df)
 
     merged_df = pd.concat(df_list)
+
+    merged_df = merged_df[merged_df["rt"] < rt_max]
+    merged_df = merged_df[merged_df["rt"] > rt_min]
+
     return merged_df
 
 def _is_worker_up():
@@ -2702,7 +2706,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 
     # Looking at chromatograms only if a single file exists
     if len(usi_list) == 1 and len(chromatogram_list) > 0:
-        chrom_df = _perform_chromatogram_extraction(usi_list, chromatogram_list)
+        chrom_df = _perform_chromatogram_extraction(usi_list, chromatogram_list, rt_min, rt_max)
+        chrom_df["GROUP"] = "TOP"
         merged_df_long = pd.concat([merged_df_long, chrom_df])
 
     # Limit the plotting USIs, but not the integrals below
@@ -2775,6 +2780,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         box_fig.update_traces(pointpos=0)
         box_graph = dcc.Graph(figure=box_fig, config=graph_config)
     except:
+        raise
         pass
 
     return [fig, graph_config, table_graph, box_graph, dash.no_update]
