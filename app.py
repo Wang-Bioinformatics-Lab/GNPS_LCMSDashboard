@@ -1632,6 +1632,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("feature_finding_rt_tolerance", "value"),
                 Output("sychronization_session_id", "value"),
 
+                Output("chromatogram_options", "value"),
+
                 Output("comment", "value"),
 
                 Output("map_plot_color_scale", "value"),
@@ -1681,6 +1683,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   State('feature_finding_rt_tolerance', 'value'),
                   
                   State('sychronization_session_id', 'value'),
+
+                  State("chromatogram_options", "value"),
 
                   State("comment", 'value'),
 
@@ -1733,6 +1737,8 @@ def determine_url_only_parameters(  search,
                                     existing_feature_finding_rt_tolerance,
 
                                     existing_sychronization_session_id,
+
+                                    existing_chromatogram_options,
 
                                     existing_comment,
                                     
@@ -1807,6 +1813,9 @@ def determine_url_only_parameters(  search,
         default_session_id = existing_sychronization_session_id
     sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", default_session_id, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
 
+    # Chromatogram Options
+    chromatogram_options = _get_param_from_url(search, "", "chromatogram_options", dash.no_update, session_dict=session_dict, old_value=existing_chromatogram_options, no_change_default=dash.no_update)
+
     # Comment
     comment = _get_param_from_url(search, "", "comment", dash.no_update, session_dict=session_dict, old_value=existing_comment, no_change_default=dash.no_update)
 
@@ -1847,6 +1856,11 @@ def determine_url_only_parameters(  search,
             show_lcms_2nd_map = dash.no_update
     except:
         pass
+
+    try:
+        chromatogram_options = json.loads(chromatogram_options)
+    except:
+        pass    
     
     return [xic_formula, 
             xic_peptide, 
@@ -1862,6 +1876,7 @@ def determine_url_only_parameters(  search,
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
             sychronization_session_id,
+            chromatogram_options, 
             comment,
             map_plot_color_scale,
             map_plot_quantization_level]
@@ -3128,6 +3143,8 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("sychronization_session_id", "value"),
                 Input("synchronization_leader_token", "value"),
 
+                Input("chromatogram_options", "value"),
+
                 Input("comment", "value"),
 
                 Input("map_plot_color_scale", "value"),
@@ -3142,6 +3159,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
                 sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, 
+                chromatogram_options, 
                 comment,
                 map_plot_color_scale, map_plot_quantization_level,
                 synchronization_type):
@@ -3185,6 +3203,9 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     # Sychronization Options
     url_params["sychronization_session_id"] = sychronization_session_id
+
+    # mzML Chromatogram Options
+    url_params["chromatogram_options"] = json.dumps(chromatogram_options)
 
     # Comment
     url_params["comment"] = comment
