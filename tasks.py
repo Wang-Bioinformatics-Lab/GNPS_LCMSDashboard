@@ -54,6 +54,14 @@ def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, x
     xic_df, ms2_data = xic_file(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
     return xic_df.to_dict(orient="records"), ms2_data
 
+@celery_instance.task(time_limit=60)
+def task_chromatogram_options(local_filename):
+    # Caching
+    chromatograms_list = memory.cache(xic.chromatograms_list)
+
+    options = chromatograms_list(local_filename)
+    return options
+
 @celery_instance.task(time_limit=90)
 def task_featurefinding(filename, params):
     feature_df = feature_finding.perform_feature_finding(filename, params, timeout=80)
