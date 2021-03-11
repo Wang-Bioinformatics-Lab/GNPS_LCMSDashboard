@@ -3517,7 +3517,7 @@ def get_dataset_link(usi, usi2):
             all_accessions.append(accession)
 
     if len(all_accessions) > 0:
-        return [dbc.NavLink("Select Other Dataset Files", href="https://gnps-dataset-explorer.herokuapp.com/{}".format(all_accessions[0]))]
+        return [dbc.NavLink("Select Other Dataset Files", href="https://gnps-explorer.ucsd.edu/{}".format(all_accessions[0]))]
     return [dash.no_update]
 
 @app.callback([Output('overlay_hover', 'options'), Output('overlay_color', 'options'), Output('overlay_size', 'options')],
