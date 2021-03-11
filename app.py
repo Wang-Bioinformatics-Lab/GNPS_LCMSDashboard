@@ -387,7 +387,26 @@ DATASELECTION_CARD = [
                                 row=True,
                                 className="mb-3",
                             )),
-                        dbc.Col(),
+                        dbc.Col(
+                            dbc.FormGroup(
+                                [
+                                    dbc.Label("Show Details", html_for="show_details", width=5.8, style={"width":"160px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_details',
+                                            value=True,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                row=True,
+                                className="mb-3",
+                            )
+                        ),
                     ]),
                 ], className="col-sm"),
                 ## Right Panel
@@ -1165,7 +1184,7 @@ TOP_DASHBOARD = [
     )
 ]
 
-LEFT_DASHBOARD = [
+RIGHT_DASHBOARD = [
     html.Div(
         [
             html.Div(DATASLICE_CARD),
@@ -1357,16 +1376,22 @@ BODY = dbc.Container(
                 is_open=True,
                 style={"height": "1200px", "width": "50%"}
             ),
-            dbc.Col([
-                dbc.Collapse(
-                    dbc.Card(SECOND_DATAEXPLORATION_DASHBOARD),
-                    id='second-data-exploration-dashboard-collapse',
-                    is_open=True,
-                    style={"height": "1200px"}
+            dbc.Collapse([
+                dbc.Col([
+                    dbc.Collapse(
+                        dbc.Card(SECOND_DATAEXPLORATION_DASHBOARD),
+                        id='second-data-exploration-dashboard-collapse',
+                        is_open=True,
+                        style={"height": "1200px"}
+                    ),
+                    dbc.Card(RIGHT_DASHBOARD),
+                ],
+                    # className="w-50"
                 ),
-                dbc.Card(LEFT_DASHBOARD),
             ],
-                className="w-50"
+                id='details-panel-dashboard-collapse',
+                is_open=True,
+                style={"width": "50%"}
             ),
         ], style={"marginTop": 30}),
         html.Br(),
@@ -3753,6 +3778,16 @@ def set_update_interval(synchronization_begin_button, synchronization_stop_butto
 # Hiding Panels
 ###########################################
 
+
+# Show Hide Panels
+@app.callback(
+    Output("first-data-exploration-dashboard-collapse", "is_open"),
+    [Input("show_lcms_1st_map", "value")],
+    [State("first-data-exploration-dashboard-collapse", "is_open")],
+)
+def toggle_collapse1(show_lcms_1st_map, is_open):
+    return show_lcms_1st_map
+
 # Show Hide Panels
 @app.callback(
     Output("second-data-exploration-dashboard-collapse", "is_open"),
@@ -3764,12 +3799,12 @@ def toggle_collapse2(show_lcms_2nd_map, is_open):
 
 # Show Hide Panels
 @app.callback(
-    Output("first-data-exploration-dashboard-collapse", "is_open"),
-    [Input("show_lcms_1st_map", "value")],
-    [State("first-data-exploration-dashboard-collapse", "is_open")],
+    Output("details-panel-dashboard-collapse", "is_open"),
+    [Input("show_details", "value")],
+    [State("details-panel-dashboard-collapse", "is_open")],
 )
-def toggle_collapse1(show_lcms_1st_map, is_open):
-    return show_lcms_1st_map
+def toggle_collapse_details(show_details, is_open):
+    return show_details
 
 @app.callback(
     [Output("usi1-filtering-collapse", "is_open"), Output("usi2-filtering-collapse", "is_open")],
