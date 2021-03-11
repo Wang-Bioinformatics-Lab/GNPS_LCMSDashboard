@@ -81,7 +81,7 @@ To get everything up and running, we've created a make target for you to get doc
 make server-compose-interactive
 ```
 
-The requirements on your locally system are:
+The requirements on your local system are:
 
 1. Docker
 2. Docker Compose
@@ -97,7 +97,7 @@ This will bring the server up on http://localhost:6548.
 
 **Example shell**
 
-```
+```shell
 # make sure to have Python3 installed via conda (preferably 3.8)
 conda install -c conda-forge datashader
 conda install -c conda-forge openjdk
