@@ -6,6 +6,7 @@ RUN conda install -c conda-forge datashader
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 RUN pip install -U Celery
+RUN pip install -U celery_once
 RUN conda install -c conda-forge openjdk
 
 ################## METADATA ######################

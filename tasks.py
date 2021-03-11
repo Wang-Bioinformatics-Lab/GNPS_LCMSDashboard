@@ -1,4 +1,5 @@
 from celery import Celery
+from celery_once import QueueOnce
 import download
 import os
 import uuid
@@ -9,18 +10,31 @@ import tic
 import glob
 import redis
 from joblib import Memory
+
 from sync import _sychronize_save_state, _sychronize_load_state
 
 memory = Memory("temp/memory-cache", verbose=0)
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
+
+# Limiting the once queue for celery tasks, will give an error for idempotent tasks within an hour interval
+celery_instance.conf.ONCE = {
+  'backend': 'celery_once.backends.Redis',
+  'settings': {
+    'url': 'redis://redis:6379/0',
+    'default_timeout': 60 * 60,
+    'blocking': True,
+    'blocking_timeout': 120
+  }
+}
+
 redis_client = redis.Redis(host='redis', port=6379, db=0)
 
 ##############################
 # Conversion
 ##############################
-@celery_instance.task(time_limit=240)
+@celery_instance.task(time_limit=480, base=QueueOnce)
 def _download_convert_file(usi, temp_folder="temp"):
     """
         This function does the serialization of downloading files
