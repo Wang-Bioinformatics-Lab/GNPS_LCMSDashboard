@@ -256,6 +256,7 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
 
     temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
     # Lets do a conversion
+    # TODO: Setting timeouts to kill child processes
     if file_extension.lower() == ".cdf":
         _convert_cdf_to_mzML(local_filename, temp_filename)
     elif file_extension.lower() == ".raw":
