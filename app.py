@@ -2801,22 +2801,26 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     if len(all_xic_values) > 0:
         xic_heatmap_graph_list = []
         all_xic_targets = list(set(merged_df_long["variable"]))
+        all_xic_targets.sort()
 
         for xic_target in all_xic_targets:
             try:
                 filtered_df_long = merged_df_long[merged_df_long["variable"] == xic_target]
                 all_usi_list = list(set(filtered_df_long["USI"]))
-                filtered_df_long["USI_int"] = filtered_df_long["USI"].apply(lambda x: all_usi_list.index(x))
+                filtered_df_long["USI"] = filtered_df_long["USI"].apply(lambda x: all_usi_list.index(x))
 
                 cvs = ds.Canvas(plot_width=50, plot_height=len(all_usi_list))
-                agg = cvs.points(filtered_df_long, 'rt', 'USI_int', agg=ds.sum("value"))
+                agg = cvs.points(filtered_df_long, 'rt', 'USI', agg=ds.sum("value"))
+
+                # Shortening the actual name of the file
+                all_usi_list = [download._get_usi_display_filename(x) for x in all_usi_list]
 
                 # Clipping
                 import numpy as np
                 min_value = agg.min().values
-                agg.values = np.nan_to_num(agg.values, nan=1)
+                agg.values = np.nan_to_num(agg.values, nan=min_value)
                 agg.values = np.clip(agg.values, min_value, 10000000000000000)
-                agg.values = np.log10(agg.values)
+                #agg.values = np.log10(agg.values)
 
                 xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Log10(abundance)'}, height=200 + 25 * len(all_usi_list), template=plot_theme, title='XIC Heatmap - {} m/z'.format(xic_target),
                                             color_continuous_scale=map_plot_color_scale)
