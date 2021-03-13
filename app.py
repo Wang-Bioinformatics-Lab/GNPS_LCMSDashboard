@@ -2806,7 +2806,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             cvs = ds.Canvas(plot_width=100, plot_height=len(all_usi_list))
             agg = cvs.points(merged_df_long, 'rt', 'USI_int', agg=ds.sum("value"))
 
-            xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Log10(abundance)'}, height=150 + 30 * len(all_usi_list), template="plotly_white")
+            xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Log10(abundance)'}, height=150 + 20 * len(all_usi_list), template="plotly_white")
             xic_heatmap_graph = dcc.Graph(figure=xic_heatmap_fig, config=graph_config) 
         except:
             pass
