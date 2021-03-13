@@ -1091,6 +1091,13 @@ INTEGRATION_CARD = [
                 children=[html.Div([html.Div(id="loading-output-101")])],
                 type="default",
             ),
+            html.Br(),
+            html.Br(),
+            dcc.Loading(
+                id="xic-heatmap",
+                children=[html.Div([html.Div(id="loading-output-102")])],
+                type="default",
+            ),
         ]
     )
 ]
@@ -2601,6 +2608,7 @@ def create_chromatogram_options(usi, usi2):
                 Output('xic-plot', 'config'), 
                 Output("integration-table", "children"), 
                 Output("integration-boxplot", "children"),
+                Output("xic-heatmap", "children"),
                 Output('loading_xic_plot', 'children')
               ],
               [
@@ -2745,7 +2753,6 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     # Making these scatter plots into lines
     fig.update_traces(mode='lines')
 
-
     # Plotting the MS2 on the XIC
     if len(usi_list) == 1 and len(all_xic_values) == 1:
         try:
@@ -2783,14 +2790,26 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
         box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", points="all", height=box_height, boxmode="overlay", template=plot_theme)
         box_fig.update_traces(pointpos=0)
-        box_graph = dcc.Graph(figure=box_fig, config=graph_config)
-
-        # Doing a heatmap
-        
+        box_graph = dcc.Graph(figure=box_fig, config=graph_config)        
     except:
         pass
 
-    return [fig, graph_config, table_graph, box_graph, dash.no_update]
+    xic_heatmap_graph = dash.no_update
+    # Plotting the XIC Heatmap
+    if len(all_xic_values) == 1:
+        all_usi_list = list(set(merged_df_long["USI"]))
+        print(all_usi_list)
+        merged_df_long["USI_int"] = merged_df_long["USI"].apply(lambda x: all_usi_list.index(x))
+        print(merged_df_long.head())
+
+        cvs = ds.Canvas(plot_width=100, plot_height=len(all_usi_list))
+        agg = cvs.points(merged_df_long, 'rt', 'USI_int', agg=ds.sum("value"))
+
+        xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Log10(abundance)'}, height=100 + 50 * len(all_usi_list), template="plotly_white")
+        xic_heatmap_graph = dcc.Graph(figure=xic_heatmap_fig, config=graph_config)     
+
+
+    return [fig, graph_config, table_graph, box_graph, xic_heatmap_graph, dash.no_update]
 
 
 @app.callback([
