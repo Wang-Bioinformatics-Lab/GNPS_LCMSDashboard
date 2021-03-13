@@ -232,8 +232,10 @@ ADVANCED_VISUALIZATION_MODAL = [
                                         options=[
                                             {'label': 'Hot_r', 'value': 'Hot_r'},
                                             {'label': 'Blues', 'value': 'Blues'},
+                                            {'label': 'Blues_r', 'value': 'Blues_r'},
                                             {'label': 'Sunsetdark', 'value': 'Sunsetdark'},
                                             {'label': 'Viridis', 'value': 'Viridis'},
+                                            {'label': 'Viridis_r', 'value': 'Viridis_r'},
                                             {'label': 'Greys', 'value': 'Greys'},
                                               
                                         ],
