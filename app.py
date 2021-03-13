@@ -2799,9 +2799,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     if len(all_xic_values) == 1:
         try:
             all_usi_list = list(set(merged_df_long["USI"]))
-            print(all_usi_list)
             merged_df_long["USI_int"] = merged_df_long["USI"].apply(lambda x: all_usi_list.index(x))
-            print(merged_df_long.head())
 
             cvs = ds.Canvas(plot_width=100, plot_height=len(all_usi_list))
             agg = cvs.points(merged_df_long, 'rt', 'USI_int', agg=ds.sum("value"))
