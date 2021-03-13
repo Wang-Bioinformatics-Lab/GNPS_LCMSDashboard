@@ -535,7 +535,7 @@ DATASELECTION_CARD = [
                                         ],
                                         searchable=False,
                                         clearable=False,
-                                        value="FILE",
+                                        value="MZ",
                                         style={
                                             "width":"50%"
                                         }
