@@ -2628,8 +2628,9 @@ def create_chromatogram_options(usi, usi2):
                   Input('polarity_filtering', 'value'),
                   Input('image_export_format', 'value'), 
                   Input("plot_theme", "value"),
+                  Input('map_plot_color_scale', 'value'),
               ])
-def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, chromatogram_list, polarity_filter, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, chromatogram_list, polarity_filter, export_format, plot_theme, map_plot_color_scale):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     print("TRIGGERED XIC PLOT", triggered_id, file=sys.stderr)
 
@@ -2795,19 +2796,35 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         pass
 
     xic_heatmap_graph = dash.no_update
+
     # Plotting the XIC Heatmap
-    if len(all_xic_values) == 1:
-        try:
-            all_usi_list = list(set(merged_df_long["USI"]))
-            merged_df_long["USI_int"] = merged_df_long["USI"].apply(lambda x: all_usi_list.index(x))
+    if len(all_xic_values) > 0:
+        xic_heatmap_graph_list = []
+        all_xic_targets = list(set(merged_df_long["variable"]))
 
-            cvs = ds.Canvas(plot_width=100, plot_height=len(all_usi_list))
-            agg = cvs.points(merged_df_long, 'rt', 'USI_int', agg=ds.sum("value"))
+        for xic_target in all_xic_targets:
+            try:
+                filtered_df_long = merged_df_long[merged_df_long["variable"] == xic_target]
+                all_usi_list = list(set(filtered_df_long["USI"]))
+                filtered_df_long["USI_int"] = filtered_df_long["USI"].apply(lambda x: all_usi_list.index(x))
 
-            xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Log10(abundance)'}, height=150 + 20 * len(all_usi_list), template="plotly_white")
-            xic_heatmap_graph = dcc.Graph(figure=xic_heatmap_fig, config=graph_config) 
-        except:
-            pass
+                cvs = ds.Canvas(plot_width=100, plot_height=len(all_usi_list))
+                agg = cvs.points(filtered_df_long, 'rt', 'USI_int', agg=ds.sum("value"))
+
+                # Clipping
+                import numpy as np
+                agg.values = np.nan_to_num(agg.values, nan=1)
+                agg.values = np.clip(agg.values, 1, 10000000000000000)
+                agg.values = np.log10(agg.values)
+
+                xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Log10(abundance)'}, height=200 + 25 * len(all_usi_list), template=plot_theme, title='XIC Heatmap - {} m/z'.format(xic_target),
+                                            color_continuous_scale=map_plot_color_scale)
+                xic_heatmap_graph_list.append(dcc.Graph(figure=xic_heatmap_fig, config=graph_config))
+            except:
+                pass
+
+        if len(xic_heatmap_graph_list) > 0:
+            xic_heatmap_graph = xic_heatmap_graph_list
 
 
     return [fig, graph_config, table_graph, box_graph, xic_heatmap_graph, dash.no_update]
