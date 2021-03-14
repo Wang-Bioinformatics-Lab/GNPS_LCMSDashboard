@@ -12,7 +12,7 @@ import lcms_map
 from utils import _get_scan_polarity
 
 FILENAME_PREFIX = "QC_0"
-FILENAME_PREFIX = "01308_H02_P013387_B00_N16_R1"
+#FILENAME_PREFIX = "01308_H02_P013387_B00_N16_R1"
 
 def test_write():
     print("X")
@@ -98,7 +98,9 @@ def test_write():
     import sqlite3
     db = sqlite3.connect("{}.sqlite".format(FILENAME_PREFIX))
     ms1_df.to_sql("ms1_df", db, if_exists="append")
-    #db.execute("CREATE INDEX ms1_mz ON ms1_df(ms1_mz)") 
+    db.execute("CREATE INDEX mz_rt ON ms1_df(ms1_mz, ms1_rt)")
+    db.execute("CREATE INDEX mz_rt_polarity ON ms1_df(ms1_mz, ms1_rt, ms1_polarity)") 
+    
     #db.execute("CREATE INDEX ms1_rt ON ms1_df(ms1_rt)") 
     #db.execute("CREATE INDEX ms1_scan ON ms1_df(ms1_scan)") 
     #db.execute("CREATE INDEX ms1_polarity ON ms1_df(ms1_polarity)") 
@@ -117,10 +119,10 @@ def test_load_mzml():
 
     ms1_df = pd.DataFrame(ms1_results)
 
-    width = 500
-    height = 500
-    cvs = ds.Canvas(plot_width=width, plot_height=height)
-    agg = cvs.points(ms1_df,'rt','mz', agg=ds.sum("i"))
+    # width = 500
+    # height = 500
+    # cvs = ds.Canvas(plot_width=width, plot_height=height)
+    # agg = cvs.points(ms1_df,'rt','mz', agg=ds.sum("i"))
 
     print(ms1_df)
 
@@ -146,9 +148,9 @@ def test_load_sqlite():
     ms1_df = pd.read_sql("SELECT * FROM ms1_df WHERE ms1_rt > 1.0 AND ms1_rt < 1.5 AND ms1_mz < 500 AND ms1_mz > 300 AND ms1_polarity='Positive'", db)
     #ms1_df = pd.read_sql("SELECT * FROM ms1_df", db)
 
-    width = 500
-    height = 500
-    cvs = ds.Canvas(plot_width=width, plot_height=height)
-    agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
+    # width = 500
+    # height = 500
+    # cvs = ds.Canvas(plot_width=width, plot_height=height)
+    # agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
 
     print(ms1_df)
