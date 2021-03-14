@@ -18,3 +18,17 @@ specific_test:
 	#pytest --durations=0 test.py::test_tic_fast -v --capture=tee-sys
 	#pytest --durations=0 test_featurefinding.py::test_mzmine -v --capture=tee-sys
 	pytest --durations=0 test.py::test_ms2_spectrum -v --capture=tee-sys
+
+
+# Testing performance with hdf5
+write_compressed:
+	pytest test_hdf5.py::test_write -vv --capture=tee-sys
+
+read_mzml:
+	pytest test_hdf5.py::test_load_mzml -vv --capture=tee-sys
+
+read_hdf5:
+	pytest test_hdf5.py::test_load_h5 -vv --capture=tee-sys
+
+read_sqlite:
+	pytest test_hdf5.py::test_load_sqlite -vv --capture=tee-sys
