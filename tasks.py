@@ -40,7 +40,29 @@ def _download_convert_file(usi, temp_folder="temp"):
         This function does the serialization of downloading files
     """
 
-    return download._resolve_usi(usi, temp_folder=temp_folder)
+    return_val = download._resolve_usi(usi, temp_folder=temp_folder)
+    _convert_file_feather.delay(usi, temp_folder=temp_folder)
+
+    return return_val
+
+@celery_instance.task(time_limit=480)
+def _convert_file_feather(usi, temp_folder="temp"):
+    """
+        This function does the serialization of conversion to feather format
+    """
+
+    if _resolve_exists_local(usi, temp_folder=temp_folder):
+        local_filename = download._usi_to_local_filename(usi)
+        feather_filename = os.path.join(temp_folder, local_filaname, ".feather")
+
+        if os.path.exists(feather_filename):
+            return
+
+        # Let's do stuff here
+        print(feather_filename)
+
+
+    
 
 #################################
 # Compute Data
@@ -141,6 +163,7 @@ celery_instance.conf.beat_schedule = {
 
 celery_instance.conf.task_routes = {
     'tasks._download_convert_file': {'queue': 'conversion'},
+    'tasks._convert_file_feather': {'queue': 'conversion'},
     
     'tasks._task_cleanup': {'queue': 'compute'},
 
