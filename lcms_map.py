@@ -15,7 +15,7 @@ import time
 
 import utils
 
-def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
+def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", top_spectrum_peaks=100):
     all_mz = []
     all_rt = []
     all_i = []
@@ -67,7 +67,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
                 # Sorting by intensity
                 peaks = peaks[peaks[:,1].argsort()]
-                peaks = peaks[-100:]
+                peaks = peaks[-1 * top_spectrum_peaks:]
 
                 mz, intensity = zip(*peaks)
 
@@ -119,15 +119,17 @@ def _get_feather_filenames(filename):
 def _save_lcms_data_feather(filename):
     output_ms1_filename, output_msn_filename = _get_feather_filenames(filename)
     
-    ms1_results, number_spectra, msn_results = _gather_lcms_data(filename, 0, 1000000, 0, 10000, polarity_filter="None")
+    ms1_results, number_spectra, msn_results = _gather_lcms_data(filename, 0, 1000000, 0, 10000, polarity_filter="None", top_spectrum_peaks=100000)
     ms1_results.to_feather(output_ms1_filename)
     msn_results.to_feather(output_msn_filename)    
 
 def _gather_lcms_data_cached(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
     ms1_filename, msn_filename = _get_feather_filenames(filename)
 
+    delta_rt = max_rt - min_rt
+
     # We don't see the feather files, so lets just do the classic thing
-    if not os.path.exists(ms1_filename):
+    if not os.path.exists(ms1_filename) or delta_rt < 1:
         print("FEATHER NOT PRESENT")
         return _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
     else:
@@ -142,7 +144,6 @@ def _gather_lcms_data_cached(filename, min_rt, max_rt, min_mz, max_mz, polarity_
     number_spectra = len(set(ms1_results["scan"]))
 
     return ms1_results, number_spectra, msn_results
-
 
 def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium"):
     import time

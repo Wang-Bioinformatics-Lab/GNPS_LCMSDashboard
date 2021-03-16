@@ -45,7 +45,7 @@ def _download_convert_file(usi, temp_folder="temp"):
 
     return return_val
 
-@celery_instance.task(time_limit=480)
+@celery_instance.task(time_limit=480, base=QueueOnce)
 def _convert_file_feather(usi, temp_folder="temp"):
     """
         This function does the serialization of conversion to feather format
