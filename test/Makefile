@@ -1,5 +1,5 @@
 all:
-	pytest --durations=0 test_2d.py test_usi_resolution.py test_xic.py 
+	pytest --durations=0 test_2d.py test_usi_resolution.py test_xic.py -n 8
 
 resolve:
 	pytest test_usi_resolution.py -v

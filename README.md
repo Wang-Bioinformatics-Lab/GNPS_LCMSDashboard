@@ -126,6 +126,9 @@ To run our unit tests,
 
 ```
 cd test
+pip install pytest
+pip install pytest-xdist
+pip install pytest-profiling
 make all
 ```
 
