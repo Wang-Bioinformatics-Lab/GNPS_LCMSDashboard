@@ -320,6 +320,7 @@ def _spectrum_generator(filename, min_rt, max_rt):
                 yield spec
             print("USED INDEX")
         except:
+            run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
             for spec in run:
                 yield spec
             print("USED BRUTEFORCE")
