@@ -2122,7 +2122,6 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
 def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, map_plot_quantization_level="Medium", map_plot_color_scale="Hot_r"):
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
-    print("BEFORE AGGREGATE")
     import time
     start = time.time()
 
