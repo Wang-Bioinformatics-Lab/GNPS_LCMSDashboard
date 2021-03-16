@@ -40,7 +40,29 @@ def _download_convert_file(usi, temp_folder="temp"):
         This function does the serialization of downloading files
     """
 
-    return download._resolve_usi(usi, temp_folder=temp_folder)
+    return_val = download._resolve_usi(usi, temp_folder=temp_folder)
+    _convert_file_feather.delay(usi, temp_folder=temp_folder)
+
+    return return_val
+
+@celery_instance.task(time_limit=480, base=QueueOnce)
+def _convert_file_feather(usi, temp_folder="temp"):
+    """
+        This function does the serialization of conversion to feather format
+    """
+
+    if download._resolve_exists_local(usi, temp_folder=temp_folder):
+        local_filename = os.path.join(temp_folder, download._usi_to_local_filename(usi))
+        ms1_filename, msn_filename = lcms_map._get_feather_filenames(local_filename)
+
+        if os.path.exists(ms1_filename):
+            return
+
+        # Let's do stuff here
+        lcms_map._save_lcms_data_feather(local_filename)
+
+
+    
 
 #################################
 # Compute Data
@@ -48,12 +70,11 @@ def _download_convert_file(usi, temp_folder="temp"):
 @celery_instance.task(time_limit=120)
 def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium", cache=True):
     if cache:
-        _aggregate_lcms_map = memory.cache(lcms_map._aggregate_lcms_map)
-    else:
-        _aggregate_lcms_map = lcms_map._aggregate_lcms_map
+        print("Caching Disabled, because with memory, it takes almost as long to cache the result as it takes to run")
 
-    return _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
-
+    _aggregate_lcms_map = lcms_map._aggregate_lcms_map
+    aggregation, msn_df = _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
+    return aggregation, msn_df.to_dict(orient="records")
 
 @celery_instance.task(time_limit=90)
 def task_tic(input_filename, tic_option="TIC", polarity_filter="None"):
@@ -143,10 +164,12 @@ celery_instance.conf.beat_schedule = {
 
 celery_instance.conf.task_routes = {
     'tasks._download_convert_file': {'queue': 'conversion'},
+    'tasks._convert_file_feather': {'queue': 'conversion'},
     
     'tasks._task_cleanup': {'queue': 'compute'},
 
     'tasks.task_lcms_aggregate': {'queue': 'compute'},
+
     'tasks.task_tic': {'queue': 'compute'},
     'tasks.task_xic': {'queue': 'compute'},
     'tasks.task_featurefinding': {'queue': 'compute'},

@@ -38,6 +38,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo Q Exactive LCMS RAW", href="/?usi=mzspec%3AMSV000086206%3Araw/raw/S_N1.raw&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),
             html.Br(),
+            html.A("Thermo Orbitrap Elite LCMS with MS3", href='/#%7B"usi"%3A%20"mzspec%3AMSV000084754%3Accms_peak/raw/Toronamide_MS3_DDA_2.mzML"%2C%20"usi2"%3A%20""%7D'),
+            html.Br(),
             html.A("Thermo Lumos LCMS RAW", href="/?usi=mzspec:MSV000086729:raw/raw/Identification/UP_Fusion_AcX_SAT_ob_pool_1_NOlist.raw"),
             html.Br(),
             html.A("Sciex LCMS", href="/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None"),

@@ -44,3 +44,10 @@ def test():
     fig = px.imshow(agg, origin='lower', y=[usi], labels={'color':'Log10(abundance)'}, height=600, template="plotly_white")
     fig.write_image("test.png")
     #print(agg.to_dict())
+
+
+def test_agilent():
+    remote_link, local_filename = download._resolve_usi("mzspec:MSV000084060:KM0001")
+    agg_dict, msn_results = lcms_map._aggregate_lcms_map(local_filename, 0, 300, 0, 2000)
+    lcms_map._create_map_fig(agg_dict, msn_results)
+    
