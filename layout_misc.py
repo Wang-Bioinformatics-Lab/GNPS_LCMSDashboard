@@ -232,14 +232,24 @@ ADVANCED_VISUALIZATION_MODAL = [
                                     dcc.Dropdown(
                                         id='map_plot_color_scale',
                                         options=[
+                                            {'label': 'Hot', 'value': 'Hot'},
                                             {'label': 'Hot_r', 'value': 'Hot_r'},
                                             {'label': 'Blues', 'value': 'Blues'},
+                                            {'label': 'Blues_r', 'value': 'Blues_r'},
                                             {'label': 'Sunsetdark', 'value': 'Sunsetdark'},
+                                            {'label': 'Sunsetdark_r', 'value': 'Sunsetdark_r'},
                                             {'label': 'Viridis', 'value': 'Viridis'},
+                                            {'label': 'Viridis_r', 'value': 'Viridis_r'},
                                             {'label': 'Greys', 'value': 'Greys'},
-                                              
+                                            {'label': 'Greys_r', 'value': 'Greys_r'},
+                                            {'label': 'Plotly3', 'value': 'Plotly3'},
+                                            {'label': 'Plotly3_r', 'value': 'Plotly3_r'},
+                                            {'label': 'Aggrnyl', 'value': 'Aggrnyl'},
+                                            {'label': 'Aggrnyl_r', 'value': 'Aggrnyl_r'},
+                                            {'label': 'Jet', 'value': 'Jet'},
+                                            {'label': 'Jet_r', 'value': 'Jet_r'},
                                         ],
-                                        searchable=False,
+                                        searchable=True,
                                         clearable=False,
                                         value="Hot_r",
                                         style={

@@ -535,7 +535,7 @@ DATASELECTION_CARD = [
                                         ],
                                         searchable=False,
                                         clearable=False,
-                                        value="FILE",
+                                        value="MZ",
                                         style={
                                             "width":"50%"
                                         }
@@ -1089,6 +1089,13 @@ INTEGRATION_CARD = [
             dcc.Loading(
                 id="integration-boxplot",
                 children=[html.Div([html.Div(id="loading-output-101")])],
+                type="default",
+            ),
+            html.Br(),
+            html.Br(),
+            dcc.Loading(
+                id="xic-heatmap",
+                children=[html.Div([html.Div(id="loading-output-102")])],
                 type="default",
             ),
         ]
@@ -2607,6 +2614,7 @@ def create_chromatogram_options(usi, usi2):
                 Output('xic-plot', 'config'), 
                 Output("integration-table", "children"), 
                 Output("integration-boxplot", "children"),
+                Output("xic-heatmap", "children"),
                 Output('loading_xic_plot', 'children')
               ],
               [
@@ -2626,8 +2634,9 @@ def create_chromatogram_options(usi, usi2):
                   Input('polarity_filtering', 'value'),
                   Input('image_export_format', 'value'), 
                   Input("plot_theme", "value"),
+                  Input('map_plot_color_scale', 'value'),
               ])
-def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, chromatogram_list, polarity_filter, export_format, plot_theme):
+def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, chromatogram_list, polarity_filter, export_format, plot_theme, map_plot_color_scale):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     print("TRIGGERED XIC PLOT", triggered_id, file=sys.stderr)
 
@@ -2751,7 +2760,6 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     # Making these scatter plots into lines
     fig.update_traces(mode='lines')
 
-
     # Plotting the MS2 on the XIC
     if len(usi_list) == 1 and len(all_xic_values) == 1:
         try:
@@ -2789,11 +2797,48 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
         box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", points="all", height=box_height, boxmode="overlay", template=plot_theme)
         box_fig.update_traces(pointpos=0)
-        box_graph = dcc.Graph(figure=box_fig, config=graph_config)
+        box_graph = dcc.Graph(figure=box_fig, config=graph_config)        
     except:
         pass
 
-    return [fig, graph_config, table_graph, box_graph, dash.no_update]
+    xic_heatmap_graph = dash.no_update
+
+    # Plotting the XIC Heatmap
+    if len(all_xic_values) > 0:
+        xic_heatmap_graph_list = []
+        all_xic_targets = list(set(merged_df_long["variable"]))
+        all_xic_targets.sort()
+
+        for xic_target in all_xic_targets:
+            try:
+                filtered_df_long = merged_df_long[merged_df_long["variable"] == xic_target]
+                all_usi_list = list(set(filtered_df_long["USI"]))
+                filtered_df_long["USI"] = filtered_df_long["USI"].apply(lambda x: all_usi_list.index(x))
+
+                cvs = ds.Canvas(plot_width=50, plot_height=len(all_usi_list))
+                agg = cvs.points(filtered_df_long, 'rt', 'USI', agg=ds.sum("value"))
+
+                # Shortening the actual name of the file
+                all_usi_list = [download._get_usi_display_filename(x) for x in all_usi_list]
+
+                # Clipping
+                import numpy as np
+                min_value = agg.min().values
+                agg.values = np.nan_to_num(agg.values, nan=min_value)
+                agg.values = np.clip(agg.values, min_value, 10000000000000000)
+                #agg.values = np.log10(agg.values)
+
+                xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Log10(abundance)'}, height=200 + 25 * len(all_usi_list), template=plot_theme, title='XIC Heatmap - {} m/z'.format(xic_target),
+                                            color_continuous_scale=map_plot_color_scale)
+                xic_heatmap_graph_list.append(dcc.Graph(figure=xic_heatmap_fig, config=graph_config))
+            except:
+                pass
+
+        if len(xic_heatmap_graph_list) > 0:
+            xic_heatmap_graph = xic_heatmap_graph_list
+
+
+    return [fig, graph_config, table_graph, box_graph, xic_heatmap_graph, dash.no_update]
 
 
 @app.callback([
