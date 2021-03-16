@@ -21,4 +21,5 @@ def test_2d_mapping_many():
     for record in df.to_dict(orient="records"):
         print(record["usi"])
         remote_link, local_filename = download._resolve_usi(record["usi"])
-        lcms_map._create_map_fig(local_filename)
+        agg_dict, msn_results = lcms_map._aggregate_lcms_map(local_filename, 0, 300, 0, 2000)
+        lcms_map._create_map_fig(agg_dict, msn_results)
