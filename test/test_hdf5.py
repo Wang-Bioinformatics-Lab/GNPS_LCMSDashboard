@@ -128,12 +128,14 @@ def test_load_mzml():
 
     ms1_df = pd.DataFrame(ms1_results)
 
+    width = 500
+    height = 500
+    cvs = ds.Canvas(plot_width=width, plot_height=height)
+    agg = cvs.points(ms1_df,'rt','mz', agg=ds.sum("i"))
+
     print("TIMING", time.time() - start)
 
-    # width = 500
-    # height = 500
-    # cvs = ds.Canvas(plot_width=width, plot_height=height)
-    # agg = cvs.points(ms1_df,'rt','mz', agg=ds.sum("i"))
+    
 
     print(ms1_df)
 
@@ -143,17 +145,17 @@ def test_load_h5():
     ms1_df = pd.read_hdf("{}.h5".format(FILENAME_PREFIX), key="ms1_df", where=[f'ms1_rt>{RT_MIN}', f'ms1_rt<{RT_MAX}', 'ms1_mz<500', 'ms1_mz>300', 'ms1_polarity=Positive'], columns=["ms1_rt", "ms1_mz", "ms1_i"])
     #ms1_df = pd.read_hdf("{}.h5".format(FILENAME_PREFIX), "ms1_df", columns=["ms1_rt", "ms1_mz", "ms1_i"])
 
+    width = 500
+    height = 500
+    cvs = ds.Canvas(plot_width=width, plot_height=height)
+    agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
+
     print("TIMING", time.time() - start)
 
     #ms1_df = dd.from_pandas(ms1_df, npartitions=4)
     #ms1_df.persist()
     
-
-
-    width = 500
-    height = 500
-    cvs = ds.Canvas(plot_width=width, plot_height=height)
-    agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
+    
 
     print(ms1_df)
 
@@ -170,12 +172,12 @@ def test_load_sqlite():
     ms1_df = pd.read_sql(f"SELECT * FROM ms1_df WHERE ms1_rt > {RT_MIN} AND ms1_rt < {RT_MAX} AND ms1_mz < 500 AND ms1_mz > 300 AND ms1_polarity='Positive'", db)
     #ms1_df = pd.read_sql("SELECT * FROM ms1_df", db)
 
-    print("TIMING", time.time() - start)
+    width = 500
+    height = 500
+    cvs = ds.Canvas(plot_width=width, plot_height=height)
+    agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
 
-    # width = 500
-    # height = 500
-    # cvs = ds.Canvas(plot_width=width, plot_height=height)
-    # agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
+    print("TIMING", time.time() - start)
 
     print(ms1_df)
 
@@ -183,6 +185,11 @@ def test_load_pickle():
     start = time.time()
     ms1_df = pd.read_pickle("{}.pickle".format(FILENAME_PREFIX))
     ms1_df = ms1_df[(ms1_df["ms1_rt"] > RT_MIN) & (ms1_df["ms1_rt"] < RT_MAX) & (ms1_df["ms1_mz"] < 500) & (ms1_df["ms1_mz"] > 300)]
+
+    width = 500
+    height = 500
+    cvs = ds.Canvas(plot_width=width, plot_height=height)
+    agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
 
     print("TIMING", time.time() - start)
 
@@ -192,6 +199,11 @@ def test_load_feather():
     start = time.time()
     ms1_df = pd.read_feather("{}.feather".format(FILENAME_PREFIX))
     ms1_df = ms1_df[(ms1_df["ms1_rt"] > RT_MIN) & (ms1_df["ms1_rt"] < RT_MAX) & (ms1_df["ms1_mz"] < 500) & (ms1_df["ms1_mz"] > 300)]
+
+    width = 500
+    height = 500
+    cvs = ds.Canvas(plot_width=width, plot_height=height)
+    agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
 
     print("TIMING", time.time() - start)
 
