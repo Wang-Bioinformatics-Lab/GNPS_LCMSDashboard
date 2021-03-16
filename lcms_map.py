@@ -174,12 +174,14 @@ def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
     cvs = ds.Canvas(plot_width=width, plot_height=height)
     agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 
-    end_time = time.time()
-    print("Datashader Agg", end_time - start_time)
+    print("Datashader Agg", time.time() - start_time)
+    start_time = time.time()
 
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
     agg_dict = agg.to_dict()
+
+    print("Datashader Post Processing", time.time() - start_time)
 
     return agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan
 

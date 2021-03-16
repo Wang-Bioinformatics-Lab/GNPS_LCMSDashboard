@@ -2123,6 +2123,8 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     print("BEFORE AGGREGATE")
+    import time
+    start = time.time()
 
     if _is_worker_up():
         print("WORKER AGGREGATE")
@@ -2132,12 +2134,15 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
         while(1):
             if result.ready():
                 break
-            sleep(0.25)
+            sleep(0.1)
         agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = result.get()
     else:
         print("CALL AGGREGATE")
         agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level, cache=False)
 
+    print("GETTING LCMS AGG", time.time() - start, file=sys.stderr, flush=True)
+
+    start = time.time()
     lcms_fig = lcms_map._create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, 
                                             map_selection=map_selection, 
                                             show_ms2_markers=show_ms2_markers, 
@@ -2145,6 +2150,7 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
                                             highlight_box=highlight_box,
                                             color_scale=map_plot_color_scale)
 
+    print("DRAWING LCMS MAP", time.time() - start, file=sys.stderr, flush=True)
     return lcms_fig
 
 def _generate_qrcode_img(text_string):

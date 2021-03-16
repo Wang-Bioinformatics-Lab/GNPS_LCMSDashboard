@@ -48,12 +48,10 @@ def _download_convert_file(usi, temp_folder="temp"):
 @celery_instance.task(time_limit=120)
 def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium", cache=True):
     if cache:
-        _aggregate_lcms_map = memory.cache(lcms_map._aggregate_lcms_map)
-    else:
-        _aggregate_lcms_map = lcms_map._aggregate_lcms_map
+        print("Caching Disabled, because with memory, it takes almost as long to cache the result as it takes to run")
 
+    _aggregate_lcms_map = lcms_map._aggregate_lcms_map
     return _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
-
 
 @celery_instance.task(time_limit=90)
 def task_tic(input_filename, tic_option="TIC", polarity_filter="None"):
@@ -147,6 +145,7 @@ celery_instance.conf.task_routes = {
     'tasks._task_cleanup': {'queue': 'compute'},
 
     'tasks.task_lcms_aggregate': {'queue': 'compute'},
+
     'tasks.task_tic': {'queue': 'compute'},
     'tasks.task_xic': {'queue': 'compute'},
     'tasks.task_featurefinding': {'queue': 'compute'},
