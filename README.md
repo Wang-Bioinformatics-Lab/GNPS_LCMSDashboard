@@ -120,6 +120,14 @@ Since we utilize a USI to find datasets, there are a limited number of locations
 1. USI Specification that denotes what the resource is and how to get data
 1. Update the code in ```download.py```, specifically in ```_resolve_usi_remotelink``` to implement how to get the remote URL for your new USI. 
 
+### Testing
+
+To run our unit tests, 
+
+```
+cd test
+make all
+```
 
 ### Useful links for developers
 **Dash and plotly documentations**
