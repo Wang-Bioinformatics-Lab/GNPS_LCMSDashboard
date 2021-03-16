@@ -120,6 +120,8 @@ def _save_lcms_data_feather(filename):
     output_ms1_filename, output_msn_filename = _get_feather_filenames(filename)
     
     ms1_results, number_spectra, msn_results = _gather_lcms_data(filename, 0, 1000000, 0, 10000, polarity_filter="None", top_spectrum_peaks=100000)
+    ms1_results = ms1_results.sort_values(by='i', ascending=False).reset_index()
+
     ms1_results.to_feather(output_ms1_filename)
     msn_results.to_feather(output_msn_filename)    
 
@@ -137,6 +139,7 @@ def _gather_lcms_data_cached(filename, min_rt, max_rt, min_mz, max_mz, polarity_
 
     ms1_results = pd.read_feather(ms1_filename)
     ms1_results = ms1_results[(ms1_results["rt"] > min_rt) & (ms1_results["rt"] < max_rt) & (ms1_results["mz"] > min_mz) & (ms1_results["mz"] < max_mz)]
+    ms1_results = ms1_results.groupby('scan').head(100).reset_index(drop=True) # Getting the top 100 peaks per scan
 
     msn_results = pd.read_feather(msn_filename)
     msn_results = msn_results[(msn_results["rt"] > min_rt) & (msn_results["rt"] < max_rt) & (msn_results["precursor_mz"] > min_mz) & (msn_results["precursor_mz"] < max_mz)]
