@@ -10,9 +10,11 @@ import ms2
 import download
 
 def test_chromatograms():
-    local_filename = "std1_022721.mzML"
+    usi = "mzspec:MSV000087058:peak/peak/std1_022721.mzML"
+    remote_link, local_filename = download._resolve_usi(usi)
     chrom_list = xic.chromatograms_list(local_filename)
     xic_df = xic.get_chromatogram(local_filename, chrom_list[0])
 
-    print(xic_df)
+    assert(len(xic_df) > 300)
+
 
