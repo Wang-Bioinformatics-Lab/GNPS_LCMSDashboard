@@ -51,15 +51,15 @@ def _convert_file_feather(usi, temp_folder="temp"):
         This function does the serialization of conversion to feather format
     """
 
-    if _resolve_exists_local(usi, temp_folder=temp_folder):
-        local_filename = download._usi_to_local_filename(usi)
-        feather_filename = os.path.join(temp_folder, local_filaname, ".feather")
+    if download._resolve_exists_local(usi, temp_folder=temp_folder):
+        local_filename = os.path.join(temp_folder, download._usi_to_local_filename(usi))
+        ms1_filename, msn_filename = lcms_map._get_feather_filenames(local_filename)
 
-        if os.path.exists(feather_filename):
+        if os.path.exists(ms1_filename):
             return
 
         # Let's do stuff here
-        print(feather_filename)
+        lcms_map._save_lcms_data_feather(local_filename)
 
 
     
@@ -73,7 +73,8 @@ def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
         print("Caching Disabled, because with memory, it takes almost as long to cache the result as it takes to run")
 
     _aggregate_lcms_map = lcms_map._aggregate_lcms_map
-    return _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
+    aggregation, msn_df = _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
+    return aggregation, msn_df.to_dict(orient="records")
 
 @celery_instance.task(time_limit=90)
 def task_tic(input_filename, tic_option="TIC", polarity_filter="None"):

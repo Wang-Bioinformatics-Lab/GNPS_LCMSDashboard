@@ -17,7 +17,8 @@ specific_test:
 	#pytest --durations=0 test_usi_resolution.py::test_raw_filename -v --capture=tee-sys
 	#pytest --durations=0 test.py::test_tic_fast -v --capture=tee-sys
 	#pytest --durations=0 test_featurefinding.py::test_mzmine -v --capture=tee-sys
-	pytest --durations=0 test.py::test_ms2_spectrum -v --capture=tee-sys
+	#pytest --durations=0 test.py::test_ms2_spectrum -v --capture=tee-sys
+	pytest --durations=0 test_2d.py::test_2d_mapping -v --capture=tee-sys
 
 
 # Testing performance with hdf5

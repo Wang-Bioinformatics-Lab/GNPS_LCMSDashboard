@@ -2135,15 +2135,16 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
             if result.ready():
                 break
             sleep(0.1)
-        agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = result.get()
+        agg_dict, msn_results = result.get()
+        msn_results = pd.DataFrame(msn_results) # This comes as a list, due to serialization
     else:
         print("CALL AGGREGATE")
-        agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level, cache=False)
+        agg_dict, msn_results = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level, cache=False)
 
     print("GETTING LCMS AGG", time.time() - start, file=sys.stderr, flush=True)
 
     start = time.time()
-    lcms_fig = lcms_map._create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, 
+    lcms_fig = lcms_map._create_map_fig(agg_dict, msn_results, 
                                             map_selection=map_selection, 
                                             show_ms2_markers=show_ms2_markers, 
                                             polarity_filter=polarity_filter, 
