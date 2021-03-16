@@ -12,10 +12,10 @@ import lcms_map
 from utils import _get_scan_polarity
 
 FILENAME_PREFIX = "QC_0"
-#FILENAME_PREFIX = "01308_H02_P013387_B00_N16_R1"
+FILENAME_PREFIX = "01308_H02_P013387_B00_N16_R1"
 
 RT_MIN = 1
-RT_MAX = 4
+RT_MAX = 5
 
 def test_write():
     print("X")
@@ -109,6 +109,11 @@ def test_write():
     #db.execute("CREATE INDEX ms1_polarity ON ms1_df(ms1_polarity)") 
     db.close()
 
+    # Saving the pickle
+    ms1_df.to_pickle("{}.pickle".format(FILENAME_PREFIX))
+
+    ms1_df.to_feather("{}.feather".format(FILENAME_PREFIX))
+
     # with h5py.File('QC_0.mz5','r') as hf:
     #     Datasetnames=hf.keys()
     #     print(Datasetnames)
@@ -130,7 +135,7 @@ def test_load_mzml():
     # cvs = ds.Canvas(plot_width=width, plot_height=height)
     # agg = cvs.points(ms1_df,'rt','mz', agg=ds.sum("i"))
 
-    #print(ms1_df)
+    print(ms1_df)
 
 def test_load_h5():
     start = time.time()
@@ -172,4 +177,22 @@ def test_load_sqlite():
     # cvs = ds.Canvas(plot_width=width, plot_height=height)
     # agg = cvs.points(ms1_df,'ms1_rt','ms1_mz', agg=ds.sum("ms1_i"))
 
-    #print(ms1_df)
+    print(ms1_df)
+
+def test_load_pickle():
+    start = time.time()
+    ms1_df = pd.read_pickle("{}.pickle".format(FILENAME_PREFIX))
+    ms1_df = ms1_df[(ms1_df["ms1_rt"] > RT_MIN) & (ms1_df["ms1_rt"] < RT_MAX) & (ms1_df["ms1_mz"] < 500) & (ms1_df["ms1_mz"] > 300)]
+
+    print("TIMING", time.time() - start)
+
+    print(ms1_df)
+
+def test_load_feather():
+    start = time.time()
+    ms1_df = pd.read_feather("{}.feather".format(FILENAME_PREFIX))
+    ms1_df = ms1_df[(ms1_df["ms1_rt"] > RT_MIN) & (ms1_df["ms1_rt"] < RT_MAX) & (ms1_df["ms1_mz"] < 500) & (ms1_df["ms1_mz"] > 300)]
+
+    print("TIMING", time.time() - start)
+
+    print(ms1_df)

@@ -32,3 +32,9 @@ read_hdf5:
 
 read_sqlite:
 	pytest test_hdf5.py::test_load_sqlite -vv --capture=tee-sys
+
+read_pickle:
+	pytest test_hdf5.py::test_load_pickle -vv --capture=tee-sys
+	
+read_feather:
+	pytest test_hdf5.py::test_load_feather -vv --capture=tee-sys
