@@ -25,7 +25,7 @@ write_compressed:
 	pytest test_hdf5.py::test_write -vv --capture=tee-sys
 
 read_mzml:
-	pytest test_hdf5.py::test_load_mzml -vv --capture=tee-sys
+	pytest test_hdf5.py::test_load_mzml -vv --capture=tee-sys --profile --profile-svg
 
 read_hdf5:
 	pytest test_hdf5.py::test_load_h5 -vv --capture=tee-sys

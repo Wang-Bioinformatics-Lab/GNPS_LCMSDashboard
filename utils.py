@@ -266,11 +266,11 @@ def _determine_rendering_bounds(map_selection):
     return min_rt, max_rt, min_mz, max_mz
 
 # Binary Search, returns target
-def _find_lcms_rt(filename, rt_query):
-    run = pymzml.run.Reader(filename, MS_precisions=MS_precisions)
+def _find_lcms_rt(run, rt_query):
+    spectrum_count = run.get_spectrum_count()
 
     s = 0
-    e = run.get_spectrum_count()
+    e = spectrum_count
 
     while True:
         jump_point = int((e + s) / 2)
@@ -280,7 +280,7 @@ def _find_lcms_rt(filename, rt_query):
         if jump_point == 0:
             break
         
-        if jump_point == run.get_spectrum_count():
+        if jump_point == spectrum_count:
             break
 
         if s == e:
@@ -291,9 +291,11 @@ def _find_lcms_rt(filename, rt_query):
 
         spec = run[ jump_point ]
 
-        if spec.scan_time_in_minutes() < rt_query:
+        rt = spec.scan_time_in_minutes()
+
+        if rt < rt_query:
             s = jump_point
-        elif spec.scan_time_in_minutes() > rt_query:
+        elif rt > rt_query:
             e = jump_point
         else:
             break
@@ -308,11 +310,10 @@ def _spectrum_generator(filename, min_rt, max_rt):
     if min_rt <= 0 and max_rt > 1000:
         for spec in run:
             yield spec
-
     else:
         try:
-            min_rt_index = _find_lcms_rt(filename, min_rt) # These are inclusive on left
-            max_rt_index = _find_lcms_rt(filename, max_rt) + 1 # Exclusive on the right
+            min_rt_index = _find_lcms_rt(run, min_rt) # These are inclusive on left
+            max_rt_index = _find_lcms_rt(run, max_rt) + 1 # Exclusive on the right
 
             for spec_index in tqdm(range(min_rt_index, max_rt_index)):
                 spec = run[spec_index]

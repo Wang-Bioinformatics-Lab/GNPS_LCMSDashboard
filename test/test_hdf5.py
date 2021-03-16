@@ -11,11 +11,11 @@ sys.path.insert(0, "..")
 import lcms_map
 from utils import _get_scan_polarity
 
-#FILENAME_PREFIX = "QC_0"
-FILENAME_PREFIX = "01308_H02_P013387_B00_N16_R1"
+FILENAME_PREFIX = "QC_0"
+#FILENAME_PREFIX = "01308_H02_P013387_B00_N16_R1"
 
-MZ_MIN = 1
-MZ_MAX = 4
+RT_MIN = 1
+RT_MAX = 4
 
 def test_write():
     print("X")
@@ -119,7 +119,7 @@ def test_write():
 
 def test_load_mzml():
     start = time.time()
-    ms1_results, ms2_results, ms3_results = lcms_map._gather_lcms_data("{}.mzML".format(FILENAME_PREFIX), MZ_MIN, MZ_MAX, 300, 500, polarity_filter="Positive")
+    ms1_results, ms2_results, ms3_results = lcms_map._gather_lcms_data("{}.mzML".format(FILENAME_PREFIX), RT_MIN, RT_MAX, 300, 500, polarity_filter="None")
 
     ms1_df = pd.DataFrame(ms1_results)
 
@@ -130,12 +130,12 @@ def test_load_mzml():
     # cvs = ds.Canvas(plot_width=width, plot_height=height)
     # agg = cvs.points(ms1_df,'rt','mz', agg=ds.sum("i"))
 
-    print(ms1_df)
+    #print(ms1_df)
 
 def test_load_h5():
     start = time.time()
 
-    ms1_df = pd.read_hdf("{}.h5".format(FILENAME_PREFIX), key="ms1_df", where=[f'ms1_rt>{MZ_MIN}', f'ms1_rt<{MZ_MAX}', 'ms1_mz<500', 'ms1_mz>300', 'ms1_polarity=Positive'], columns=["ms1_rt", "ms1_mz", "ms1_i"])
+    ms1_df = pd.read_hdf("{}.h5".format(FILENAME_PREFIX), key="ms1_df", where=[f'ms1_rt>{RT_MIN}', f'ms1_rt<{RT_MAX}', 'ms1_mz<500', 'ms1_mz>300', 'ms1_polarity=Positive'], columns=["ms1_rt", "ms1_mz", "ms1_i"])
     #ms1_df = pd.read_hdf("{}.h5".format(FILENAME_PREFIX), "ms1_df", columns=["ms1_rt", "ms1_mz", "ms1_i"])
 
     print("TIMING", time.time() - start)
@@ -162,7 +162,7 @@ def test_load_sqlite():
     #for row in cur.execute("SELECT * FROM ms1_df WHERE ms1_rt > 1.0 AND ms1_rt < 1.5 AND ms1_mz < 500 AND ms1_mz > 300 AND ms1_polarity='Positive'"):
     #    pass
 
-    ms1_df = pd.read_sql(f"SELECT * FROM ms1_df WHERE ms1_rt > {MZ_MIN} AND ms1_rt < {MZ_MAX} AND ms1_mz < 500 AND ms1_mz > 300 AND ms1_polarity='Positive'", db)
+    ms1_df = pd.read_sql(f"SELECT * FROM ms1_df WHERE ms1_rt > {RT_MIN} AND ms1_rt < {RT_MAX} AND ms1_mz < 500 AND ms1_mz > 300 AND ms1_polarity='Positive'", db)
     #ms1_df = pd.read_sql("SELECT * FROM ms1_df", db)
 
     print("TIMING", time.time() - start)

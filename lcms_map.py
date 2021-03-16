@@ -11,6 +11,7 @@ from utils import _get_scan_polarity
 import plotly.express as px
 import plotly.graph_objects as go 
 import xarray
+import time
 
 import utils
 
@@ -33,15 +34,15 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
     # Iterating through all data with a custom scan iterator
     # It handles custom bounds on RT
-
     for spec in _spectrum_generator(filename, min_rt, max_rt):
         try:
+            rt = spec.scan_time_in_minutes()
             # Still waiting for the window
-            if spec.scan_time_in_minutes() < min_rt:
+            if rt < min_rt:
                 continue
             
             # We've passed the window
-            if spec.scan_time_in_minutes() > max_rt:            
+            if rt > max_rt:            
                 break
         except:
             pass
@@ -55,9 +56,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
         
         if spec.ms_level == 1:
             spectrum_index += 1
-
             number_spectra += 1
-            rt = spec.scan_time_in_minutes()
 
             try:
                 # Filtering peaks by mz
