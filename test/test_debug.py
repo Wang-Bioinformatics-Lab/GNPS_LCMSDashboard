@@ -18,10 +18,15 @@ import download
 #     remote_link, local_filename = download._resolve_usi(usi, cleanup=False)
 #     print(remote_link, local_filename)
 
-def test_chromatograms():
-    local_filename = "std1_022721.mzML"
-    chrom_list = xic.chromatograms_list(local_filename)
-    xic_df = xic.get_chromatogram(local_filename, chrom_list[0])
+# def test_chromatograms():
+#     local_filename = "std1_022721.mzML"
+#     chrom_list = xic.chromatograms_list(local_filename)
+#     xic_df = xic.get_chromatogram(local_filename, chrom_list[0])
 
-    print(xic_df)
+#     print(xic_df)
 
+def test_agilent():
+    remote_link, local_filename = download._resolve_usi("mzspec:MSV000084060:KM0001")
+    agg_dict, msn_results = lcms_map._aggregate_lcms_map(local_filename, 0, 300, 0, 2000)
+    lcms_map._create_map_fig(agg_dict, msn_results)
+    

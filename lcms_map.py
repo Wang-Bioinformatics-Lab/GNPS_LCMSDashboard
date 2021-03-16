@@ -11,10 +11,11 @@ from utils import _get_scan_polarity
 import plotly.express as px
 import plotly.graph_objects as go 
 import xarray
+import time
 
 import utils
 
-def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
+def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", top_spectrum_peaks=100):
     all_mz = []
     all_rt = []
     all_i = []
@@ -23,25 +24,22 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
     spectrum_index = 0
     number_spectra = 0
 
-    all_ms2_mz = []
-    all_ms2_rt = []
-    all_ms2_scan = []
-
-    all_ms3_mz = []
-    all_ms3_rt = []
-    all_ms3_scan = []
+    all_msn_mz = []
+    all_msn_rt = []
+    all_msn_scan = []
+    all_msn_level = []
 
     # Iterating through all data with a custom scan iterator
     # It handles custom bounds on RT
-
     for spec in _spectrum_generator(filename, min_rt, max_rt):
+        rt = spec.scan_time_in_minutes()
         try:
             # Still waiting for the window
-            if spec.scan_time_in_minutes() < min_rt:
+            if rt < min_rt:
                 continue
             
             # We've passed the window
-            if spec.scan_time_in_minutes() > max_rt:            
+            if rt > max_rt:            
                 break
         except:
             pass
@@ -55,9 +53,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
         
         if spec.ms_level == 1:
             spectrum_index += 1
-
             number_spectra += 1
-            rt = spec.scan_time_in_minutes()
 
             try:
                 # Filtering peaks by mz
@@ -71,7 +67,7 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
                 # Sorting by intensity
                 peaks = peaks[peaks[:,1].argsort()]
-                peaks = peaks[-100:]
+                peaks = peaks[-1 * top_spectrum_peaks:]
 
                 mz, intensity = zip(*peaks)
 
@@ -83,77 +79,83 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
             except:
                 pass
-        elif spec.ms_level == 2:
+        elif spec.ms_level > 1:
             try:
-                ms2_mz = spec.selected_precursors[0]["mz"]
-                if ms2_mz < min_mz or ms2_mz > max_mz:
+                msn_mz = spec.selected_precursors[0]["mz"]
+                if msn_mz < min_mz or msn_mz > max_mz:
                     continue
-                all_ms2_mz.append(ms2_mz)
-                all_ms2_rt.append(spec.scan_time_in_minutes())
-                all_ms2_scan.append(spec.ID)
+                all_msn_mz.append(msn_mz)
+                all_msn_rt.append(rt)
+                all_msn_scan.append(spec.ID)
+                all_msn_level.append(spec.ms_level)
             except:
                 pass
-        elif spec.ms_level == 3:
-            try:
-                ms3_mz = spec.selected_precursors[0]["mz"]
-                if ms3_mz < min_mz or ms3_mz > max_mz:
-                    continue
-                all_ms3_mz.append(ms3_mz)
-                all_ms3_rt.append(spec.scan_time_in_minutes())
-                all_ms3_scan.append(spec.ID)
-            except:
-                pass
-
+        
     ms1_results = {}
     ms1_results["mz"] = all_mz
     ms1_results["rt"] = all_rt
     ms1_results["i"] = all_i
     ms1_results["scan"] = all_scan
     ms1_results["index"] = all_index
-    ms1_results["number_spectra"] = number_spectra
 
-    ms2_results = {}
-    ms2_results["all_ms2_mz"] = all_ms2_mz
-    ms2_results["all_ms2_rt"] = all_ms2_rt
-    ms2_results["all_ms2_scan"] = all_ms2_scan
+    msn_results = {}
+    msn_results["precursor_mz"] = all_msn_mz
+    msn_results["rt"] = all_msn_rt
+    msn_results["scan"] = all_msn_scan
+    msn_results["level"] = all_msn_level
 
-    ms3_results = {}
-    ms3_results["all_ms3_mz"] = all_ms3_mz
-    ms3_results["all_ms3_rt"] = all_ms3_rt
-    ms3_results["all_ms3_scan"] = all_ms3_scan
+    ms1_results = pd.DataFrame(ms1_results)
+    msn_results = pd.DataFrame(msn_results)
 
-    return ms1_results, ms2_results, ms3_results
+    return ms1_results, number_spectra, msn_results
+
+def _get_feather_filenames(filename):
+    output_ms1_filename = filename + ".ms1.feather"
+    output_msn_filename = filename + ".msn.feather"
+
+    return output_ms1_filename, output_msn_filename
+
+# These are caching layers for fast loading
+def _save_lcms_data_feather(filename):
+    output_ms1_filename, output_msn_filename = _get_feather_filenames(filename)
+    
+    ms1_results, number_spectra, msn_results = _gather_lcms_data(filename, 0, 1000000, 0, 10000, polarity_filter="None", top_spectrum_peaks=100000)
+    ms1_results = ms1_results.sort_values(by='i', ascending=False).reset_index()
+
+    ms1_results.to_feather(output_ms1_filename)
+    msn_results.to_feather(output_msn_filename)    
+
+def _gather_lcms_data_cached(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None"):
+    ms1_filename, msn_filename = _get_feather_filenames(filename)
+
+    delta_rt = max_rt - min_rt
+
+    # We don't see the feather files, so lets just do the classic thing
+    if not os.path.exists(ms1_filename) or delta_rt < 1:
+        print("FEATHER NOT PRESENT")
+        return _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+    else:
+        print("FEATHER PRESENT")
+
+    ms1_results = pd.read_feather(ms1_filename)
+    ms1_results = ms1_results[(ms1_results["rt"] > min_rt) & (ms1_results["rt"] < max_rt) & (ms1_results["mz"] > min_mz) & (ms1_results["mz"] < max_mz)]
+    ms1_results = ms1_results.groupby('scan').head(100).reset_index(drop=True) # Getting the top 100 peaks per scan
+
+    msn_results = pd.read_feather(msn_filename)
+    msn_results = msn_results[(msn_results["rt"] > min_rt) & (msn_results["rt"] < max_rt) & (msn_results["precursor_mz"] > min_mz) & (msn_results["precursor_mz"] < max_mz)]
+
+    number_spectra = len(set(ms1_results["scan"]))
+
+    return ms1_results, number_spectra, msn_results
 
 def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium"):
     import time
     start_time = time.time()
-    ms1_results, ms2_results, ms3_results = _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
+    ms1_results, number_spectra, msn_results = _gather_lcms_data_cached(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter)
     end_time = time.time()
     print("READ FILE", end_time - start_time)
 
     start_time = time.time()
-
-    all_mz = ms1_results["mz"]
-    all_rt = ms1_results["rt"]
-    all_i = ms1_results["i"]
-    all_scan = ms1_results["scan"]
-    all_index = ms1_results["index"]
-    number_spectra = ms1_results["number_spectra"]
-
-    all_ms2_mz = ms2_results["all_ms2_mz"]
-    all_ms2_rt = ms2_results["all_ms2_rt"]
-    all_ms2_scan = ms2_results["all_ms2_scan"]
-
-    all_ms3_mz = ms3_results["all_ms3_mz"]
-    all_ms3_rt = ms3_results["all_ms3_rt"]
-    all_ms3_scan = ms3_results["all_ms3_scan"]
-            
-    df = pd.DataFrame()
-    df["mz"] = all_mz
-    df["i"] = all_i
-    df["rt"] = all_rt
-    df["scan"] = all_scan
-    df["index"] = all_index
 
     min_size = min(number_spectra, int(max_mz - min_mz))
     width = max(min(min_size*4, 500), 20)
@@ -170,24 +172,26 @@ def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
         width = int(width * 2)
         height = int(height * 2)
 
-    print("Datashader Len", len(df))
+    print("Datashader Len", len(ms1_results))
 
     cvs = ds.Canvas(plot_width=width, plot_height=height)
-    agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
+    agg = cvs.points(ms1_results,'rt','mz', agg=ds.sum("i"))
 
-    end_time = time.time()
-    print("Datashader Agg", end_time - start_time)
+    print("Datashader Agg", time.time() - start_time)
+    start_time = time.time()
 
     zero_mask = agg.values == 0
     agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
     agg_dict = agg.to_dict()
 
-    return agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan
+    print("Datashader Post Processing", time.time() - start_time)
+
+    return agg_dict, msn_results
 
 
 # Creates the figure for map plot
 # overlay_data is a dataframe that includes the overlay, rt and mz are the expected columns
-def _create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, all_ms3_rt, all_ms3_scan, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, color_scale="Hot_r"):
+def _create_map_fig(agg_dict, msn_results, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, color_scale="Hot_r"):
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     agg = xarray.DataArray.from_dict(agg_dict)
@@ -201,19 +205,26 @@ def _create_map_fig(agg_dict, all_ms2_mz, all_ms2_rt, all_ms2_scan, all_ms3_mz, 
     fig.update_xaxes(showline=True, linewidth=1, linecolor='black', showgrid=False)
     if max_rt < 100000:
         fig.update_xaxes(range=[min_rt, max_rt])
+
+    if len(msn_results) > 0:
+        ms2_results = msn_results[msn_results["level"] == 2]
+        ms3_results = msn_results[msn_results["level"] == 3]
+    else:
+        ms2_results = pd.DataFrame()
+        ms3_results = pd.DataFrame()
         
     too_many_ms2 = False
     MAX_MS2 = 1000000
-    if len(all_ms2_scan) > MAX_MS2 or len(all_ms3_scan) > MAX_MS2:
-        too_many_ms2 = True
-
-    if show_ms2_markers is True and too_many_ms2 is False:
-        scatter_fig = go.Scattergl(x=all_ms2_rt, y=all_ms2_mz, mode='markers', customdata=all_ms2_scan, marker=dict(color='blue', size=5, symbol="x"), name="MS2s")
+    if len(ms2_results) > MAX_MS2 or len(ms3_results) > MAX_MS2:
+       too_many_ms2 = True
+    
+    if show_ms2_markers is True and too_many_ms2 is False and len(ms2_results) > 0:
+        scatter_fig = go.Scattergl(x=ms2_results["rt"], y=ms2_results["precursor_mz"], mode='markers', customdata=ms2_results["scan"], marker=dict(color='blue', size=5, symbol="x"), name="MS2s")
         fig.add_trace(scatter_fig)
 
-        if len(all_ms3_scan) > 0:
-            scatter_ms3_fig = go.Scatter(x=all_ms3_rt, y=all_ms3_mz, mode='markers', customdata=all_ms3_scan, marker=dict(color='green', size=5, symbol="x"), name="MS3s")
-            fig.add_trace(scatter_ms3_fig)
+    if show_ms2_markers is True and too_many_ms2 is False and len(ms3_results) > 0:
+        scatter_ms3_fig = go.Scatter(x=ms3_results["rt"], y=ms3_results["precursor_mz"], mode='markers', customdata=ms3_results["scan"], marker=dict(color='green', size=5, symbol="x"), name="MS3s")
+        fig.add_trace(scatter_ms3_fig)
 
     if highlight_box is not None:
         print("ADDING HIGHLIGHT BOX")

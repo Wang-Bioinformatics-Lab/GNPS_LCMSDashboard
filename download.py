@@ -460,3 +460,4 @@ def _convert_cdf_to_mzML(input_cdf, output_mzML):
         os.rename(temp_filename, output_mzML)
     except:
         pass
+
