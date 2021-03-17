@@ -2804,7 +2804,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     xic_heatmap_graph = dash.no_update
 
     # Plotting the XIC Heatmap
-    if len(all_xic_values) > 0:
+    if len(all_xic_values) > 0 or len(chromatogram_list) > 0:
         xic_heatmap_graph_list = []
         all_xic_targets = list(set(merged_df_long["variable"]))
         all_xic_targets.sort()
