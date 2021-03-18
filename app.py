@@ -2126,7 +2126,7 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, map_plot_quantization_level="Medium", map_plot_color_scale="Hot_r"):
+def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, map_plot_quantization_level="Medium", map_plot_color_scale="Hot_r", template="plotly_light"):
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     import time
@@ -2155,7 +2155,8 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
                                             show_ms2_markers=show_ms2_markers, 
                                             polarity_filter=polarity_filter, 
                                             highlight_box=highlight_box,
-                                            color_scale=map_plot_color_scale)
+                                            color_scale=map_plot_color_scale, 
+                                            template=template)
 
     print("DRAWING LCMS MAP", time.time() - start, file=sys.stderr, flush=True)
     return lcms_fig
@@ -2974,6 +2975,7 @@ def determine_plot_zoom_bounds(url_search, usi,
                 Input('overlay_filter_value', 'value'),
                 Input('feature_finding_type', 'value'),
                 Input('run_feature_finding_button', 'n_clicks'),
+                Input("plot_theme", "value")
               ],
               [
                 State('feature_finding_ppm', 'value'),
@@ -2988,6 +2990,7 @@ def draw_file(url_search, usi,
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_click,
+                plot_theme,
                 feature_finding_ppm,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
@@ -3035,7 +3038,8 @@ def draw_file(url_search, usi,
                                 polarity_filter=polarity_filter, 
                                 highlight_box=highlight_box, 
                                 map_plot_quantization_level=map_plot_quantization_level,
-                                map_plot_color_scale=map_plot_color_scale)
+                                map_plot_color_scale=map_plot_color_scale,
+                                template=plot_theme)
 
     # Adding on Feature Finding data
     map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
@@ -3072,10 +3076,11 @@ def draw_file(url_search, usi,
                 Input('show_ms2_markers', 'value'),
                 Input("show_lcms_2nd_map", "value"),
                 Input('polarity_filtering2', 'value'),
+                Input('plot_theme', 'value')
               ])
 def draw_file2( usi, 
                 map_plot_zoom, map_plot_quantization_level, map_plot_color_scale,
-                show_ms2_markers, show_lcms_2nd_map, polarity_filter):
+                show_ms2_markers, show_lcms_2nd_map, polarity_filter, plot_theme):
 
     if show_lcms_2nd_map is False:
         return [dash.no_update]
@@ -3099,7 +3104,8 @@ def draw_file2( usi,
                                 show_ms2_markers=show_ms2_markers, 
                                 polarity_filter=polarity_filter, 
                                 map_plot_quantization_level=map_plot_quantization_level,
-                                map_plot_color_scale=map_plot_color_scale)
+                                map_plot_color_scale=map_plot_color_scale,
+                                template=plot_theme)
 
     return [map_fig]
 
