@@ -638,7 +638,7 @@ DATASELECTION_CARD = [
                                         ],
                                         searchable=False,
                                         clearable=False,
-                                        value="simple_white",
+                                        value="plotly_white",
                                         style={
                                             "width":"60%"
                                         }
@@ -1618,7 +1618,11 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("xic_norm", "value"), 
                 Output("xic_file_grouping", "value"),
                 Output("xic_integration_type", "value"),
+                
                 Output("show_ms2_markers", "value"),
+                Output("ms2marker_color", "value"),
+                Output("ms2marker_size", "value"),
+
                 Output("show_lcms_2nd_map", "value"),
                 Output("tic_option", "value"),
                 Output("polarity_filtering", "value"),
@@ -1667,7 +1671,11 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   State('xic_integration_type', 'value'),
                   State('xic_file_grouping', 'value'),
                   State('xic_rt_window', 'value'),
+
                   State('show_ms2_markers', 'value'),
+                  State("ms2marker_color", "value"),
+                  State("ms2marker_size", "value"),
+
                   State('show_lcms_2nd_map', 'value'),
                   State('tic_option', 'value'),
                   State('polarity_filtering', 'value'),
@@ -1720,6 +1728,9 @@ def determine_url_only_parameters(  search,
                                     existing_xic_rt_window,
 
                                     existing_show_ms2_markers,
+                                    existing_ms2marker_color,
+                                    existing_ms2marker_size,
+
                                     existing_show_lcms_2nd_map,
 
                                     existing_tic_option,
@@ -1790,6 +1801,9 @@ def determine_url_only_parameters(  search,
     xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict, old_value=existing_xic_rt_window, no_change_default=dash.no_update)
 
     show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", dash.no_update, session_dict=session_dict, old_value=existing_show_ms2_markers, no_change_default=dash.no_update)
+    ms2marker_color = _get_param_from_url(search, "", "ms2marker_color", dash.no_update, session_dict=session_dict, old_value=existing_ms2marker_color, no_change_default=dash.no_update)
+    ms2marker_size = _get_param_from_url(search, "", "ms2marker_size", dash.no_update, session_dict=session_dict, old_value=existing_ms2marker_size, no_change_default=dash.no_update)
+
     show_lcms_2nd_map = _get_param_from_url(search, "", "show_lcms_2nd_map", dash.no_update, session_dict=session_dict, old_value=existing_show_lcms_2nd_map, no_change_default=dash.no_update)
 
     tic_option = _get_param_from_url(search, "", "tic_option", dash.no_update, session_dict=session_dict, old_value=existing_tic_option, no_change_default=dash.no_update)
@@ -1877,6 +1891,8 @@ def determine_url_only_parameters(  search,
             xic_rt_window, xic_norm, 
             xic_file_grouping, xic_integration_type, 
             show_ms2_markers, 
+            ms2marker_color, 
+            ms2marker_size, 
             show_lcms_2nd_map, 
             tic_option, polarity_filtering, 
             polarity_filtering2, 
@@ -2126,7 +2142,17 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
 
 
 @cache.memoize()
-def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, map_plot_quantization_level="Medium", map_plot_color_scale="Hot_r", template="plotly_light"):
+def _create_map_fig(filename, 
+                    map_selection=None, 
+                    show_ms2_markers=True, 
+                    polarity_filter="None", 
+                    highlight_box=None, 
+                    map_plot_quantization_level="Medium", 
+                    map_plot_color_scale="Hot_r", 
+                    template="plotly_light",
+                    ms2marker_color="blue",
+                    ms2marker_size=5):
+
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
 
     import time
@@ -2146,6 +2172,7 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
     else:
         print("CALL AGGREGATE")
         agg_dict, msn_results = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level, cache=False)
+        msn_results = pd.DataFrame(msn_results) # This comes as a list, due to serialization
 
     print("GETTING LCMS AGG", time.time() - start, file=sys.stderr, flush=True)
 
@@ -2156,7 +2183,9 @@ def _create_map_fig(filename, map_selection=None, show_ms2_markers=True, polarit
                                             polarity_filter=polarity_filter, 
                                             highlight_box=highlight_box,
                                             color_scale=map_plot_color_scale, 
-                                            template=template)
+                                            template=template,
+                                            ms2marker_color=ms2marker_color,
+                                            ms2marker_size=int(ms2marker_size))
 
     print("DRAWING LCMS MAP", time.time() - start, file=sys.stderr, flush=True)
     return lcms_fig
@@ -2964,6 +2993,8 @@ def determine_plot_zoom_bounds(url_search, usi,
                 Input('map_plot_quantization_level', 'value'), 
                 Input('map_plot_color_scale', 'value'),
                 Input('show_ms2_markers', 'value'),
+                Input('ms2marker_color', 'value'),
+                Input('ms2marker_size', 'value'),
                 Input('polarity_filtering', 'value'),
                 Input('overlay_usi', 'value'),
                 Input('overlay_mz', 'value'),
@@ -2986,7 +3017,7 @@ def determine_plot_zoom_bounds(url_search, usi,
               ])
 def draw_file(url_search, usi, 
                 map_plot_zoom, highlight_box_zoom, map_plot_quantization_level, map_plot_color_scale,
-                show_ms2_markers, polarity_filter, 
+                show_ms2_markers, ms2marker_color, ms2marker_size, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_click,
@@ -3039,7 +3070,9 @@ def draw_file(url_search, usi,
                                 highlight_box=highlight_box, 
                                 map_plot_quantization_level=map_plot_quantization_level,
                                 map_plot_color_scale=map_plot_color_scale,
-                                template=plot_theme)
+                                template=plot_theme,
+                                ms2marker_color=ms2marker_color,
+                                ms2marker_size=ms2marker_size)
 
     # Adding on Feature Finding data
     map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
@@ -3184,6 +3217,8 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input('xic_file_grouping', 'value'),
                 Input('xic_integration_type', 'value'),
                 Input("show_ms2_markers", "value"),
+                Input('ms2marker_color', 'value'),
+                Input('ms2marker_size', 'value'),
                 Input("ms2_identifier", "value"),
                 Input("map_plot_zoom", "children"),
 
@@ -3222,7 +3257,8 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
               ])
 def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
-                xic_integration_type, show_ms2_markers, ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
+                xic_integration_type, show_ms2_markers, ms2marker_color, ms2marker_size,
+                ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
                 sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, 
@@ -3242,7 +3278,12 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["xic_norm"] = xic_norm
     url_params["xic_file_grouping"] = xic_file_grouping
     url_params["xic_integration_type"] = xic_integration_type
+
+    # MS2 in heatmap
     url_params["show_ms2_markers"] = show_ms2_markers
+    url_params["ms2marker_color"] = ms2marker_color
+    url_params["ms2marker_size"] = ms2marker_size
+
     url_params["ms2_identifier"] = ms2_identifier
     url_params["show_lcms_2nd_map"] = show_lcms_2nd_map
     url_params["map_plot_zoom"] = map_plot_zoom

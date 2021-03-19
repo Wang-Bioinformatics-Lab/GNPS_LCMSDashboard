@@ -318,6 +318,59 @@ ADVANCED_VISUALIZATION_MODAL = [
                     )),
                 ]),
                 dbc.Button("Update Map Plot Ranges", block=True, id="map_plot_update_range_button"),
+                html.Br(),
+                html.Hr(),
+                html.H5("MS2 Markers"),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("MS2 Marker Color", width=4.8, style={"width":"250px"}),
+                                dcc.Dropdown(
+                                    id='ms2marker_color',
+                                    options=[
+                                        {'label': 'blue', 'value': 'blue'},
+                                        {'label': 'white', 'value': 'white'},
+                                        {'label': 'red', 'value': 'red'},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value="blue",
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
+                dbc.Row([
+                    dbc.Col(
+                        dbc.FormGroup(
+                            [
+                                dbc.Label("MS2 Marker Size", width=4.8, style={"width":"250px"}),
+                                dcc.Dropdown(
+                                    id='ms2marker_size',
+                                    options=[
+                                        {'label': '5', 'value': 5},
+                                        {'label': '10', 'value': 10},
+                                        {'label': '15', 'value': 15},
+                                    ],
+                                    searchable=False,
+                                    clearable=False,
+                                    value=5,
+                                    style={
+                                        "width":"60%"
+                                    }
+                                )  
+                            ],
+                            row=True,
+                            className="mb-3",
+                            style={"margin-left": "4px"}
+                    )),
+                ]),
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_visualization_modal_close", className="ml-auto")
