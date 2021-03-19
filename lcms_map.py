@@ -191,13 +191,13 @@ def _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
 
 # Creates the figure for map plot
 # overlay_data is a dataframe that includes the overlay, rt and mz are the expected columns
-def _create_map_fig(agg_dict, msn_results, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, color_scale="Hot_r"):
+def _create_map_fig(agg_dict, msn_results, map_selection=None, show_ms2_markers=True, polarity_filter="None", highlight_box=None, color_scale="Hot_r", template="plotly_white", ms2marker_color="blue", ms2marker_size=5):
     min_rt, max_rt, min_mz, max_mz = utils._determine_rendering_bounds(map_selection)
-
+    
     agg = xarray.DataArray.from_dict(agg_dict)
 
     # Creating the figures
-    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale=color_scale, height=600, template="plotly_white")
+    fig = px.imshow(agg, origin='lower', labels={'color':'Log10(abundance)'}, color_continuous_scale=color_scale, height=600, template=template)
     fig.update_traces(hoverongaps=False)
     fig.update_layout(coloraxis_colorbar=dict(title='Abundance', tickprefix='1.e'))
 
@@ -219,11 +219,11 @@ def _create_map_fig(agg_dict, msn_results, map_selection=None, show_ms2_markers=
        too_many_ms2 = True
     
     if show_ms2_markers is True and too_many_ms2 is False and len(ms2_results) > 0:
-        scatter_fig = go.Scattergl(x=ms2_results["rt"], y=ms2_results["precursor_mz"], mode='markers', customdata=ms2_results["scan"], marker=dict(color='blue', size=5, symbol="x"), name="MS2s")
+        scatter_fig = go.Scattergl(x=ms2_results["rt"], y=ms2_results["precursor_mz"], mode='markers', customdata=ms2_results["scan"], marker=dict(color=ms2marker_color, size=ms2marker_size, symbol="x"), name="MS2s")
         fig.add_trace(scatter_fig)
 
     if show_ms2_markers is True and too_many_ms2 is False and len(ms3_results) > 0:
-        scatter_ms3_fig = go.Scatter(x=ms3_results["rt"], y=ms3_results["precursor_mz"], mode='markers', customdata=ms3_results["scan"], marker=dict(color='green', size=5, symbol="x"), name="MS3s")
+        scatter_ms3_fig = go.Scatter(x=ms3_results["rt"], y=ms3_results["precursor_mz"], mode='markers', customdata=ms3_results["scan"], marker=dict(color='green', size=ms2marker_size, symbol="x"), name="MS3s")
         fig.add_trace(scatter_ms3_fig)
 
     if highlight_box is not None:
