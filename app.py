@@ -2842,6 +2842,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             try:
                 filtered_df_long = merged_df_long[merged_df_long["variable"] == xic_target]
                 all_usi_list = list(set(filtered_df_long["USI"]))
+                all_usi_list.sort()
                 filtered_df_long["USI"] = filtered_df_long["USI"].apply(lambda x: all_usi_list.index(x))
 
                 cvs = ds.Canvas(plot_width=50, plot_height=len(all_usi_list))
