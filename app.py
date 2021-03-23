@@ -1843,7 +1843,6 @@ def determine_url_only_parameters(  search,
 
     # Chromatogram Options
     chromatogram_options = _get_param_from_url(search, "", "chromatogram_options", dash.no_update, session_dict=session_dict, old_value=json.dumps(existing_chromatogram_options), no_change_default=dash.no_update)
-    print("ZZZZZZZZZZZZZZZZZZZ", chromatogram_options, existing_chromatogram_options, chromatogram_options==existing_chromatogram_options, file=sys.stderr, flush=True)
 
     # Comment
     comment = _get_param_from_url(search, "", "comment", dash.no_update, session_dict=session_dict, old_value=existing_comment, no_change_default=dash.no_update)
