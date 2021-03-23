@@ -752,6 +752,13 @@ DATASLICE_CARD = [
                 children=[html.Div([html.Div(id="loading-output-1034")])],
                 type="default",
             ),
+            html.Br(),
+            html.Br(),
+            dcc.Loading(
+                id="xic-heatmap",
+                children=[html.Div([html.Div(id="loading-output-102")])],
+                type="default",
+            ),
         ]
     )
 ]
@@ -1094,8 +1101,8 @@ INTEGRATION_CARD = [
             html.Br(),
             html.Br(),
             dcc.Loading(
-                id="xic-heatmap",
-                children=[html.Div([html.Div(id="loading-output-102")])],
+                id="integration-scatter",
+                children=[html.Div([html.Div(id="loading-output-103")])],
                 type="default",
             ),
         ]
@@ -1835,7 +1842,8 @@ def determine_url_only_parameters(  search,
     sychronization_session_id = _get_param_from_url(search, "", "sychronization_session_id", default_session_id, session_dict=session_dict, old_value=existing_sychronization_session_id, no_change_default=dash.no_update)
 
     # Chromatogram Options
-    chromatogram_options = _get_param_from_url(search, "", "chromatogram_options", dash.no_update, session_dict=session_dict, old_value=existing_chromatogram_options, no_change_default=dash.no_update)
+    chromatogram_options = _get_param_from_url(search, "", "chromatogram_options", dash.no_update, session_dict=session_dict, old_value=json.dumps(existing_chromatogram_options), no_change_default=dash.no_update)
+    print("ZZZZZZZZZZZZZZZZZZZ", chromatogram_options, existing_chromatogram_options, chromatogram_options==existing_chromatogram_options, file=sys.stderr, flush=True)
 
     # Comment
     comment = _get_param_from_url(search, "", "comment", dash.no_update, session_dict=session_dict, old_value=existing_comment, no_change_default=dash.no_update)
@@ -2641,9 +2649,10 @@ def create_chromatogram_options(usi, usi2):
 @app.callback([
                 Output('xic-plot', 'figure'), 
                 Output('xic-plot', 'config'), 
+                Output("xic-heatmap", "children"),
                 Output("integration-table", "children"), 
                 Output("integration-boxplot", "children"),
-                Output("xic-heatmap", "children"),
+                Output("integration-scatter", "children"),
                 Output('loading_xic_plot', 'children')
               ],
               [
@@ -2667,7 +2676,7 @@ def create_chromatogram_options(usi, usi2):
               ])
 def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, chromatogram_list, polarity_filter, export_format, plot_theme, map_plot_color_scale):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    print("TRIGGERED XIC PLOT", triggered_id, file=sys.stderr)
+    print("TRIGGERED XIC PLOT", dash.callback_context.triggered, file=sys.stderr, flush=True)
 
     # For Drawing and Exporting
     graph_config = {
@@ -2729,8 +2738,6 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     except:
         pass
 
-    
-
     rt_min = 0
     rt_max = 10000000
     try:
@@ -2767,7 +2774,6 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     # Cleaning up the USI to show
     plotting_df["USI"] = plotting_df["USI"].apply(lambda x: download._get_usi_display_filename(x))
 
-    
     if len(plot_usi_list) == 1:
         if xic_file_grouping == "FILE":
             height = 400
@@ -2802,37 +2808,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         except:
             pass
 
-    table_graph = dash.no_update
-    box_graph = dash.no_update
-
-    try:
-        # Doing actual integration
-        integral_df = _integrate_files(merged_df_long, xic_integration_type)
-        integral_df["USI"] = integral_df["USI"].apply(lambda x: download._get_usi_display_filename(x))
-
-        # Creating a table
-        table_graph = dash_table.DataTable(
-            id='table',
-            columns=[{"name": i, "id": i} for i in integral_df.columns],
-            data=integral_df.to_dict('records'),
-            sort_action="native",
-            page_action="native",
-            page_size= 10,
-            filter_action="native",
-            export_format="csv"
-        )
-
-        # Creating a box plot
-        box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
-        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", points="all", height=box_height, boxmode="overlay", template=plot_theme)
-        box_fig.update_traces(pointpos=0)
-        box_graph = dcc.Graph(figure=box_fig, config=graph_config)        
-    except:
-        pass
-
-    xic_heatmap_graph = dash.no_update
-
     # Plotting the XIC Heatmap
+    xic_heatmap_graph = dash.no_update
     if len(all_xic_values) > 0 or len(chromatogram_list) > 0:
         xic_heatmap_graph_list = []
         all_xic_targets = list(set(merged_df_long["variable"]))
@@ -2868,7 +2845,47 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
             xic_heatmap_graph = xic_heatmap_graph_list
 
 
-    return [fig, graph_config, table_graph, box_graph, xic_heatmap_graph, dash.no_update]
+    ##################################
+    # Integration Results Section
+    ##################################
+
+    table_graph = dash.no_update
+    box_graph = dash.no_update
+    integration_scatter_graph = dash.no_update
+
+    try:
+        # Doing actual integration
+        integral_df = _integrate_files(merged_df_long, xic_integration_type)
+        integral_df["USI"] = integral_df["USI"].apply(lambda x: download._get_usi_display_filename(x))
+
+        # Creating a table
+        table_graph = dash_table.DataTable(
+            id='table',
+            columns=[{"name": i, "id": i} for i in integral_df.columns],
+            data=integral_df.to_dict('records'),
+            sort_action="native",
+            page_action="native",
+            page_size= 10,
+            filter_action="native",
+            export_format="csv"
+        )
+
+        # Creating a box plot
+        box_height = 250 * int(float(len(all_xic_values)) / 3.0 + 0.1)
+        box_fig = px.box(integral_df, x="GROUP", y="value", facet_col="variable", facet_col_wrap=3, color="GROUP", points="all", height=box_height, boxmode="overlay", template=plot_theme)
+        box_fig.update_traces(pointpos=0)
+        box_graph = dcc.Graph(figure=box_fig, config=graph_config)
+
+        # Plotting the Scatter Plot
+        if len(all_xic_values) > 0 or len(chromatogram_list) > 0:
+            scatter_fig = px.scatter(x=[0, 1, 2, 3, 4], y=[0, 1, 4, 9, 16])
+            print(integral_df)
+            integration_scatter_graph = dash.no_update
+    except:
+        pass
+
+
+    return [fig, graph_config, xic_heatmap_graph, table_graph, box_graph, integration_scatter_graph, dash.no_update]
 
 
 @app.callback([
