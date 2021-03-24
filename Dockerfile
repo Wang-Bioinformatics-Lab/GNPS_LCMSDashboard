@@ -7,8 +7,6 @@ RUN conda install -c conda-forge openjdk=11.0.9.1
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-RUN pip install -U Celery
-RUN pip install -U celery_once
 
 ################## METADATA ######################
 LABEL base_image="mono:latest"
@@ -29,7 +27,7 @@ RUN apt-get update && apt-get install -y git
 RUN apt-get update && apt -y install apt-transport-https dirmngr gnupg ca-certificates
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
 RUN echo "deb https://download.mono-project.com/repo/debian stable-buster main" | tee /etc/apt/sources.list.d/mono-official-stable.list
-RUN apt-get -y install mono-devel
+RUN apt-get update && apt-get -y install mono-devel
 
 WORKDIR /src
 RUN git clone -b master --single-branch https://github.com/compomics/ThermoRawFileParser /src
