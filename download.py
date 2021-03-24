@@ -437,7 +437,7 @@ def _convert_cdf_to_mzML(input_cdf, output_mzML):
                         
                         out.write_spectrum(
                             _mz_array, _i_array,
-                            id=str(i), params=[
+                            id="scan={}".format(i), params=[
                                 "MS1 Spectrum",
                                 {"ms level": 1},
                                 {"total ion current": sum(_i_array)}

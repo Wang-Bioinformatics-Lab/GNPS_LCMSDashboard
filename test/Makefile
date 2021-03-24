@@ -1,4 +1,5 @@
 all:
+	rm temp/*
 	pytest --durations=0 test_2d.py test_usi_resolution.py test_xic.py -n 8
 
 resolve:
@@ -19,7 +20,9 @@ specific_test:
 	#pytest --durations=0 test_featurefinding.py::test_mzmine -v --capture=tee-sys
 	#pytest --durations=0 test.py::test_ms2_spectrum -v --capture=tee-sys
 	#pytest --durations=0 test_2d.py::test_2d_mapping -v --capture=tee-sys
-	pytest --durations=0 test_debug.py::test_agilent -v --capture=tee-sys
+	#pytest --durations=0 test_debug.py::test_agilent -v --capture=tee-sys
+	pytest --durations=0 test_debug.py::test_cdf -v --capture=tee-sys
+	
 
 
 # Testing performance with hdf5
