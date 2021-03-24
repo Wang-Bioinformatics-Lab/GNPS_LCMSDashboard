@@ -93,6 +93,8 @@ EXAMPLE_DASHBOARD = [
 
             html.A("Thermo GCMS", href="/?usi=mzspec:MSV000086150:BA1.mzML"),
             html.Br(),
+            html.A("GCMS in CDF Format", href="/?usi=mzspec:MSV000084169:raw/FractA1/0205045.CDF"),
+            html.Br(),
             html.Br(),
 
             html.H5("Advanced Examples - LC/MS Metabolomics"),

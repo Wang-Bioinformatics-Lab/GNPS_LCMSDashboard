@@ -126,13 +126,18 @@ def task_collabsync(session_id, triggered_fields, full_params, synchronization_t
 def task_computeheartbeat():
     return "Up"
 
+
+#################################
+# Cleanup Data
+#################################
 import datetime
 import sys
 @celery_instance.task(time_limit=480)
 def _task_cleanup():
     all_temp_files = glob.glob("/app/temp/*")
 
-    MAX_TIME_SECONDS = 604800 # This is one week
+    MAX_TIME_SECONDS = 2592000 # This is one month
+    #MAX_TIME_SECONDS = 604800 # This is one week
     #MAX_TIME_SECONDS = 60 # This is one minute
 
     for filename in all_temp_files:
