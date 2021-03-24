@@ -16,9 +16,6 @@ server-compose:
 	docker-compose build
 	docker-compose up -d
 
-attach:
-	docker exec -i -t gnpslcms-dash /bin/bash
-
 clear-cache:
 	sudo rm temp/* || true
 	sudo rm temp/flask-cache/*
@@ -27,3 +24,10 @@ clear-cache:
 
 clear-flaskcache:
 	sudo rm temp/flask-cache/*
+
+
+attach:
+	docker exec -i -t gnpslcms-dash /bin/bash
+
+attach-conversion:
+	docker exec -i -t gnpslcms-worker-conversion /bin/bash

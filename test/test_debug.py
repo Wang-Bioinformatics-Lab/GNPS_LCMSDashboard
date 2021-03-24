@@ -53,4 +53,6 @@ def test_agilent():
     
 def test_cdf():
     remote_link, local_filename = download._resolve_usi("mzspec:MSV000086834:raw/20210210 GNPS LMCS/PA1MeOH1.aia.CDF")
+    agg_dict, msn_results = lcms_map._aggregate_lcms_map(local_filename, 0, 100000, 0, 2000)
+    lcms_map._create_map_fig(agg_dict, msn_results)
     print(local_filename)

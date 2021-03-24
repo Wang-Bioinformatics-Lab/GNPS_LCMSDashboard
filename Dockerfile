@@ -2,12 +2,13 @@ FROM continuumio/miniconda3:4.8.2
 MAINTAINER Mingxun Wang "mwang87@gmail.com"
 
 
-RUN conda install -c conda-forge datashader
+RUN conda install -c conda-forge datashader=0.12.1
+RUN conda install -c conda-forge openjdk=11.0.9.1
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 RUN pip install -U Celery
 RUN pip install -U celery_once
-RUN conda install -c conda-forge openjdk
 
 ################## METADATA ######################
 LABEL base_image="mono:latest"
@@ -22,7 +23,7 @@ LABEL about.license="SPDX:Unknown"
 LABEL about.tags="Proteomics"
 
 ################## INSTALLATION ######################
-RUN apt-get install -y git
+RUN apt-get update && apt-get install -y git
 
 ################## INSTALLATION OF MONO ######################
 RUN apt-get update && apt -y install apt-transport-https dirmngr gnupg ca-certificates
