@@ -71,6 +71,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo LCMS - Q Exactive - Proteomics - mzXML from MassIVE, imported from PRIDE", href='/?usi=mzspec:PXD002854:20150414_QEp1_LC7_GaPI_SA_Serum_DT_03_150416181741.mzXML:scan:2308:[+314.188]-QQKPGQAPR/2'),
             html.Br(),
+            html.A("Sciex SWATH - Proteomics - mzML from MassIVE", href='/?usi=mzspec:MSV000085570:170425_01_Edith_120417_CCF_01'),
+            html.Br(),
             html.Br(),
 
             html.H5("Different Data Sources Examples - LC/MS Metabolomics"),
