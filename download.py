@@ -430,15 +430,10 @@ def _convert_cdf_to_mzML(input_cdf, output_mzML):
                 try:
                     # reading through scans
                     for i, scan_range in enumerate(scan_indcs):
-                        import sys
-                        print(i, file=sys.stderr, flush=True)
-
                         time_min_rt = time_values[i] / 60
 
                         _mz_array = np.array(mass_values[scan_range[0]:scan_range[1]])
                         _i_array = np.array(intensity_values[scan_range[0]:scan_range[1]])
-
-                        print("LEN", len(_i_array), file=sys.stderr, flush=True)
                         
                         out.write_spectrum(
                             _mz_array, _i_array,
