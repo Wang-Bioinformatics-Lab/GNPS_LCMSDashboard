@@ -65,7 +65,12 @@ def _usi_to_local_filename(usi):
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
         print(converted_local_filename, file=sys.stderr)
         return converted_local_filename.replace(".mzML.mzML", ".mzML")
-
+        
+    if "GPST" in usi_splits[1]:
+        converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
+        filename, file_extension = os.path.splitext(converted_local_filename)
+        converted_local_filename = filename + ".mzML"
+        return converted_local_filename
 
 
 def _resolve_gnps_usi(usi):
@@ -103,7 +108,14 @@ def _resolve_mtbls_usi(usi):
 
     return remote_link
 
+def _resolve_glycopost_usi(usi):
+    usi_splits = usi.split(':')
 
+    dataset_accession = usi_splits[1]
+    filename = usi_splits[2]
+    remote_link = "https://glycopost.glycosmos.org/data/{}.0/{}".format(dataset_accession, filename)
+
+    return remote_link
 
 def _resolve_pxd_usi(usi):
     usi_splits = usi.split(':')
