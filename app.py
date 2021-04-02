@@ -145,8 +145,8 @@ agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
 placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
-placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder')
-placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='Spectrum Placeholder')
+placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder', render_mode="svg")
+placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='Spectrum Placeholder', render_mode="svg")
 
 MAX_XIC_PLOT_LCMS_FILES = 30
 MAX_LCMS_FILES = 500
@@ -729,7 +729,8 @@ DATASLICE_CARD = [
                     id='xic-plot',
                     figure=placeholder_xic_plot,
                     config={
-                        'doubleClick': 'reset'
+                        'doubleClick': 'reset',
+                        "format": "svg",
                     }
                 )],
                 type="default",
