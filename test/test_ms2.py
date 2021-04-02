@@ -21,7 +21,7 @@ def test_ms2_spectrum():
     usi = "mzspec:MSV000086995:updates/2021-04-01_mwang87_a4ef53e6/peak/wash_initial.mzML"
     remote_link, local_filename = download._resolve_usi(usi)
     peaks, mz, spectrum_details_string = ms2._get_ms2_peaks(usi, local_filename, 527060)
-    assert(len(peaks) > 10)
+    assert(len(peaks) == 0) # This is known to have no peaks
 
 def test_ms1_selection_spectrum():
     usi = "mzspec:MSV000086521:raw/ORSL13CM.CDF"
