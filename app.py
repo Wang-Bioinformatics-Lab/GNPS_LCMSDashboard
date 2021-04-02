@@ -735,6 +735,11 @@ DATASLICE_CARD = [
                 type="default",
             ),
             dcc.Loading(
+                id="xic-vector",
+                children=[html.Div([html.Div(id="loading-output-2312")])],
+                type="default",
+            ),
+            dcc.Loading(
                 id="loading-289",
                 children=[dcc.Graph(
                     id='ms2-plot',
@@ -2649,6 +2654,7 @@ def create_chromatogram_options(usi, usi2):
                 Output('xic-plot', 'figure'), 
                 Output('xic-plot', 'config'), 
                 Output("xic-heatmap", "children"),
+                Output("xic-vector", "children"),
                 Output("integration-table", "children"), 
                 Output("integration-boxplot", "children"),
                 Output("integration-scatter", "children"),
@@ -2883,8 +2889,12 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     except:
         pass
 
+    # Drawing XIC 
+    #xic_vector = html.Img(src="data:image/svg;base64,{}".format(encoded_image))
+    xic_vector = dash.no_update
 
-    return [fig, graph_config, xic_heatmap_graph, table_graph, box_graph, integration_scatter_graph, dash.no_update]
+
+    return [fig, graph_config, xic_heatmap_graph, xic_vector, table_graph, box_graph, integration_scatter_graph, dash.no_update]
 
 
 @app.callback([

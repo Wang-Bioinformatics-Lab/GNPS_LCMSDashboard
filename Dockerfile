@@ -33,6 +33,8 @@ WORKDIR /src
 RUN git clone -b master --single-branch https://github.com/compomics/ThermoRawFileParser /src
 RUN xbuild
 
+RUN pip install seaborn
+
 COPY . /app
 WORKDIR /app
 
