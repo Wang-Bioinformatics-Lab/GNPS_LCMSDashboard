@@ -21,7 +21,8 @@ specific_test:
 	#pytest --durations=0 test.py::test_ms2_spectrum -v --capture=tee-sys
 	#pytest --durations=0 test_2d.py::test_2d_mapping -v --capture=tee-sys
 	#pytest --durations=0 test_debug.py::test_agilent -v --capture=tee-sys
-	pytest --durations=0 test_debug.py::test_cdf -v --capture=tee-sys
+	#pytest --durations=0 test_debug.py::test_cdf -v --capture=tee-sys
+	pytest --durations=0 test_usi_resolution.py::test_feather_download_convert -v --capture=tee-sys
 	
 
 
