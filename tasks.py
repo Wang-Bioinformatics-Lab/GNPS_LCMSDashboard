@@ -41,12 +41,28 @@ def _download_convert_file(usi, temp_folder="temp"):
     """
 
     return_val = download._resolve_usi(usi, temp_folder=temp_folder)
-    _convert_file_feather.delay(usi, temp_folder=temp_folder)
+    _convert_usi_feather.delay(usi, temp_folder=temp_folder)
 
     return return_val
 
 @celery_instance.task(time_limit=480, base=QueueOnce)
-def _convert_file_feather(usi, temp_folder="temp"):
+def _convert_file(local_filename, temp_folder="temp"):
+    """
+    This is meant to convert files that have been uploaded
+
+    Args:
+        local_filename ([type]): [description]
+        temp_folder (str, optional): [description]. Defaults to "temp".
+
+    Returns:
+        [type]: [description]
+    """
+    download._convert_mzML(local_filename, local_filename)
+    _convert_filename_feather.delay(usi, temp_folder=temp_folder)
+
+
+@celery_instance.task(time_limit=480, base=QueueOnce)
+def _convert_usi_feather(usi, temp_folder="temp"):
     """
         This function does the serialization of conversion to feather format
     """
@@ -61,7 +77,19 @@ def _convert_file_feather(usi, temp_folder="temp"):
         # Let's do stuff here
         lcms_map._save_lcms_data_feather(local_filename)
 
+@celery_instance.task(time_limit=480, base=QueueOnce)
+def _convert_filename_feather(local_filename):
+    """
+        This function does the serialization of conversion to feather format
+    """
 
+    ms1_filename, msn_filename = lcms_map._get_feather_filenames(local_filename)
+
+    if os.path.exists(ms1_filename):
+        return
+
+    # Let's do stuff here
+    lcms_map._save_lcms_data_feather(local_filename)
     
 
 #################################

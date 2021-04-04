@@ -1946,9 +1946,11 @@ def determine_url_only_parameters_synchronization(  search,
                 Input('url', 'search'), 
                 Input('url', 'hash'), 
                 Input('upload-data', 'contents'),
+
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
+                
                 Input('auto_import_parameters', 'children')
               ],
               [
@@ -1990,7 +1992,7 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
             extension = os.path.splitext(filename)[1]
             original_filename = os.path.splitext(filename)[0]
             safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
-            if extension == ".mzML":
+            if extension.lower() == ".mzml":
                 temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
                 data = filecontent.encode("utf8").split(b";base64,")[1]
 
@@ -1999,7 +2001,7 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 
                 usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
-            if extension == ".mzXML":
+            if extension.lower() == ".mzxml":
                 temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
                 data = filecontent.encode("utf8").split(b";base64,")[1]
 
@@ -2760,7 +2762,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 
     # Exiting if we don't have any valid XIC values
     if len(all_xic_values) == 0 and len(chromatogram_list) == 0:
-        return [placeholder_xic_plot, graph_config, dash.no_update, dash.no_update, dash.no_update]
+        return [placeholder_xic_plot, graph_config, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
 
     merged_df_long = pd.DataFrame()
     if len(all_xic_values) > 0:
