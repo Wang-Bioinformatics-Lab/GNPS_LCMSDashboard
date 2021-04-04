@@ -145,8 +145,8 @@ agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
 placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
-placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder')
-placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='Spectrum Placeholder')
+placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder', render_mode="svg")
+placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='Spectrum Placeholder', render_mode="svg")
 
 MAX_XIC_PLOT_LCMS_FILES = 30
 MAX_LCMS_FILES = 500
@@ -729,7 +729,8 @@ DATASLICE_CARD = [
                     id='xic-plot',
                     figure=placeholder_xic_plot,
                     config={
-                        'doubleClick': 'reset'
+                        'doubleClick': 'reset',
+                        "format": "svg",
                     }
                 )],
                 type="default",
@@ -1544,6 +1545,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     graph_config = {
         "toImageButtonOptions":{
             "format": export_format,
+            'filename': werkzeug.utils.secure_filename('ms2_plot_{}_{}'.format(filename, scan_number)),
             'height': None, 
             'width': None,
         }
@@ -1564,8 +1566,6 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
     # Figuring out which labels to show
     mzs_text = ms2._get_ms_peak_labels(mzs, ints)
-
-    print(mzs_text)
 
     interactive_fig = go.Figure(
         data=go.Scatter(x=mzs, y=ints, 
@@ -2397,6 +2397,7 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
     graph_config = {
         "toImageButtonOptions":{
             "format": export_format,
+            'filename': 'tic_plot',
             'height': None, 
             'width': None,
         }
@@ -2405,13 +2406,18 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
     return [fig, graph_config]
 
 # Creating TIC plot
-@app.callback([Output('tic-plot2', 'figure'), Output('tic-plot2', 'config')],
-              [Input('usi2', 'value'), 
-              Input('image_export_format', 'value'), 
-              Input("plot_theme", "value"), 
-              Input("tic_option", "value"),
-              Input("polarity_filtering2", "value"),
-              Input("show_multiple_tic", "value")])
+@app.callback([
+                  Output('tic-plot2', 'figure'), 
+                  Output('tic-plot2', 'config')
+              ],
+              [
+                  Input('usi2', 'value'), 
+                  Input('image_export_format', 'value'), 
+                  Input("plot_theme", "value"), 
+                  Input("tic_option", "value"),
+                  Input("polarity_filtering2", "value"),
+                  Input("show_multiple_tic", "value")
+              ])
 def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
@@ -2440,6 +2446,7 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
     graph_config = {
         "toImageButtonOptions":{
             "format": export_format,
+            'filename': 'tic_plot2',
             'height': None, 
             'width': None,
         }
@@ -2681,6 +2688,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     graph_config = {
         "toImageButtonOptions":{
             "format": export_format,
+            'filename': 'xic_plot',
             'height': None, 
             'width': None,
         }
@@ -2773,23 +2781,28 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     # Cleaning up the USI to show
     plotting_df["USI"] = plotting_df["USI"].apply(lambda x: download._get_usi_display_filename(x))
 
+    RENDER_MODE = "auto"
+    # Making sure the data in the browser is actually svg
+    if export_format == "svg":
+        RENDER_MODE = "svg"
+
     if len(plot_usi_list) == 1:
         if xic_file_grouping == "FILE":
             height = 400
-            fig = px.scatter(plotting_df, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", color="variable", title='XIC Plot - Single File', height=height, template=plot_theme, render_mode=RENDER_MODE)
         else:
             height = 400 * (len(all_xic_values) + len(chromatogram_list))
-            fig = px.scatter(plotting_df, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", facet_row="variable", title='XIC Plot - Single File', height=height, template=plot_theme, render_mode=RENDER_MODE)
     else:
         if xic_file_grouping == "FILE":
             height = 400 * len(plot_usi_list)
-            fig = px.scatter(plotting_df, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", color="variable", facet_row="USI", title='XIC Plot - Grouped Per File', height=height, template=plot_theme, render_mode=RENDER_MODE)
         elif xic_file_grouping == "MZ":
             height = 400 * (len(all_xic_values) + len(chromatogram_list))
-            fig = px.scatter(plotting_df, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", color="USI", facet_row="variable", title='XIC Plot - Grouped Per M/Z', height=height, template=plot_theme, render_mode=RENDER_MODE)
         elif xic_file_grouping == "GROUP":
             height = 400 * (len(all_xic_values) + len(chromatogram_list))
-            fig = px.scatter(plotting_df, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme)
+            fig = px.scatter(plotting_df, x="rt", y="value", color="GROUP", facet_row="variable", title='XIC Plot - By Group', height=height, template=plot_theme, render_mode=RENDER_MODE)
 
     # Making these scatter plots into lines
     fig.update_traces(mode='lines')
