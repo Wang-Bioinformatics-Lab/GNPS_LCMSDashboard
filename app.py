@@ -730,7 +730,9 @@ DATASLICE_CARD = [
                     figure=placeholder_xic_plot,
                     config={
                         'doubleClick': 'reset',
-                        "format": "svg",
+                        "toImageButtonOptions":{
+                            "format": "svg",
+                        }
                     }
                 )],
                 type="default",
@@ -2372,6 +2374,11 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
 
+    RENDER_MODE = "auto"
+    # Making sure the data in the browser is actually svg
+    if export_format == "svg":
+        RENDER_MODE = "svg"
+
     if len(all_usi) > 1 and show_multiple_tic is True:
         all_usi_tic_df = []
 
@@ -2387,10 +2394,10 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
                 pass
 
         merged_tic_df = pd.concat(all_usi_tic_df)
-        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI")
+        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
     else:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
-        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
+        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
 
 
     # For Drawing and Exporting
@@ -2422,6 +2429,11 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
 
+    RENDER_MODE = "auto"
+    # Making sure the data in the browser is actually svg
+    if export_format == "svg":
+        RENDER_MODE = "svg"
+
     if len(all_usi) > 1 and show_multiple_tic is True:
         all_usi_tic_df = []
 
@@ -2437,10 +2449,10 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
                 pass
 
         merged_tic_df = pd.concat(all_usi_tic_df)
-        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI")
+        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
     else:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
-        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme)
+        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
 
     # For Drawing and Exporting
     graph_config = {
@@ -2760,7 +2772,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 
     # Exiting if we don't have any valid XIC values
     if len(all_xic_values) == 0 and len(chromatogram_list) == 0:
-        return [placeholder_xic_plot, graph_config, dash.no_update, dash.no_update, dash.no_update]
+        return [placeholder_xic_plot, graph_config, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update]
 
     merged_df_long = pd.DataFrame()
     if len(all_xic_values) > 0:
@@ -3010,6 +3022,7 @@ def determine_plot_zoom_bounds(url_search, usi,
 
 @app.callback([
                 Output('map-plot', 'figure'), 
+                Output('map-plot', 'config'), 
                 Output('download-link', 'children'), 
                 Output("feature-finding-table", 'children'),
                 Output('loading_map_plot', 'children')
@@ -3035,6 +3048,7 @@ def determine_plot_zoom_bounds(url_search, usi,
                 Input('overlay_filter_value', 'value'),
                 Input('feature_finding_type', 'value'),
                 Input('run_feature_finding_button', 'n_clicks'),
+                Input('image_export_format', 'value'),
                 Input("plot_theme", "value")
               ],
               [
@@ -3050,6 +3064,7 @@ def draw_file(url_search, usi,
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
                 feature_finding_type,
                 feature_finding_click,
+                export_format,
                 plot_theme,
                 feature_finding_ppm,
                 feature_finding_noise,
@@ -3124,11 +3139,22 @@ def draw_file(url_search, usi,
     except:
         pass
 
-    return [map_fig, remote_link, table_graph, dash.no_update]
+    # Heatmap Config
+    graph_config = {
+        "toImageButtonOptions":{
+            "format": export_format,
+            'filename': werkzeug.utils.secure_filename('map_plot_{}'.format(os.path.basename(local_filename))),
+            'height': None, 
+            'width': None,
+        }
+    }
+
+    return [map_fig, graph_config, remote_link, table_graph, dash.no_update]
 
 
 @app.callback([
-                Output('map-plot2', 'figure')
+                Output('map-plot2', 'figure'),
+                Output('map-plot2', 'config'), 
               ],
               [
                 Input('usi2', 'value'), 
@@ -3138,11 +3164,12 @@ def draw_file(url_search, usi,
                 Input('show_ms2_markers', 'value'),
                 Input("show_lcms_2nd_map", "value"),
                 Input('polarity_filtering2', 'value'),
+                Input('image_export_format', 'value'),
                 Input('plot_theme', 'value')
               ])
 def draw_file2( usi, 
                 map_plot_zoom, map_plot_quantization_level, map_plot_color_scale,
-                show_ms2_markers, show_lcms_2nd_map, polarity_filter, plot_theme):
+                show_ms2_markers, show_lcms_2nd_map, polarity_filter, export_format, plot_theme):
 
     if show_lcms_2nd_map is False:
         return [dash.no_update]
@@ -3169,7 +3196,17 @@ def draw_file2( usi,
                                 map_plot_color_scale=map_plot_color_scale,
                                 template=plot_theme)
 
-    return [map_fig]
+    # Heatmap Config
+    graph_config = {
+        "toImageButtonOptions":{
+            "format": export_format,
+            'filename': werkzeug.utils.secure_filename('map_plot_{}'.format(os.path.basename(local_filename))),
+            'height': None, 
+            'width': None,
+        }
+    }
+
+    return [map_fig, graph_config]
 
 
 @app.callback(Output('run-gnps-mzmine-link', 'href'),
@@ -3688,6 +3725,9 @@ def get_file_summary(usi, usi2):
     for row in table.children:
         for tbody in row.children:
             usi = tbody.children[0].children
+            # Skipping header
+            if usi == "USI": 
+                continue
             download_remote_link = download._resolve_usi_remotelink(usi)
 
             # Here we're going to convert massive downloads to a proxy
