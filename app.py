@@ -1572,7 +1572,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     interactive_fig = go.Figure(
         data=go.Scatter(x=mzs, y=ints, 
             mode='markers+text',
-            marker=dict(size=1),
+            marker=dict(size=0.00001),
             error_y=dict(
                 symmetric=False,
                 arrayminus=[0]*len(neg_ints),
