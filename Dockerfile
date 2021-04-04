@@ -30,7 +30,7 @@ RUN echo "deb https://download.mono-project.com/repo/debian stable-buster main" 
 RUN apt-get update && apt-get -y install mono-devel
 
 WORKDIR /src
-RUN git clone -b master --single-branch https://github.com/compomics/ThermoRawFileParser /src
+RUN git clone -b master --single-branch https://github.com/compomics/ThermoRawFileParser --branch v1.3.2 /src
 RUN xbuild
 
 COPY . /app
