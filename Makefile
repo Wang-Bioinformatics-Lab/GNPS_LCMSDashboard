@@ -18,7 +18,7 @@ server-compose:
 
 clear-cache:
 	sudo rm temp/* || true
-	sudo rm temp/flask-cache/*
+	sudo rm temp/flask-cache/*  || true
 	sudo rm temp/memory-cache/joblib/ -rf
 	sudo rm temp/image_previews/*.png
 
