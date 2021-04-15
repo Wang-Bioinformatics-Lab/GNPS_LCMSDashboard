@@ -253,6 +253,8 @@ ADVANCED_VISUALIZATION_MODAL = [
                                             {'label': 'Aggrnyl_r', 'value': 'Aggrnyl_r'},
                                             {'label': 'Jet', 'value': 'Jet'},
                                             {'label': 'Jet_r', 'value': 'Jet_r'},
+                                            {'label': 'Turbo', 'value': 'Turbo'},
+                                            {'label': 'Turbo_r', 'value': 'Turbo_r'},
                                         ],
                                         searchable=True,
                                         clearable=False,
