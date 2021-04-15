@@ -67,7 +67,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
-from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL
+from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 
 server = Flask(__name__)
@@ -748,7 +748,13 @@ DATASLICE_CARD = [
                 )],
                 type="default",
             ),
-            dbc.Button("Spectrum Details", block=True, id="spectrum_details_modal_button"),
+
+            dbc.ButtonGroup([
+                dbc.Button("Spectrum Details", block=False, id="spectrum_details_modal_button"),
+                dbc.Button("View Vector Metabolomics USI", block=False, id="advanced_usi_modal_button"),
+            ]),
+
+            html.Br(),
             html.Br(),
             dcc.Loading(
                 id="ms2-plot-buttons",
@@ -1394,6 +1400,7 @@ BODY = dbc.Container(
         dbc.Row(ADVANCED_REPLAY_MODAL),
         dbc.Row(ADVANCED_VISUALIZATION_MODAL),
         dbc.Row(ADVANCED_XIC_MODAL),
+        dbc.Row(ADVANCED_USI_MODAL)
         
     ],
     fluid=True,
@@ -1526,7 +1533,8 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
                 Output('ms2-plot', 'figure'), 
                 Output('ms2-plot', 'config'), 
                 Output('ms2-plot-buttons', 'children'),
-                Output('spectrum_details_area', 'children'), 
+                Output('spectrum_details_area', 'children'),
+                Output('usi_frame', 'src'),
               ],
               [
                   Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")
@@ -1604,18 +1612,18 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
         masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
 
-        USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
 
-        button_elements = [USI_button, html.Br(), masst_button]
+        button_elements = [masst_button]
 
     if "MS1" in ms2_identifier:
         spectrum_type = "MS1"
 
-        USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
 
-        button_elements = [USI_button]
+        button_elements = []
 
-    return [spectrum_type, interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string)]
+    return [spectrum_type, interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url]
 
 @app.callback([ 
                 Output("xic_formula", "value"),
@@ -3984,6 +3992,13 @@ app.callback(
     [Input("spectrum_details_modal_button", "n_clicks"), Input("spectrum_details_modal_close", "n_clicks")],
     [State("spectrum_details_modal", "is_open")],
 )(toggle_modal)
+
+app.callback(
+    Output("advanced_usi_modal", "is_open"),
+    [Input("advanced_usi_modal_button", "n_clicks"), Input("advanced_usi_modal_close", "n_clicks")],
+    [State("advanced_usi_modal", "is_open")],
+)(toggle_modal)
+
 
 
 app.callback(

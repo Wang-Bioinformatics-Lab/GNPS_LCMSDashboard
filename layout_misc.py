@@ -478,3 +478,26 @@ ADVANCED_REPLAY_MODAL = [
         size="xl",
     ),
 ]
+
+ADVANCED_USI_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("GNPS Metabolomics USI Modal"),
+            dbc.ModalBody([
+                html.Iframe(
+                    id="usi_frame",
+                    style={
+                        "width" : "100%",
+                        "height" : "800px",
+                        "border" : "0"
+                    }
+                )
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_usi_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_usi_modal",
+        size="xl",
+    ),
+]
