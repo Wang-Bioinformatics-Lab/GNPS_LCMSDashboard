@@ -2442,6 +2442,16 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
         _intermediate_fig.showlegend = True
 
         lcms_fig.add_trace(_intermediate_fig)
+
+        # Adding new markers, adding traces only if there are less than 100
+        if len(overlay_df) < 100:
+            for row in overlay_df.to_dict(orient="records"):
+                mz = row["mz"]
+                rt = row["rt"]
+                lcms_fig.add_shape(type="rect",
+                    x0=rt - 0.1, y0=mz - 0.1, x1=rt + 0.1, y1=mz + 0.1,
+                    line=dict(color="RoyalBlue"),
+                )
     except:
         pass
 
