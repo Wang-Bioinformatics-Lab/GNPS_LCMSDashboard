@@ -886,8 +886,20 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay m/z", addon_type="prepend"),
-                            dbc.Input(id='overlay_mz', placeholder="Enter Overlay mz column", value="row m/z"),
+                            dbc.InputGroupAddon("Overlay m/z", addon_type="prepend", style={"margin-right":"20px"}),
+                            #dbc.Input(id='overlay_mz', placeholder="Enter Overlay mz column", value="row m/z"),
+                            dcc.Dropdown(
+                                id='overlay_mz',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
                         ],
                         className="mb-3",
                     ),
@@ -895,8 +907,20 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay rt", addon_type="prepend"),
-                            dbc.Input(id='overlay_rt', placeholder="Enter Overlay rt column", value="row retention time"),
+                            dbc.InputGroupAddon("Overlay RT", addon_type="prepend", style={"margin-right":"20px"}),
+                            #dbc.Input(id='overlay_rt', placeholder="Enter Overlay rt column", value="row retention time"),
+                            dcc.Dropdown(
+                                id='overlay_rt',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
                         ],
                         className="mb-3",
                     ),
@@ -988,6 +1012,17 @@ OVERLAY_PANEL = [
                     ),
                 )
             ]),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay Raw Tabular Data (if no UDI)", addon_type="prepend"),
+                            dbc.Textarea(id='overlay_tabular_data', placeholder="Enter Overlay tabular data", rows="20"),
+                        ],
+                        className="mb-3",
+                    ),
+                )
+            ])
         ]
     )
 
@@ -1579,7 +1614,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     # Getting Spectrum Peaks
     remote_link, local_filename = _resolve_usi(usi_first)
     peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
-    usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
+    usi_url = "https://metabolomics-usi.ucsd.edu/dashinterface/?usi={}".format(updated_usi)
 
     spectrum_type = "MS"
     button_elements = []
@@ -2287,7 +2322,7 @@ def _perform_feature_finding(filename, feature_finding=None):
 
 
 @cache.memoize()
-def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover):
+def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=""):
     """This function handles getting data and formatting for the overlay, functions as caching middle shim
 
     Args:
@@ -2301,7 +2336,10 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
         overlay_hover ([type]): [description]
     """
 
-    overlay_df = utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover)
+    if len(overlay_tabular_data) > 10000000:
+        overlay_tabular_data = ""
+
+    overlay_df = utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=overlay_tabular_data)
     
     return overlay_df
 
@@ -2335,7 +2373,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
 
     return lcms_fig, features_df
 
-def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=None):
+def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=None, overlay_tabular_data=""):
     """Given data, we try to put it on top of the LCMS View
 
     Args:
@@ -2359,7 +2397,7 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
     # Adding in overlay data
     # Adding a few extra things to the figure
     try:
-        overlay_df = _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover)
+        overlay_df = _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=overlay_tabular_data)
 
         overlay_df = overlay_df[overlay_df["rt"] > min_rt]
         overlay_df = overlay_df[overlay_df["rt"] < max_rt]
@@ -3093,6 +3131,8 @@ def determine_plot_zoom_bounds(url_search, usi,
                 Input('overlay_hover', 'value'),
                 Input('overlay_filter_column', 'value'),
                 Input('overlay_filter_value', 'value'),
+                Input('overlay_tabular_data', 'value'),
+
                 Input('feature_finding_type', 'value'),
                 Input('run_feature_finding_button', 'n_clicks'),
                 Input('image_export_format', 'value'),
@@ -3108,7 +3148,7 @@ def determine_plot_zoom_bounds(url_search, usi,
 def draw_file(url_search, usi, 
                 map_plot_zoom, highlight_box_zoom, map_plot_quantization_level, map_plot_color_scale,
                 show_ms2_markers, ms2marker_color, ms2marker_size, polarity_filter, 
-                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
+                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_tabular_data,
                 feature_finding_type,
                 feature_finding_click,
                 export_format,
@@ -3169,7 +3209,7 @@ def draw_file(url_search, usi,
     map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
 
     # Adding on Overlay Data
-    map_fig = _integrate_overlay(overlay_usi, map_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=current_map_selection)
+    map_fig = _integrate_overlay(overlay_usi, map_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=current_map_selection, overlay_tabular_data=overlay_tabular_data)
 
     try:
         # Creating a table
@@ -3821,10 +3861,19 @@ def get_dataset_link(usi, usi2):
         return [dbc.NavLink("Select Other Dataset Files", href="https://gnps-explorer.ucsd.edu/{}".format(all_accessions[0]))]
     return [dash.no_update]
 
-@app.callback([Output('overlay_hover', 'options'), Output('overlay_color', 'options'), Output('overlay_size', 'options')],
-              [Input('overlay_usi', 'value')])
+@app.callback([
+                  Output('overlay_mz', 'options'), 
+                  Output('overlay_rt', 'options'), 
+                  Output('overlay_hover', 'options'),
+                  Output('overlay_color', 'options'), 
+                  Output('overlay_size', 'options')
+              ],
+              [
+                  Input('overlay_usi', 'value'),
+                  Input('overlay_tabular_data', 'value'),
+              ])
 @cache.memoize()
-def get_overlay_options(overlay_usi):
+def get_overlay_options(overlay_usi, overlay_tabular_data):
     """This function finds all the overlay options
 
     Args:
@@ -3834,7 +3883,8 @@ def get_overlay_options(overlay_usi):
         [type]: [description]
     """
 
-    overlay_df = _resolve_overlay(overlay_usi, "", "", "", "", "", "", "")
+    overlay_df = _resolve_overlay(overlay_usi, "", "", "", "", "", "", "", overlay_tabular_data=overlay_tabular_data)
+    
 
     columns = list(overlay_df.columns)
 
@@ -3843,7 +3893,7 @@ def get_overlay_options(overlay_usi):
     for column in columns:
         options.append({"label": column, "value": column})
 
-    return [options, options, options]
+    return [options, options, options, options, options]
 
 
 
