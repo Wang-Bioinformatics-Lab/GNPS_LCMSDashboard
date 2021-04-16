@@ -871,8 +871,20 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay m/z", addon_type="prepend"),
-                            dbc.Input(id='overlay_mz', placeholder="Enter Overlay mz column", value="row m/z"),
+                            dbc.InputGroupAddon("Overlay m/z", addon_type="prepend", style={"margin-right":"20px"}),
+                            #dbc.Input(id='overlay_mz', placeholder="Enter Overlay mz column", value="row m/z"),
+                            dcc.Dropdown(
+                                id='overlay_mz',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
                         ],
                         className="mb-3",
                     ),
@@ -880,8 +892,20 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay rt", addon_type="prepend"),
-                            dbc.Input(id='overlay_rt', placeholder="Enter Overlay rt column", value="row retention time"),
+                            dbc.InputGroupAddon("Overlay RT", addon_type="prepend", style={"margin-right":"20px"}),
+                            #dbc.Input(id='overlay_rt', placeholder="Enter Overlay rt column", value="row retention time"),
+                            dcc.Dropdown(
+                                id='overlay_rt',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
                         ],
                         className="mb-3",
                     ),
@@ -2272,6 +2296,9 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
         overlay_color ([type]): [description]
         overlay_hover ([type]): [description]
     """
+
+    if len(overlay_tabular_data) > 10000000:
+        overlay_tabular_data = ""
 
     overlay_df = utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=overlay_tabular_data)
     
@@ -3792,7 +3819,9 @@ def get_dataset_link(usi, usi2):
     return [dash.no_update]
 
 @app.callback([
-                  Output('overlay_hover', 'options'), 
+                  Output('overlay_mz', 'options'), 
+                  Output('overlay_rt', 'options'), 
+                  Output('overlay_hover', 'options'),
                   Output('overlay_color', 'options'), 
                   Output('overlay_size', 'options')
               ],
@@ -3821,7 +3850,7 @@ def get_overlay_options(overlay_usi, overlay_tabular_data):
     for column in columns:
         options.append({"label": column, "value": column})
 
-    return [options, options, options]
+    return [options, options, options, options, options]
 
 
 
