@@ -973,6 +973,15 @@ OVERLAY_PANEL = [
                     ),
                 )
             ]),
+            dbc.Row([
+                dbc.InputGroup(
+                    [
+                        dbc.InputGroupAddon("Overlay Raw Tabular Data (if no UDI)", addon_type="prepend"),
+                        dbc.Input(id='overlay_tabular_data', placeholder="Enter Overlay tabular data", value=""),
+                    ],
+                    className="mb-3",
+                ),
+            ])
         ]
     )
 
@@ -1564,7 +1573,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     # Getting Spectrum Peaks
     remote_link, local_filename = _resolve_usi(usi_first)
     peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
-    usi_url = "https://metabolomics-usi.ucsd.edu/spectrum/?usi={}".format(updated_usi)
+    usi_url = "https://metabolomics-usi.ucsd.edu/dashinterface/?usi={}".format(updated_usi)
 
     spectrum_type = "MS"
     button_elements = []

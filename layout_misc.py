@@ -499,5 +499,8 @@ ADVANCED_USI_MODAL = [
         ],
         id="advanced_usi_modal",
         size="xl",
+        style={
+            "max-width": "1920px"
+        }
     ),
 ]
