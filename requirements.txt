@@ -53,3 +53,4 @@ flask_limiter==1.4
 pyarrow==3.0.0
 celery==5.0.5
 celery_once==3.0.1
+dash-extensions==0.0.51

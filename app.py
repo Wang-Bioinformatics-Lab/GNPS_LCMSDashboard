@@ -8,7 +8,12 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output, State
+#from dash.dependencies import State
 import dash_daq as daq
+
+#from dash_extensions.enrich import DashProxy, TriggerTransform, MultiplexerTransform, ServersideOutputTransform, NoOutputTransform, Output, Input
+
+
 from time import sleep
 
 # Plotly Imports
@@ -71,6 +76,7 @@ from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAIL
 from layout_xic_options import ADVANCED_XIC_MODAL
 
 server = Flask(__name__)
+#app = DashProxy(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP], transforms=[MultiplexerTransform()])
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 TEMPFOLDER = "./temp"
@@ -1341,7 +1347,7 @@ BODY = dbc.Container(
                     ),
                 ],
                 id='overlay-collapse',
-                is_open=True,
+                is_open=False,
                 style={"width": "50%", "marginTop": 30}
             )
         ]),
@@ -3951,6 +3957,8 @@ def toggle_collapse_filters(show_filters):
     [Input("feature_finding_type", "value")],
 )
 def toggle_collapse_feature_finding(feature_finding_type):
+    import sys
+    print("XXXXXXXXXXXXXXX", feature_finding_type, file=sys.stderr, flush=True)
     if feature_finding_type == "MZmine2":
         return [True]
     return [False]
