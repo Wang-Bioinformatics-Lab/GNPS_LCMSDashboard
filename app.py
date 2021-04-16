@@ -604,7 +604,22 @@ DATASELECTION_CARD = [
                             ),
                         ),
                     ]),
-                    html.H5(children='Rendering Options'),
+
+                    dbc.Row([
+                        dbc.Col(
+                            html.H5(children='Rendering Options '),
+                            className="col-3"
+                        ),
+                        dbc.Col(
+                            dbc.Button("Dark Mode", 
+                                id="darkmode_button", 
+                                color="dark", size="sm",
+                                className="mr-1",
+                            ),
+                            className="col-4"
+                        )
+                    ]),
+                    
                     dbc.Row([
                         dbc.Col(
                             dcc.Dropdown(
@@ -1652,6 +1667,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("overlay_hover", "value"),
                 Output('overlay_filter_column', 'value'),
                 Output('overlay_filter_value', 'value'),
+
                 Output("feature_finding_type", "value"),
                 Output("feature_finding_ppm", "value"),
                 Output("feature_finding_noise", "value"),
@@ -1666,14 +1682,17 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
                 Output("map_plot_color_scale", "value"),
                 Output("map_plot_quantization_level", "value"),
-                
+
+                Output("plot_theme", "value"),
               ],
               [
                   Input('url', 'search'), 
                   Input('sychronization_load_session_button', 'n_clicks'),
                   Input('sychronization_interval', 'n_intervals'),
                   Input('advanced_import_update_button', "n_clicks"),
-                  Input('auto_import_parameters', 'children')
+                  Input('auto_import_parameters', 'children'),
+
+                  Input('darkmode_button', 'n_clicks'),
               ],
               [
                   State('sychronization_session_id', 'value'),
@@ -1722,6 +1741,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
                   State('map_plot_color_scale', 'value'),
                   State('map_plot_quantization_level', 'value'),
+
+                  State("plot_theme", "value"),
                   
               ]
               )
@@ -1730,6 +1751,9 @@ def determine_url_only_parameters(  search,
                                     sychronization_interval, 
                                     advanced_import_update_button, 
                                     auto_import_parameters,
+
+                                    darkmode_button_click,
+
                                     sychronization_session_id,
 
                                     setting_json_area,
@@ -1778,8 +1802,17 @@ def determine_url_only_parameters(  search,
                                     existing_comment,
                                     
                                     existing_map_plot_color_scale,
-                                    existing_map_plot_quantization_level):
+                                    existing_map_plot_quantization_level,
+                                    
+                                    existing_plot_theme):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    # Here we clicked a button
+    if "darkmode_button" in triggered_id:
+        output = [dash.no_update] * 36
+        output[-1] = "plotly_dark"
+        output[-3] = "Turbo"
+        return output
 
     print("TRIGGERED URL PARSING", triggered_id, file=sys.stderr)
 
@@ -1861,6 +1894,8 @@ def determine_url_only_parameters(  search,
     map_plot_color_scale = _get_param_from_url(search, "", "map_plot_color_scale", dash.no_update, session_dict=session_dict, old_value=existing_map_plot_color_scale, no_change_default=dash.no_update)
     map_plot_quantization_level = _get_param_from_url(search, "", "map_plot_quantization_level", dash.no_update, session_dict=session_dict, old_value=existing_map_plot_quantization_level, no_change_default=dash.no_update)
 
+    plot_theme = _get_param_from_url(search, "", "plot_theme", dash.no_update, session_dict=session_dict, old_value=existing_plot_theme, no_change_default=dash.no_update)
+
     # Formatting the types
     try:
         if xic_norm == "True":
@@ -1905,13 +1940,16 @@ def determine_url_only_parameters(  search,
             xic_tolerance, 
             xic_ppm_tolerance, 
             xic_tolerance_unit, 
-            xic_rt_window, xic_norm, 
-            xic_file_grouping, xic_integration_type, 
+            xic_rt_window, 
+            xic_norm, 
+            xic_file_grouping, 
+            xic_integration_type, 
             show_ms2_markers, 
             ms2marker_color, 
             ms2marker_size, 
             show_lcms_2nd_map, 
-            tic_option, polarity_filtering, 
+            tic_option, 
+            polarity_filtering, 
             polarity_filtering2, 
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
@@ -1919,7 +1957,8 @@ def determine_url_only_parameters(  search,
             chromatogram_options, 
             comment,
             map_plot_color_scale,
-            map_plot_quantization_level]
+            map_plot_quantization_level,
+            plot_theme]
 
 
 @app.callback([ 
@@ -3325,6 +3364,8 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 
                 Input("map_plot_color_scale", "value"),
                 Input("map_plot_quantization_level", "value"),
+
+                Input("plot_theme", "value"),
               ],
               [
                   State('synchronization_type', 'value')
@@ -3338,7 +3379,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, 
                 chromatogram_options, 
                 comment,
-                map_plot_color_scale, map_plot_quantization_level,
+                map_plot_color_scale, map_plot_quantization_level, plot_theme,
                 synchronization_type):
 
     url_params = {}
@@ -3395,6 +3436,8 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     # Advanced Viz options
     url_params["map_plot_color_scale"] = map_plot_color_scale
     url_params["map_plot_quantization_level"] = map_plot_quantization_level
+
+    url_params["plot_theme"] = plot_theme
 
     hash_params = {}
     hash_params["usi"] = usi
