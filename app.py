@@ -904,6 +904,8 @@ OVERLAY_PANEL = [
                         className="mb-3",
                     ),
                 ),
+            ]),
+            dbc.Row([
                 dbc.Col(
                     dbc.InputGroup(
                         [
@@ -1034,6 +1036,8 @@ OVERLAY_PANEL = [
                         className="mb-3",
                     ),
                 ),
+            ]),
+            dbc.Row([
                 dbc.Col(
                     dbc.InputGroup(
                         [
