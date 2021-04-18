@@ -1750,6 +1750,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("overlay_hover", "value"),
                 Output('overlay_filter_column', 'value'),
                 Output('overlay_filter_value', 'value'),
+                Output('overlay_rt_min', 'value'),
+                Output('overlay_rt_max', 'value'),
 
                 Output("feature_finding_type", "value"),
                 Output("feature_finding_ppm", "value"),
@@ -1808,6 +1810,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   State('overlay_hover', 'value'),
                   State('overlay_filter_column', 'value'),
                   State('overlay_filter_value', 'value'),
+                  State('overlay_rt_min', 'value'),
+                  State('overlay_rt_max', 'value'),
 
                   State('feature_finding_type', 'value'),
                   State('feature_finding_ppm', 'value'),
@@ -1870,6 +1874,8 @@ def determine_url_only_parameters(  search,
                                     existing_overlay_hover,
                                     existing_overlay_filter_column,
                                     existing_overlay_filter_value,
+                                    existing_overlay_rt_min,
+                                    existing_overlay_rt_max,
 
                                     existing_feature_finding_type,
                                     existing_feature_finding_ppm,
@@ -1892,7 +1898,7 @@ def determine_url_only_parameters(  search,
 
     # Here we clicked a button
     if "darkmode_button" in triggered_id:
-        output = [dash.no_update] * 36
+        output = [dash.no_update] * 38
         output[-1] = "plotly_dark"
         output[-3] = "Turbo"
         return output
@@ -1952,6 +1958,8 @@ def determine_url_only_parameters(  search,
     overlay_hover = _get_param_from_url(search, "", "overlay_hover", dash.no_update, session_dict=session_dict, old_value=existing_overlay_hover, no_change_default=dash.no_update)
     overlay_filter_column = _get_param_from_url(search, "", "overlay_filter_column", dash.no_update, session_dict=session_dict, old_value=existing_overlay_filter_column, no_change_default=dash.no_update)
     overlay_filter_value = _get_param_from_url(search, "", "overlay_filter_value", dash.no_update, session_dict=session_dict, old_value=existing_overlay_filter_value, no_change_default=dash.no_update)
+    overlay_rt_min = _get_param_from_url(search, "", "overlay_rt_min", dash.no_update, session_dict=session_dict, old_value=existing_overlay_rt_min, no_change_default=dash.no_update)
+    overlay_rt_max = _get_param_from_url(search, "", "overlay_rt_max", dash.no_update, session_dict=session_dict, old_value=existing_overlay_rt_max, no_change_default=dash.no_update)
 
     # Feature Finding
     feature_finding_type = _get_param_from_url(search, "", "feature_finding_type", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_type, no_change_default=dash.no_update)
@@ -2034,7 +2042,7 @@ def determine_url_only_parameters(  search,
             tic_option, 
             polarity_filtering, 
             polarity_filtering2, 
-            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
+            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_rt_min, overlay_rt_max,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
             sychronization_session_id,
             chromatogram_options, 
@@ -3457,6 +3465,9 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("overlay_hover", "value"),
                 Input('overlay_filter_column', 'value'),
                 Input('overlay_filter_value', 'value'),
+                Input('overlay_rt_min', 'value'),
+                Input('overlay_rt_max', 'value'),
+
                 Input("feature_finding_type", "value"),
                 Input("feature_finding_ppm", "value"),
                 Input("feature_finding_noise", "value"),
@@ -3483,7 +3494,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2marker_color, ms2marker_size,
                 ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
-                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
+                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_rt_min, overlay_rt_max,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
                 sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, 
                 chromatogram_options, 
@@ -3524,6 +3535,8 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["overlay_hover"] = overlay_hover
     url_params["overlay_filter_column"] = overlay_filter_column
     url_params["overlay_filter_value"] = overlay_filter_value
+    url_params["overlay_rt_min"] = overlay_rt_min
+    url_params["overlay_rt_max"] = overlay_rt_max
 
     # Feature Finding Options
     url_params["feature_finding_type"] = feature_finding_type
