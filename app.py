@@ -2986,10 +2986,9 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         box_graph = dcc.Graph(figure=box_fig, config=graph_config)
 
         # Plotting the Scatter Plot
-        if len(all_xic_values) > 0 or len(chromatogram_list) > 0:
-            scatter_fig = px.scatter(x=[0, 1, 2, 3, 4], y=[0, 1, 4, 9, 16])
-            print(integral_df)
-            integration_scatter_graph = dash.no_update
+        if (len(all_xic_values) + len(chromatogram_list) > 0) and (len(usi_list) > 1):
+            scatter_fig = px.scatter(integral_df, x="USI", y="value", color="variable", template=plot_theme)
+            integration_scatter_graph = dcc.Graph(figure=scatter_fig, config=graph_config)
     except:
         pass
 
