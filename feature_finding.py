@@ -26,7 +26,7 @@ def perform_feature_finding(filename, params, timeout=90):
         return _dinosaur_feature_finding(filename, timeout=timeout)
 
     if params["type"] == "MSQL":
-        return _msql_feature_finding(filename, timeout=timeout)
+        return _msql_feature_finding(filename, params["params"])
     
 
 def _test_feature_finding(filename):
@@ -67,7 +67,6 @@ def _trivial_feature_finding(filename):
                 all_i += list(intensity)
                 all_rt += len(mz) * [rt]
             except:
-                raise
                 pass
 
     features_df = pd.DataFrame()
@@ -188,8 +187,46 @@ def _dinosaur_feature_finding(filename, timeout=90):
     
     return features_df
 
-def _msql_feature_finding(filename):
+def _msql_feature_finding(filename, params):
+    msql_statement = params["msql_statement"]
+
+    min_rt = 0
+    max_rt = 1000000
+    min_mz = 0
+    max_mz = 2000
+
+    all_mz = []
+    all_i = []
+    all_rt = []
+
+    ms2_highlight = float(msql_statement.split("=")[-1])
+    min_mz = ms2_highlight - 0.5
+    max_mz = ms2_highlight + 0.5
+
+    for spec in _spectrum_generator(filename, min_rt, max_rt):
+        scan_polarity = _get_scan_polarity(spec)
+
+        if spec.ms_level == 2:
+            rt = spec.scan_time_in_minutes()
+            prec_mz = spec.selected_precursors[0]["mz"]
+
+            try:
+                # Filtering peaks by mz
+                peaks = spec.reduce(mz_range=(min_mz, max_mz))
+
+                if len(peaks) > 0:
+                    all_mz.append(prec_mz)
+                    all_i.append(0)
+                    all_rt.append(rt)
+            except:
+                pass
+
     features_df = pd.DataFrame()
+    features_df['mz'] = all_mz
+    features_df['i'] = all_i
+    features_df['rt'] = all_rt
+
+
 
     return features_df
 

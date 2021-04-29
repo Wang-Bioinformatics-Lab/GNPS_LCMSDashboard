@@ -868,6 +868,26 @@ FEATURE_FINDING_PANEL = [
     )
 ]
 
+MASSSPEC_QUERY_PANEL = [
+    dbc.CardHeader(html.H5("Mass Spec Query Options")),
+    dbc.CardBody(
+        [   
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("MSQL", addon_type="prepend"),
+                            dbc.Input(id='msql_statement', placeholder="MSQL", value=""),
+                        ],
+                        className="mb-3",
+                    )
+                ),
+            ]),
+        ]
+    )
+]
+
+
 OVERLAY_PANEL = [
     dbc.CardHeader(html.H5("LCMS Overlay Options")),
     dbc.CardBody(
@@ -1387,6 +1407,22 @@ BODY = dbc.Container(
                 style={"width": "50%", "marginTop": 30}
             )
         ]),
+
+        dbc.Row([
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(MASSSPEC_QUERY_PANEL),
+                    ],
+                        #className="w-50"
+                    ),
+                ],
+                id='msql-collapse',
+                is_open=False,
+                style={"width": "50%", "marginTop": 30}
+            )
+        ]),
+
 
         dbc.Row([
             dbc.Collapse(
@@ -3136,6 +3172,9 @@ def determine_plot_zoom_bounds(url_search, usi,
 
                 Input('feature_finding_type', 'value'),
                 Input('run_feature_finding_button', 'n_clicks'),
+
+                Input('msql_statement', 'value'),
+
                 Input('image_export_format', 'value'),
                 Input("plot_theme", "value")
               ],
@@ -3152,6 +3191,7 @@ def draw_file(url_search, usi,
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_tabular_data,
                 feature_finding_type,
                 feature_finding_click,
+                msql_statement,
                 export_format,
                 plot_theme,
                 feature_finding_ppm,
@@ -3186,6 +3226,7 @@ def draw_file(url_search, usi,
         feature_finding_params["params"]["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
         feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
         feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
+        feature_finding_params["params"]["msql_statement"] = msql_statement
 
     current_map_selection = json.loads(map_plot_zoom)
     highlight_box = None
@@ -4054,6 +4095,15 @@ def toggle_collapse_filters(show_filters):
 )
 def toggle_collapse_feature_finding(feature_finding_type):
     if feature_finding_type == "MZmine2":
+        return [True]
+    return [False]
+
+@app.callback(
+    [Output("msql-collapse", "is_open")],
+    [Input("feature_finding_type", "value")],
+)
+def toggle_collapse_msql(feature_finding_type):
+    if feature_finding_type == "MSQL":
         return [True]
     return [False]
 
