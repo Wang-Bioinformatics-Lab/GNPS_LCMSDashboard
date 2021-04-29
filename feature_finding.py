@@ -24,6 +24,9 @@ def perform_feature_finding(filename, params, timeout=90):
     
     if params["type"] == "Dinosaur":
         return _dinosaur_feature_finding(filename, timeout=timeout)
+
+    if params["type"] == "MSQL":
+        return _msql_feature_finding(filename, timeout=timeout)
     
 
 def _test_feature_finding(filename):
@@ -185,6 +188,11 @@ def _dinosaur_feature_finding(filename, timeout=90):
     
     return features_df
 
+def _msql_feature_finding(filename):
+    features_df = pd.DataFrame()
+
+    return features_df
+
 def _call_feature_finding_tool(cmd, timeout=90):
     """This calls the feature finding tool but also does proper cleanup by killing all child processes
 
@@ -207,3 +215,4 @@ def _call_feature_finding_tool(cmd, timeout=90):
         parent.kill()
 
     return 1
+

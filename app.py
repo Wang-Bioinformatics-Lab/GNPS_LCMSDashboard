@@ -353,6 +353,7 @@ DATASELECTION_CARD = [
                                             # {'label': 'TidyMS', 'value': 'TidyMS'},
                                             {'label': 'MZmine2 (Metabolomics)', 'value': 'MZmine2'},
                                             {'label': 'Dinosaur (Proteomics)', 'value': 'Dinosaur'},
+                                            {'label': 'MS Query Language', 'value': 'MSQL'},
                                         ],
                                         searchable=False,
                                         clearable=False,
