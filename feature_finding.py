@@ -198,6 +198,7 @@ def _msql_feature_finding(filename, params):
     all_mz = []
     all_i = []
     all_rt = []
+    all_scan = []
 
     ms2_highlight = float(msql_statement.split("=")[-1])
     min_mz = ms2_highlight - 0.5
@@ -218,6 +219,7 @@ def _msql_feature_finding(filename, params):
                     all_mz.append(prec_mz)
                     all_i.append(0)
                     all_rt.append(rt)
+                    all_scan.append(spec.ID)
             except:
                 pass
 
@@ -225,6 +227,8 @@ def _msql_feature_finding(filename, params):
     features_df['mz'] = all_mz
     features_df['i'] = all_i
     features_df['rt'] = all_rt
+    features_df['scan'] = all_scan
+
 
 
 
