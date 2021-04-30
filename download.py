@@ -13,6 +13,8 @@ from time import sleep
 
 from download_msv import _resolve_msv_usi
 from download_workbench import _resolve_metabolomicsworkbench_usi
+from download_gnps import _resolve_gnps_usi
+
 
 def _get_usi_display_filename(usi):
     usi_splits = usi.split(":")
@@ -66,33 +68,6 @@ def _usi_to_local_filename(usi):
         print(converted_local_filename, file=sys.stderr)
         return converted_local_filename.replace(".mzML.mzML", ".mzML")
 
-
-
-def _resolve_gnps_usi(usi):
-    usi_splits = usi.split(':')
-
-    if "TASK-" in usi_splits[2]:
-        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
-        filename = "-".join(usi_splits[2].split("-")[2:])
-        task = usi_splits[2].split("-")[1]
-
-        remote_link = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, urllib.parse.quote(filename))
-    elif "QUICKSTART-" in usi_splits[2]:
-        filename = "-".join(usi_splits[2].split("-")[2:])
-        task = usi_splits[2].split("-")[1]
-        remote_link = "http://gnps-quickstart.ucsd.edu/conversion/file?sessionid={}&filename={}".format(task, urllib.parse.quote(filename))
-    elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
-        print("Library Entry")
-        # Lets find the provenance file
-        accession = usi_splits[4]
-        url = "https://gnps.ucsd.edu/ProteoSAFe/SpectrumCommentServlet?SpectrumID={}".format(accession)
-        r = requests.get(url)
-        spectrum_dict = r.json()
-        task = spectrum_dict["spectruminfo"]["task"]
-        source_file = os.path.basename(spectrum_dict["spectruminfo"]["source_file"])
-        remote_link = "ftp://ccms-ftp.ucsd.edu/GNPS_Library_Provenance/{}/{}".format(task, source_file)
-
-    return remote_link
 
 def _resolve_mtbls_usi(usi):
     usi_splits = usi.split(':')
