@@ -2505,6 +2505,7 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
         # Adding new markers, adding traces only if there are less than 100
         if len(overlay_df) < 100:
             for row in overlay_df.to_dict(orient="records"):
+                print(row, file=sys.stderr, flush=True)
                 mz = row["mz"]
                 rt_min = row["rt_min"]
                 rt_max = row["rt_max"]
