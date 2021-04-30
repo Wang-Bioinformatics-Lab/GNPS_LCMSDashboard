@@ -904,6 +904,8 @@ OVERLAY_PANEL = [
                         className="mb-3",
                     ),
                 ),
+            ]),
+            dbc.Row([
                 dbc.Col(
                     dbc.InputGroup(
                         [
@@ -1007,6 +1009,52 @@ OVERLAY_PANEL = [
                         [
                             dbc.InputGroupAddon("Overlay Filter Value", addon_type="prepend"),
                             dbc.Input(id='overlay_filter_value', placeholder="Enter Overlay size column", value=""),
+                        ],
+                        className="mb-3",
+                    ),
+                )
+            ]),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay RT min", addon_type="prepend", style={"margin-right":"20px"}),
+                            #dbc.Input(id='overlay_color', placeholder="Enter Overlay color column", value=""),
+                            dcc.Dropdown(
+                                id='overlay_rt_min',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
+                        ],
+                        className="mb-3",
+                    ),
+                ),
+            ]),
+            dbc.Row([
+                dbc.Col(
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupAddon("Overlay RT max", addon_type="prepend", style={"margin-right":"20px"}),
+                            #dbc.Input(id='overlay_size', placeholder="Enter Overlay size column", value=""),
+                            dcc.Dropdown(
+                                id='overlay_rt_max',
+                                options=[
+                                    {'label': 'None', 'value': ''},
+                                ],
+                                searchable=False,
+                                clearable=False,
+                                value="",
+                                style={
+                                    "width":"60%"
+                                }
+                            )
                         ],
                         className="mb-3",
                     ),
@@ -1702,6 +1750,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                 Output("overlay_hover", "value"),
                 Output('overlay_filter_column', 'value'),
                 Output('overlay_filter_value', 'value'),
+                Output('overlay_rt_min', 'value'),
+                Output('overlay_rt_max', 'value'),
 
                 Output("feature_finding_type", "value"),
                 Output("feature_finding_ppm", "value"),
@@ -1760,6 +1810,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   State('overlay_hover', 'value'),
                   State('overlay_filter_column', 'value'),
                   State('overlay_filter_value', 'value'),
+                  State('overlay_rt_min', 'value'),
+                  State('overlay_rt_max', 'value'),
 
                   State('feature_finding_type', 'value'),
                   State('feature_finding_ppm', 'value'),
@@ -1822,6 +1874,8 @@ def determine_url_only_parameters(  search,
                                     existing_overlay_hover,
                                     existing_overlay_filter_column,
                                     existing_overlay_filter_value,
+                                    existing_overlay_rt_min,
+                                    existing_overlay_rt_max,
 
                                     existing_feature_finding_type,
                                     existing_feature_finding_ppm,
@@ -1844,7 +1898,7 @@ def determine_url_only_parameters(  search,
 
     # Here we clicked a button
     if "darkmode_button" in triggered_id:
-        output = [dash.no_update] * 36
+        output = [dash.no_update] * 38
         output[-1] = "plotly_dark"
         output[-3] = "Turbo"
         return output
@@ -1904,6 +1958,8 @@ def determine_url_only_parameters(  search,
     overlay_hover = _get_param_from_url(search, "", "overlay_hover", dash.no_update, session_dict=session_dict, old_value=existing_overlay_hover, no_change_default=dash.no_update)
     overlay_filter_column = _get_param_from_url(search, "", "overlay_filter_column", dash.no_update, session_dict=session_dict, old_value=existing_overlay_filter_column, no_change_default=dash.no_update)
     overlay_filter_value = _get_param_from_url(search, "", "overlay_filter_value", dash.no_update, session_dict=session_dict, old_value=existing_overlay_filter_value, no_change_default=dash.no_update)
+    overlay_rt_min = _get_param_from_url(search, "", "overlay_rt_min", dash.no_update, session_dict=session_dict, old_value=existing_overlay_rt_min, no_change_default=dash.no_update)
+    overlay_rt_max = _get_param_from_url(search, "", "overlay_rt_max", dash.no_update, session_dict=session_dict, old_value=existing_overlay_rt_max, no_change_default=dash.no_update)
 
     # Feature Finding
     feature_finding_type = _get_param_from_url(search, "", "feature_finding_type", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_type, no_change_default=dash.no_update)
@@ -1986,7 +2042,7 @@ def determine_url_only_parameters(  search,
             tic_option, 
             polarity_filtering, 
             polarity_filtering2, 
-            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
+            overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_rt_min, overlay_rt_max,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
             sychronization_session_id,
             chromatogram_options, 
@@ -2322,7 +2378,7 @@ def _perform_feature_finding(filename, feature_finding=None):
 
 
 @cache.memoize()
-def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=""):
+def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_rt_min, overlay_rt_max, overlay_tabular_data=""):
     """This function handles getting data and formatting for the overlay, functions as caching middle shim
 
     Args:
@@ -2339,7 +2395,7 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
     if len(overlay_tabular_data) > 10000000:
         overlay_tabular_data = ""
 
-    overlay_df = utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=overlay_tabular_data)
+    overlay_df = utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_rt_min, overlay_rt_max, overlay_tabular_data=overlay_tabular_data)
     
     return overlay_df
 
@@ -2373,7 +2429,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
 
     return lcms_fig, features_df
 
-def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=None, overlay_tabular_data=""):
+def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_rt_min, overlay_rt_max, map_selection=None, overlay_tabular_data=""):
     """Given data, we try to put it on top of the LCMS View
 
     Args:
@@ -2397,7 +2453,7 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
     # Adding in overlay data
     # Adding a few extra things to the figure
     try:
-        overlay_df = _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=overlay_tabular_data)
+        overlay_df = _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_rt_min, overlay_rt_max, overlay_tabular_data=overlay_tabular_data)
 
         overlay_df = overlay_df[overlay_df["rt"] > min_rt]
         overlay_df = overlay_df[overlay_df["rt"] < max_rt]
@@ -2442,6 +2498,17 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
         _intermediate_fig.showlegend = True
 
         lcms_fig.add_trace(_intermediate_fig)
+
+        # Adding new markers, adding traces only if there are less than 100
+        if len(overlay_df) < 100:
+            for row in overlay_df.to_dict(orient="records"):
+                mz = row["mz"]
+                rt_min = row["rt_min"]
+                rt_max = row["rt_max"]
+                lcms_fig.add_shape(type="rect",
+                    x0=rt_min, y0=mz - 0.1, x1=rt_max, y1=mz + 0.1,
+                    line=dict(color="RoyalBlue"),
+                )
     except:
         pass
 
@@ -3131,6 +3198,9 @@ def determine_plot_zoom_bounds(url_search, usi,
                 Input('overlay_hover', 'value'),
                 Input('overlay_filter_column', 'value'),
                 Input('overlay_filter_value', 'value'),
+                Input('overlay_rt_min', 'value'),
+                Input('overlay_rt_max', 'value'),
+
                 Input('overlay_tabular_data', 'value'),
 
                 Input('feature_finding_type', 'value'),
@@ -3148,7 +3218,9 @@ def determine_plot_zoom_bounds(url_search, usi,
 def draw_file(url_search, usi, 
                 map_plot_zoom, highlight_box_zoom, map_plot_quantization_level, map_plot_color_scale,
                 show_ms2_markers, ms2marker_color, ms2marker_size, polarity_filter, 
-                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_tabular_data,
+                overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, 
+                overlay_rt_min, overlay_rt_max, 
+                overlay_tabular_data,
                 feature_finding_type,
                 feature_finding_click,
                 export_format,
@@ -3209,7 +3281,12 @@ def draw_file(url_search, usi,
     map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
 
     # Adding on Overlay Data
-    map_fig = _integrate_overlay(overlay_usi, map_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=current_map_selection, overlay_tabular_data=overlay_tabular_data)
+    map_fig = _integrate_overlay(overlay_usi, 
+                                map_fig, 
+                                overlay_mz, 
+                                overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, 
+                                overlay_rt_min, overlay_rt_max, 
+                                map_selection=current_map_selection, overlay_tabular_data=overlay_tabular_data)
 
     try:
         # Creating a table
@@ -3388,6 +3465,9 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("overlay_hover", "value"),
                 Input('overlay_filter_column', 'value'),
                 Input('overlay_filter_value', 'value'),
+                Input('overlay_rt_min', 'value'),
+                Input('overlay_rt_max', 'value'),
+
                 Input("feature_finding_type", "value"),
                 Input("feature_finding_ppm", "value"),
                 Input("feature_finding_noise", "value"),
@@ -3414,7 +3494,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2marker_color, ms2marker_size,
                 ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
-                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
+                overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_rt_min, overlay_rt_max,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
                 sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, 
                 chromatogram_options, 
@@ -3455,6 +3535,8 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["overlay_hover"] = overlay_hover
     url_params["overlay_filter_column"] = overlay_filter_column
     url_params["overlay_filter_value"] = overlay_filter_value
+    url_params["overlay_rt_min"] = overlay_rt_min
+    url_params["overlay_rt_max"] = overlay_rt_max
 
     # Feature Finding Options
     url_params["feature_finding_type"] = feature_finding_type
@@ -3866,7 +3948,9 @@ def get_dataset_link(usi, usi2):
                   Output('overlay_rt', 'options'), 
                   Output('overlay_hover', 'options'),
                   Output('overlay_color', 'options'), 
-                  Output('overlay_size', 'options')
+                  Output('overlay_size', 'options'),
+                  Output('overlay_rt_min', 'options'),
+                  Output('overlay_rt_max', 'options'),
               ],
               [
                   Input('overlay_usi', 'value'),
@@ -3883,7 +3967,7 @@ def get_overlay_options(overlay_usi, overlay_tabular_data):
         [type]: [description]
     """
 
-    overlay_df = _resolve_overlay(overlay_usi, "", "", "", "", "", "", "", overlay_tabular_data=overlay_tabular_data)
+    overlay_df = _resolve_overlay(overlay_usi, "", "", "", "", "", "", "", "", "", overlay_tabular_data=overlay_tabular_data)
     
 
     columns = list(overlay_df.columns)
@@ -3893,7 +3977,7 @@ def get_overlay_options(overlay_usi, overlay_tabular_data):
     for column in columns:
         options.append({"label": column, "value": column})
 
-    return [options, options, options, options, options]
+    return [options, options, options, options, options, options, options]
 
 
 

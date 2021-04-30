@@ -326,7 +326,7 @@ def _spectrum_generator(filename, min_rt, max_rt):
             print("USED BRUTEFORCE")
 
 # Getting the Overlay data
-def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=""):
+def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_rt_min, overlay_rt_max, overlay_tabular_data=""):
     # Let's try the UDI
     try:
         overlay_usi_splits = overlay_usi.split(":")
@@ -366,5 +366,10 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
     # Adding Label
     if len(overlay_hover) > 0 and overlay_hover in overlay_df:
         overlay_df["hover"] = overlay_df[overlay_hover]
+
+    # Adding bounds
+    if len(overlay_rt_min) > 0 and overlay_rt_min in overlay_df:
+        overlay_df["rt_min"] = overlay_df[overlay_rt_min]
+        overlay_df["rt_max"] = overlay_df[overlay_rt_max]
 
     return overlay_df
