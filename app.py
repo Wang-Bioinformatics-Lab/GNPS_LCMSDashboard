@@ -2506,7 +2506,7 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
                 rt_min = row["rt_min"]
                 rt_max = row["rt_max"]
                 lcms_fig.add_shape(type="rect",
-                    x0=rt_min, y0=mz, x1=rt_max, y1=mz + 0.3,
+                    x0=rt_min, y0=mz - 0.1, x1=rt_max, y1=mz + 0.1,
                     line=dict(color="RoyalBlue"),
                 )
     except:
