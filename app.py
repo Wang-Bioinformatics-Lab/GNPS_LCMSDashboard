@@ -69,6 +69,7 @@ from flask_limiter.util import get_remote_address
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
+from layout_overlay import OVERLAY_PANEL
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -867,166 +868,7 @@ FEATURE_FINDING_PANEL = [
     )
 ]
 
-OVERLAY_PANEL = [
-    dbc.CardHeader(html.H5("LCMS Overlay Options")),
-    dbc.CardBody(
-        [
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay UDI", addon_type="prepend"),
-                            dbc.Input(id='overlay_usi', placeholder="Enter Overlay File UDI for GNPS"),
-                        ],
-                        className="mb-3",
-                    ),
-                )
-            ]),
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay m/z", addon_type="prepend", style={"margin-right":"20px"}),
-                            #dbc.Input(id='overlay_mz', placeholder="Enter Overlay mz column", value="row m/z"),
-                            dcc.Dropdown(
-                                id='overlay_mz',
-                                options=[
-                                    {'label': 'None', 'value': ''},
-                                ],
-                                searchable=False,
-                                clearable=False,
-                                value="",
-                                style={
-                                    "width":"60%"
-                                }
-                            )
-                        ],
-                        className="mb-3",
-                    ),
-                ),
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay RT", addon_type="prepend", style={"margin-right":"20px"}),
-                            #dbc.Input(id='overlay_rt', placeholder="Enter Overlay rt column", value="row retention time"),
-                            dcc.Dropdown(
-                                id='overlay_rt',
-                                options=[
-                                    {'label': 'None', 'value': ''},
-                                ],
-                                searchable=False,
-                                clearable=False,
-                                value="",
-                                style={
-                                    "width":"60%"
-                                }
-                            )
-                        ],
-                        className="mb-3",
-                    ),
-                )
-            ]),
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay color", addon_type="prepend", style={"margin-right":"20px"}),
-                            #dbc.Input(id='overlay_color', placeholder="Enter Overlay color column", value=""),
-                            dcc.Dropdown(
-                                id='overlay_color',
-                                options=[
-                                    {'label': 'None', 'value': ''},
-                                ],
-                                searchable=False,
-                                clearable=False,
-                                value="",
-                                style={
-                                    "width":"60%"
-                                }
-                            )
-                        ],
-                        className="mb-3",
-                    ),
-                ),
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay size", addon_type="prepend", style={"margin-right":"20px"}),
-                            #dbc.Input(id='overlay_size', placeholder="Enter Overlay size column", value=""),
-                            dcc.Dropdown(
-                                id='overlay_size',
-                                options=[
-                                    {'label': 'None', 'value': ''},
-                                ],
-                                searchable=False,
-                                clearable=False,
-                                value="",
-                                style={
-                                    "width":"60%"
-                                }
-                            )
-                        ],
-                        className="mb-3",
-                    ),
-                )
-            ]),
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay Label Column", addon_type="prepend", style={"margin-right":"20px"}),
-                            dcc.Dropdown(
-                                id='overlay_hover',
-                                options=[
-                                    {'label': 'None', 'value': ''},
-                                ],
-                                searchable=False,
-                                clearable=False,
-                                value="",
-                                style={
-                                    "width":"60%"
-                                }
-                            )
-                        ],
-                        className="mb-3",
-                    ),
-                ),
-            ]),
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay Filter Column", addon_type="prepend"),
-                            dbc.Input(id='overlay_filter_column', placeholder="Enter Overlay filter column", value=""),
-                        ],
-                        className="mb-3",
-                    ),
-                ),
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay Filter Value", addon_type="prepend"),
-                            dbc.Input(id='overlay_filter_value', placeholder="Enter Overlay size column", value=""),
-                        ],
-                        className="mb-3",
-                    ),
-                )
-            ]),
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Overlay Raw Tabular Data (if no UDI)", addon_type="prepend"),
-                            dbc.Textarea(id='overlay_tabular_data', placeholder="Enter Overlay tabular data", rows="20"),
-                        ],
-                        className="mb-3",
-                    ),
-                )
-            ])
-        ]
-    )
 
-]
 
 USI1_FILTERING_PANEL = [
     dbc.CardHeader(html.H5("USI Scan Filtering Options")),
@@ -2336,7 +2178,8 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
         overlay_hover ([type]): [description]
     """
 
-    if len(overlay_tabular_data) > 10000000:
+    
+    if overlay_tabular_data is None or len(overlay_tabular_data) > 10000000:
         overlay_tabular_data = ""
 
     overlay_df = utils._resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=overlay_tabular_data)
@@ -2443,6 +2286,7 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
 
         lcms_fig.add_trace(_intermediate_fig)
     except:
+        raise
         pass
 
     return lcms_fig
@@ -3884,7 +3728,6 @@ def get_overlay_options(overlay_usi, overlay_tabular_data):
     """
 
     overlay_df = _resolve_overlay(overlay_usi, "", "", "", "", "", "", "", overlay_tabular_data=overlay_tabular_data)
-    
 
     columns = list(overlay_df.columns)
 
