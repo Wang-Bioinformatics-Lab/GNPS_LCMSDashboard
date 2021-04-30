@@ -4,8 +4,8 @@ cffi==1.12.3
 chardet==3.0.4
 click==7.1.1
 cryptography==3.3.2
-dash==1.19.0
-dash-core-components==1.15.0
+dash==1.20.0
+dash-core-components==1.16.0
 dash-html-components==1.1.2
 dash-renderer==1.9.0
 dash-table==4.11.2
