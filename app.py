@@ -69,6 +69,7 @@ from flask_limiter.util import get_remote_address
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
+from layout_featurefinding import FEATUREFINDING_RESULTS_CARD
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -1168,18 +1169,7 @@ INTEGRATION_CARD = [
     )
 ]
 
-FEATUREFINDING_RESULTS_CARD = [
-    dbc.CardHeader(html.H5("Feature Finding Results")),
-    dbc.CardBody(
-        [
-            dcc.Loading(
-                id="feature-finding-table",
-                children=[html.Div([html.Div(id="loading-output-100")])],
-                type="default",
-            ),
-        ]
-    )
-]
+
 
 
 SUMMARY_CARD = [
