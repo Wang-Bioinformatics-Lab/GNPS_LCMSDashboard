@@ -1289,7 +1289,9 @@ MIDDLE_DASHBOARD = [
                 config={
                     'doubleClick': 'reset'
                 }
-            )
+            ),
+            html.Br(),
+            html.Div(id='average_plot1'),
         ]
     )
 ]
@@ -1575,6 +1577,16 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
         closest_scan = ms2.determine_scan_by_rt(usi_first, local_filename, rt_target)
 
         return ["MS1:{}".format(closest_scan)]
+
+@app.callback([
+                  Output("average_plot1", "children")
+              ],
+              [
+                  Input('tic-plot', 'relayoutData'),
+              ])
+def tic_average_plot(tic_plot_relay):
+    return [tic_plot_relay]
+
 
 
 # This helps to update the ms2/ms1 plot
