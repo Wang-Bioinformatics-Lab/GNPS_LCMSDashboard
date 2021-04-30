@@ -69,7 +69,7 @@ from flask_limiter.util import get_remote_address
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
-from layout_featurefinding import FEATUREFINDING_RESULTS_CARD
+from layout_featurefinding import FEATURE_FINDING_PANEL, FEATUREFINDING_RESULTS_CARD
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -784,86 +784,6 @@ DATASLICE_CARD = [
                 children=[html.Div([html.Div(id="loading-output-102")])],
                 type="default",
             ),
-        ]
-    )
-]
-
-FEATURE_FINDING_PANEL = [
-    dbc.CardHeader(html.H5("Feature Finding Options")),
-    dbc.CardBody(
-        [   
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Precursor PPM Tolerance", addon_type="prepend"),
-                            dbc.Input(id='feature_finding_ppm', placeholder="PPM tolerance for feature finding", value=10),
-                        ],
-                        className="mb-3",
-                    )
-                ),
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("MS1 Noise Level", addon_type="prepend"),
-                            dbc.Input(id='feature_finding_noise', placeholder="Noise for feature finding", value=10000),
-                        ],
-                        className="mb-3",
-                    )
-                ),
-            ]),
-
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Min Peak Width (Minutes)", addon_type="prepend"),
-                            dbc.Input(id='feature_finding_min_peak_rt', placeholder="RT Min for feature finding", value=0.05),
-                        ],
-                        className="mb-3",
-                    )
-                ),
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("Max Peak Width (Minutes)", addon_type="prepend"),
-                            dbc.Input(id='feature_finding_max_peak_rt', placeholder="RT Max for feature finding", value=1.5),
-                        ],
-                        className="mb-3",
-                    )
-                ),
-            ]),
-
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupAddon("RT Tolerance (Minutes)", addon_type="prepend"),
-                            dbc.Input(id='feature_finding_rt_tolerance', placeholder="RT Tolerance for Isotopic peaks", value=0.3),
-                        ],
-                        className="mb-3",
-                    )
-                ),
-            ]),
-
-            dbc.Row([
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.Button("Update Feature Finding Interactively", color="primary", className="mr-1", id="run_feature_finding_button", block=True),
-                        ],
-                        className="mb-3",
-                    )
-                ),
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dcc.Link(dbc.Button("Run Feature Finding at GNPS with Parameters (Super Beta)", color="primary", className="mr-1"), href="https://proteomics2.ucsd.edu/ProteoSAFe/index.jsp?params={%22workflow%22:%22LC_MZMINE2%22,%22workflow_version%22:%22current%22}", target="_blank", id="run-gnps-mzmine-link")
-                        ],
-                        className="mb-3",
-                    )
-                ),
-            ]),
         ]
     )
 ]
@@ -3339,6 +3259,67 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
     gnps_url = gnps_url + urllib.parse.quote(json.dumps(parameters))
 
     return gnps_url
+
+
+# This create the output file for exclusion
+
+@app.callback(Output('orbitrap_exclusion_download', 'data'),
+              [
+                Input("orbitrap_exclusion_download_button", "n_clicks"),
+              ],
+              [
+                State("usi", "value"),
+                State("feature_finding_type", "value"),
+                State("feature_finding_ppm", "value"),
+                State("feature_finding_noise", "value"),
+                State("feature_finding_min_peak_rt", "value"),
+                State("feature_finding_max_peak_rt", "value"),
+                State("feature_finding_rt_tolerance", "value"),
+              ])
+def create_download_exclusion(
+                                orbitrap_exclusion_download_clicks, 
+                                usi,
+                                feature_finding_type, 
+                                feature_finding_ppm, 
+                                feature_finding_noise, 
+                                feature_finding_min_peak_rt, 
+                                feature_finding_max_peak_rt, 
+                                feature_finding_rt_tolerance):
+    usi_list = usi.split("\n")
+
+    remote_link, local_filename = _resolve_usi(usi_list[0])
+    
+    if feature_finding_type == "Off":
+        feature_finding_params = None
+    else:
+        feature_finding_params = {}
+        feature_finding_params["type"] = feature_finding_type
+        feature_finding_params["params"] = {}
+        feature_finding_params["params"]["feature_finding_ppm"] = feature_finding_ppm
+        feature_finding_params["params"]["feature_finding_noise"] = feature_finding_noise
+        feature_finding_params["params"]["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
+        feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
+        feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
+
+    features_df = _perform_feature_finding(local_filename, feature_finding=feature_finding_params)
+
+    # Formatting the output
+    exclusion_df = pd.DataFrame()
+    exclusion_df["Mass [m/z]"] = features_df["mz"]
+    exclusion_df["Formula [M]"] = ""
+    exclusion_df["Formula type"] = ""
+    exclusion_df["Species"] = ""
+    exclusion_df["CS [z]"] = ""
+    exclusion_df["Polarity"] = "Positive"
+    exclusion_df["Start [min]"] = features_df["rt"]
+    exclusion_df["End [min]"] = features_df["rt"]
+    exclusion_df["(N)CE"] = ""
+    exclusion_df["(N)CE type"] = ""
+    exclusion_df["MSX ID"] = ""
+    exclusion_df["Comment"] = ""
+
+    return dcc.send_data_frame(exclusion_df.to_csv, "exclusion.csv", index=False)
+
 
 
 @app.callback([
