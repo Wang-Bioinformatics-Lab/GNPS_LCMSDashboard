@@ -31,7 +31,7 @@ jobs:
         conda install -c conda-forge openjdk=11.0.9.1
         pip install -r requirements.txt 
         pip install pytest pytest-xdist
-        apt-get install -y wget
+        sudo apt-get install -y wget
     - name: Test with pytest
       run: |
         export PATH="$HOME/miniconda/bin:$PATH"
