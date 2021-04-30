@@ -2499,6 +2499,9 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
 
         lcms_fig.add_trace(_intermediate_fig)
 
+        import sys
+        print(overlay_df, file=sys.stderr, flush=True)
+
         # Adding new markers, adding traces only if there are less than 100
         if len(overlay_df) < 100:
             for row in overlay_df.to_dict(orient="records"):
