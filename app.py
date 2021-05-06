@@ -1849,13 +1849,13 @@ def determine_url_only_parameters(  search,
         output[-3] = "Turbo"
         return output
 
-    print("TRIGGERED URL PARSING", triggered_id, file=sys.stderr)
+    #print("TRIGGERED URL PARSING", triggered_id, file=sys.stderr)
 
     session_dict = {}
     # We are going to load it from internal redis session server
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         if len(sychronization_session_id) > 0:
-            print("LOADING", sychronization_session_id, file=sys.stderr)
+            #print("LOADING", sychronization_session_id, file=sys.stderr)
             try:
                 session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
                 print(session_dict, file=sys.stderr)
@@ -2012,7 +2012,7 @@ def determine_url_only_parameters_synchronization(  search,
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    print("TRIGGERED SYNCHRONIZATION URL PARSING", triggered_id, file=sys.stderr)
+    #print("TRIGGERED SYNCHRONIZATION URL PARSING", triggered_id, file=sys.stderr)
 
     synchronization_type  = _get_param_from_url(search, "", "synchronization_type", dash.no_update, old_value=existing_synchronization_type, no_change_default=dash.no_update)
 
@@ -2053,7 +2053,7 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
-    print("UPLOADING FILE", filename_list)
+    #print("UPLOADING FILE", filename_list)
 
     if filename_list is not None:
         usi = existing_usi
@@ -2064,8 +2064,6 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 
         for i, filename in enumerate(filename_list):
             filecontent = filecontent_list[i]
-
-            print(len(filecontent))
 
             if len(filecontent) > 180000000: # Limit of 180MiB
                 upload_message += "File Upload too big\n"
@@ -2104,7 +2102,6 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
             total_files_uploaded += 1
 
         upload_message += "{} Files Uploaded".format(total_files_uploaded)
-        print("upload_message", upload_message)
         return [usi.lstrip(), usi2.lstrip(), dash.no_update, upload_message]
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
@@ -2249,7 +2246,6 @@ def _create_map_fig(filename,
     start = time.time()
 
     if _is_worker_up():
-        print("WORKER AGGREGATE")
         result = tasks.task_lcms_aggregate.delay(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
 
         # Waiting
@@ -2260,7 +2256,6 @@ def _create_map_fig(filename,
         agg_dict, msn_results = result.get()
         msn_results = pd.DataFrame(msn_results) # This comes as a list, due to serialization
     else:
-        print("CALL AGGREGATE")
         agg_dict, msn_results = tasks.task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level, cache=False)
         msn_results = pd.DataFrame(msn_results) # This comes as a list, due to serialization
 
@@ -2299,13 +2294,10 @@ def _generate_qrcode_img(text_string):
 def _perform_feature_finding(filename, feature_finding=None):
     import tasks
 
-    print("BEFORE WORKER")
-    print(_is_worker_up())
-
     # Checking if local or worker
     if _is_worker_up():
         # If we have the celery instance up, we'll push it
-        result = tasks.task_featurefinding.delay(filename, feature_finding)
+        result = tasks.task_featurefinding.delay(filename, json.dumps(feature_finding))
 
         # Waiting
         while(1):
@@ -2314,7 +2306,7 @@ def _perform_feature_finding(filename, feature_finding=None):
             sleep(3)
         features_list = result.get()
     else:
-        features_list = tasks.task_featurefinding(filename, feature_finding)
+        features_list = tasks.task_featurefinding(filename, json.dumps(feature_finding))
 
     features_df = pd.DataFrame(features_list)
 
@@ -2595,7 +2587,7 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
             remote_link, local_filename = _resolve_usi(usi_element)
 
             for xic_value in all_xic_values:
-                result = tasks.task_xic.delay(local_filename, [xic_value], xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=GET_MS2)
+                result = tasks.task_xic.delay(local_filename, json.dumps([xic_value]), xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=GET_MS2)
                 result_dict = {}
                 result_dict["result"] = result
                 result_dict["usi_element"] = usi_element
