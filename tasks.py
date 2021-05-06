@@ -9,6 +9,7 @@ import lcms_map
 import tic
 import glob
 import redis
+import json
 from joblib import Memory
 
 from sync import _sychronize_save_state, _sychronize_load_state
@@ -23,7 +24,7 @@ celery_instance.conf.ONCE = {
   'backend': 'celery_once.backends.Redis',
   'settings': {
     'url': 'redis://redis:6379/0',
-    'default_timeout': 60 * 60,
+    'default_timeout': 60 * 10,
     'blocking': True,
     'blocking_timeout': 120
   }
@@ -76,15 +77,21 @@ def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
     aggregation, msn_df = _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
     return aggregation, msn_df.to_dict(orient="records")
 
-@celery_instance.task(time_limit=90)
+@celery_instance.task(time_limit=90, base=QueueOnce)
 def task_tic(input_filename, tic_option="TIC", polarity_filter="None"):
-    tic_df = tic.tic_file(input_filename, tic_option=tic_option, polarity_filter=polarity_filter)
+    # Caching
+    tic_file = memory.cache(tic.tic_file)
+
+    tic_df = tic_file(input_filename, tic_option=tic_option, polarity_filter=polarity_filter)
     return tic_df.to_dict(orient="records")
 
-@celery_instance.task(time_limit=60)
+@celery_instance.task(time_limit=60, base=QueueOnce)
 def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     # Caching
     xic_file = memory.cache(xic.xic_file)
+
+    # This is necesary for celery once because tuples are not serializable, causing issues
+    all_xic_values = json.loads(all_xic_values)
 
     xic_df, ms2_data = xic_file(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
     return xic_df.to_dict(orient="records"), ms2_data
@@ -97,9 +104,14 @@ def task_chromatogram_options(local_filename):
     options = chromatograms_list(local_filename)
     return options
 
-@celery_instance.task(time_limit=90)
+@celery_instance.task(time_limit=90, base=QueueOnce)
 def task_featurefinding(filename, params):
-    feature_df = feature_finding.perform_feature_finding(filename, params, timeout=80)
+    # Caching
+    perform_feature_finding = memory.cache(feature_finding.perform_feature_finding)
+
+    params = json.loads(params)
+    feature_df = perform_feature_finding(filename, params, timeout=80)
+
     return feature_df.to_dict(orient="records")
 
 @celery_instance.task(time_limit=1)
