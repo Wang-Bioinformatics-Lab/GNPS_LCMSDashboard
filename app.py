@@ -2286,7 +2286,6 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
 
         lcms_fig.add_trace(_intermediate_fig)
     except:
-        raise
         pass
 
     return lcms_fig
