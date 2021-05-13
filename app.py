@@ -1979,13 +1979,14 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
               [
-                Input('url', 'search'), 
+                Input('url', 'search'),
                 Input('map-plot', 'clickData'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
                 Input('auto_import_parameters', 'children'),
                 Input('xicmz_clear_button', "n_clicks"),
+                Input('xic_presets', 'value')
               ], 
               [
                   State('xic_mz', 'value'),
@@ -1993,14 +1994,18 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 
                   State('setting_json_area', 'value'),
               ])
-def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, xicmz_clear_button,
+def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, xicmz_clear_button, xic_presets,
                         existing_xic, sychronization_session_id, setting_json_area):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     print("TRIGGERED XIC MZ", triggered_id, file=sys.stderr)
 
+    # Clearing Button
     if "xicmz_clear_button" in triggered_id:
         return ""
+    
+    if "xic_presets" in triggered_id:
+        return xic_presets
 
     try:
         if existing_xic is None:
@@ -2640,7 +2645,12 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     # Getting all XIC values from m/z entry
     try:
         for xic_value in xic_mz.split(";"):
-            all_xic_values.append((str(xic_value), float(xic_value)))
+            if "=" in xic_value:
+                xic_name = xic_value.split("=")[0]
+                xic_float = float(xic_value.split("=")[1])
+                all_xic_values.append((str(xic_name), float(xic_float)))
+            else:
+                all_xic_values.append((str(xic_value), float(xic_value)))
     except:
         pass
 
