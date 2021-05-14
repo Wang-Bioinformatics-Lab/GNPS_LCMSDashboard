@@ -36,6 +36,7 @@ ADVANCED_XIC_MODAL = [
                             id='xic_presets',
                             options=[
                                 {'label': 'Amino Acids', 'value': 'Ala=90.054946;Arg=175.118946;Asn=133.060766;Asp=134.044776;Cys=122.027026;Glu=148.060426;Gln=147.076416;Gly=76.039296;His=156.076746;Ile=132.101896;Leu=132.101896;Lys=147.112796;Met=150.058326;Phe=166.086246;Pro=116.070596;Ser=106.049866;Thr=120.065516;Trp=205.097146;Tyr=182.081166;Val=118.086246'},
+                                {'label': 'QC-6mix', 'value': 'Sulfamethazine=279.0910;Sulfamethizole=271.0317935;Sulfachloropyridazine=285.0207505;Sulfadimethoxine=311.0808522;Amitryptiline=278.1903263;Coumarin-314=314.1386846'},
                             ],
                             searchable=True,
                             clearable=True,
