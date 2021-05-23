@@ -1429,7 +1429,6 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
                 Output('spectrum_details_area', 'children'),
                 Output('usi_frame', 'src'),
                 Output('librarysearch_frame', 'src'),
-                Output('advanced_librarysearch_modal_button', 'children')
               ],
               [
                   Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")
@@ -1521,7 +1520,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         button_elements = []
 
     return [spectrum_type, 
-            interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url, librarysearch_url, "NEW BUTTON TEXT"]
+            interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url, librarysearch_url]
 
 @app.callback([ 
                 Output("xic_formula", "value"),
