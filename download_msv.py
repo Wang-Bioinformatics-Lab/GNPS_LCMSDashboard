@@ -27,10 +27,12 @@ def _resolve_msv_usi(usi, force_massive=False):
         resolution_json = lookup_request.json()
 
         remote_path = None
+
+        potential_resolutions = [resolution for resolution in resolution_json["row_data"]]
         
-        mzML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
-        mzXML_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
-        raw_resolutions = [resolution for resolution in resolution_json["row_data"] if os.path.splitext(resolution["file_descriptor"])[1].lower() == ".raw"]
+        mzML_resolutions = [resolution for resolution in potential_resolutions if os.path.splitext(resolution["file_descriptor"])[1] == ".mzML"]
+        mzXML_resolutions = [resolution for resolution in potential_resolutions if os.path.splitext(resolution["file_descriptor"])[1] == ".mzXML"]
+        raw_resolutions = [resolution for resolution in potential_resolutions if os.path.splitext(resolution["file_descriptor"])[1].lower() == ".raw"]
 
         if len(mzML_resolutions) > 0:
             remote_path = mzML_resolutions[0]["file_descriptor"]
