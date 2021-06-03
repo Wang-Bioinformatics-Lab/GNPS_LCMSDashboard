@@ -4043,6 +4043,14 @@ def settingsdownload():
         mimetype='text/json'
     )
 
+@server.route("/downloadlink")
+def downloadlink():
+    usi = request.args.get("usi")
+    download_remote_link = download._resolve_usi_remotelink(usi)
+    
+    return download_remote_link
+
+
 
 
 if __name__ == "__main__":
