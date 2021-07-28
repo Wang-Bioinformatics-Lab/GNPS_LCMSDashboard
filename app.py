@@ -9,12 +9,14 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
-from time import sleep
+import dash_uploader as du
+
 
 # Plotly Imports
 
 import plotly.express as px
 import plotly.graph_objects as go 
+
 
 # Flask
 
@@ -23,7 +25,6 @@ import werkzeug
 from flask_caching import Cache
 
 # Misc Library
-
 import sys
 import os
 import io
@@ -31,23 +32,21 @@ from zipfile import ZipFile
 import urllib.parse
 from scipy import integrate
 import pandas as pd
-import requests
 import uuid
-import pymzml
 import numpy as np
 import datashader as ds
-from tqdm import tqdm
 import json
 from collections import defaultdict
 import uuid
 import base64
 import redis
-from molmass import Formula
-from pyteomics import mass
+from time import sleep
 from datetime import datetime
 
-# Project Imports
+from molmass import Formula
+from pyteomics import mass
 
+# Project Imports
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
@@ -75,6 +74,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 TEMPFOLDER = "./temp"
+TEMP_UPLOADFOLDER = "./temp/dash-uploader"
+du.configure_upload(app, TEMP_UPLOADFOLDER)
 
 server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
 
@@ -237,6 +238,23 @@ DATASELECTION_CARD = [
                         },
                         multiple=True,
                         max_size=150000000 # 150MB
+                    ),
+                    html.Hr(),
+                    du.Upload(
+                        id=id,
+                        max_file_size=2048, 
+                        filetypes=['mgf', 'mzML', 'mzXML'],
+                        max_files=5,
+                        style={
+                            'width': '95%',
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                            'margin': '10px'
+                        },
                     ),
                     html.Hr(),
                     # Linkouts
