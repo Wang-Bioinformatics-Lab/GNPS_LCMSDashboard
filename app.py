@@ -240,11 +240,7 @@ DATASELECTION_CARD = [
                     ),
                     html.Hr(),
                     # Linkouts
-                    dcc.Loading(
-                        id="link-button",
-                        children=[html.Div([html.Div(id="loading-output-9")])],
-                        type="default",
-                    ),
+                    dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0),
                     html.Br(),
                     dcc.Loading(
                         id="network-link-button",
@@ -1170,7 +1166,13 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
 
 BODY = dbc.Container(
     [
-        dcc.Location(id='url', refresh=False),
+        dcc.Location(id='url', refresh=False),        
+        html.Div(
+            [
+                dcc.Link(id="query_link", href="#", target="_blank"),
+            ],
+            style="display:none"
+        ),
         dcc.Interval(
             id='sychronization_interval',
             interval=1000000000*1000, # in milliseconds
@@ -3199,7 +3201,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 
 
 @app.callback([
-                Output('link-button', 'children'),
+                Output('query_link', 'href'),
                 Output('page_parameters', 'children'),
                 Output('qrcode', 'children'),
               ],  
@@ -3330,9 +3332,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     hash_params["usi"] = usi
     hash_params["usi2"] = usi2
 
-    full_url = "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
-    url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
-    provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
+    full_url = request.host_url + "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
 
     full_json_settings = url_params
     full_json_settings["usi"] = usi
@@ -3353,8 +3353,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     qr_html_img = dash.no_update
     try:
-        url = request.url.replace('/_dash-update-component', full_url)
-        qr_html_img = _generate_qrcode_img(url) 
+        qr_html_img = _generate_qrcode_img(full_url) 
     except:
         pass
 
@@ -3377,8 +3376,40 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     # Removing Sync token for json area
     full_json_settings.pop("sychronization_session_id", None)
 
+    return [full_url, json.dumps(full_json_settings, indent=4), qr_html_img]
 
-    return [provenance_link_object, json.dumps(full_json_settings, indent=4), qr_html_img]
+
+app.clientside_callback(
+    """
+    function(n_clicks, text_to_copy) {
+        original_text = "Copy URL Link to this Visualization"
+        if (n_clicks > 0) {
+            const el = document.createElement('textarea');
+            el.value = text_to_copy;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setTimeout(function(){ 
+                    document.getElementById("copy_link_button").textContent = original_text
+                }, 1000);
+            document.getElementById("copy_link_button").textContent = "Copied!"
+            return 'Copied!';
+        } else {
+            document.getElementById("copy_link_button").textContent = original_text
+            return original_text;
+        }
+    }
+    """,
+    Output('copy_link_button', 'children'),
+    [
+        Input('copy_link_button', 'n_clicks')
+    ],
+    [
+        State('query_link', 'href'),
+    ]
+)
+
 
 # This helps write the json string that we can use to load parameters in the whole page
 @app.callback([
