@@ -1460,7 +1460,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
     usi_url = "https://metabolomics-usi.ucsd.edu/dashinterface/?usi={}".format(updated_usi)
 
-    librarysearch_url = "http://mingwangbeta.ucsd.edu:5054/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
+    librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
 
     spectrum_type = "MS"
     button_elements = []
