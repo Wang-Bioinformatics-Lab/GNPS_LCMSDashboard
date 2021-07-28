@@ -26,6 +26,7 @@ from flask_caching import Cache
 
 # Misc Library
 import sys
+import shutil
 import os
 import io
 from zipfile import ZipFile
@@ -241,20 +242,12 @@ DATASELECTION_CARD = [
                     ),
                     html.Hr(),
                     du.Upload(
-                        id=id,
+                        id="upload-data2",
                         max_file_size=2048, 
-                        filetypes=['mgf', 'mzML', 'mzXML'],
-                        max_files=5,
-                        style={
-                            'width': '95%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin': '10px'
-                        },
+                        filetypes=['mzML', 'mzXML', "cdf"],
+                        max_files=1,
+                        pause_button=True,
+                        text="Drag and Drop your own files (deleted after 30 days)"
                     ),
                     html.Hr(),
                     # Linkouts
@@ -970,6 +963,11 @@ DEBUG_CARD = [
             dcc.Loading(
                 id="debug-output-2",
                 children=[html.Div([html.Div(id="loading-output-16")])],
+                type="default",
+            ),
+            dcc.Loading(
+                id="debug-output-3",
+                children=[html.Div([html.Div(id="loading-output-23123")])],
                 type="default",
             ),
             dcc.Loading(
@@ -1893,15 +1891,15 @@ def determine_url_only_parameters_synchronization(  search,
               [
                 Input('url', 'search'), 
                 Input('url', 'hash'), 
-                Input('upload-data', 'contents'),
+                Input('upload-data2', 'isCompleted'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
                 Input('auto_import_parameters', 'children')
               ],
               [
-                  State('upload-data', 'filename'),
-                  State('upload-data', 'last_modified'),
+                  State('upload-data2', 'fileNames'),
+                  State('upload-data2', 'upload_id'),
                   State('sychronization_session_id', 'value'),
 
                   State('setting_json_area', 'value'),
@@ -1909,8 +1907,8 @@ def determine_url_only_parameters_synchronization(  search,
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, filecontent_list, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
-                filename_list, filedate_list, sychronization_session_id,
+def update_usi(search, url_hash, uploadfile_iscompleted, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
+                uploadfile_filenames, uploadfile_uploadid, sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
                 existing_usi2):
@@ -1919,49 +1917,35 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 
     #print("UPLOADING FILE", filename_list)
 
-    if filename_list is not None:
+    if uploadfile_filenames is not None:
         usi = existing_usi
         usi2 = existing_usi2
 
         upload_message = ""
         total_files_uploaded = 0
 
-        for i, filename in enumerate(filename_list):
-            filecontent = filecontent_list[i]
-
-            if len(filecontent) > 180000000: # Limit of 180MiB
-                upload_message += "File Upload too big\n"
-                continue
+        for i, filename in enumerate(uploadfile_filenames):
+            uploaded_filename = os.path.join(TEMP_UPLOADFOLDER, uploadfile_uploadid, filename)
 
             extension = os.path.splitext(filename)[1]
             original_filename = os.path.splitext(filename)[0]
             safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
             if extension == ".mzML":
                 temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
+                shutil.move(uploaded_filename, temp_filename)
 
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
+                usi = "mzspec:LOCAL:{}\n".format(os.path.basename(temp_filename)) + usi
             if extension == ".mzXML":
                 temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
+                shutil.move(uploaded_filename, temp_filename)
 
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+                usi = "mzspec:LOCAL:{}\n".format(os.path.basename(temp_filename)) + usi
 
             if extension.lower() == ".cdf":
                 temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
+                shutil.move(uploaded_filename, temp_filename)
 
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+                usi = "mzspec:LOCAL:{}\n".format(os.path.basename(temp_filename)) + usi
 
             total_files_uploaded += 1
 
@@ -1996,6 +1980,17 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 
     return [usi, usi2, "Using URL USI", dash.no_update]
     
+# @app.callback(
+#     Output('debug-output-3', 'children'),
+#     [Input('upload-data2', 'isCompleted')],
+#     [State('upload-data2', 'fileNames'),
+#      State('upload-data2', 'upload_id')],
+# )
+# def callback_on_completion(iscompleted, filenames, upload_id):
+#     import sys
+#     print(filenames, file=sys.stderr)
+
+#     return str(iscompleted) + str(len(filenames))
     
 
 # Calculating which xic value to use
