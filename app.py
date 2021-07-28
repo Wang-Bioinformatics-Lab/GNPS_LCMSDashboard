@@ -1065,7 +1065,9 @@ CONTRIBUTORS_CARD = [
                 "Laura-Isobel McCall PhD - University of Oklahoma",
                 html.Br(),
                 "Benjamin Pullman - UC San Diego",
-                html.Br(),
+                html.Hr(),
+                html.H5("Citation"),
+                html.A("Petras, D., Phelan, V. V., Acharya, D. D., Allen, A. E., Aron, A. T., Bandeira, N., ... & Wang, M. (2021). GNPS Dashboard: Collaborative Analysis of Mass Spectrometry Data in the Web Browser. bioRxiv.", href="https://www.biorxiv.org/content/10.1101/2021.04.05.438475v1")
                 ]
             )
         ]
