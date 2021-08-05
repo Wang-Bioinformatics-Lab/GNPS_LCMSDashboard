@@ -9,45 +9,43 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
-from time import sleep
+import dash_uploader as du
+
 
 # Plotly Imports
-
 import plotly.express as px
 import plotly.graph_objects as go 
 
-# Flask
 
+# Flask
 from flask import Flask, send_from_directory, send_file
 import werkzeug
 from flask_caching import Cache
 
 # Misc Library
-
 import sys
+import shutil
 import os
 import io
 from zipfile import ZipFile
 import urllib.parse
 from scipy import integrate
 import pandas as pd
-import requests
 import uuid
-import pymzml
 import numpy as np
 import datashader as ds
-from tqdm import tqdm
 import json
 from collections import defaultdict
 import uuid
 import base64
 import redis
-from molmass import Formula
-from pyteomics import mass
+from time import sleep
 from datetime import datetime
 
-# Project Imports
+from molmass import Formula
+from pyteomics import mass
 
+# Project Imports
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
@@ -68,6 +66,7 @@ from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
+from layout_misc import UPLOAD_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
 
@@ -75,6 +74,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 TEMPFOLDER = "./temp"
+TEMP_UPLOADFOLDER = "./temp/dash-uploader"
+du.configure_upload(app, TEMP_UPLOADFOLDER)
 
 server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
 
@@ -179,13 +180,6 @@ DATASELECTION_CARD = [
                 html.H5("Data Selection"),
             ),
             dbc.Col(
-                dcc.Loading(
-                    id="upload_status",
-                    children=[html.Div([html.Div(id="loading-output-3423")])],
-                    type="default",
-                ),
-            ),
-            dbc.Col(
                 dbc.Button("Show/Hide", 
                     id="data_selection_show_hide_button", 
                     color="primary", size="sm", 
@@ -201,9 +195,19 @@ DATASELECTION_CARD = [
         dbc.CardBody(dbc.Row(
             [   ## Left Panel
                 dbc.Col([
-                    dbc.Row(
+                    dbc.Row([
                         dbc.Col(html.H5(children='File Selection')),
-                    ),
+                        dbc.Col(
+                            dbc.Button("Upload Files", 
+                                id="advanced_upload_modal_button", 
+                                color="info", size="sm", 
+                                className="mr-1", 
+                                style={
+                                    "float" : "right"
+                                }
+                            ),
+                        ),
+                    ]),
                     html.Hr(),
                     dbc.InputGroup(
                         [
@@ -219,26 +223,6 @@ DATASELECTION_CARD = [
                         ],
                         className="mb-3",
                     ),
-                    dcc.Upload(
-                        id='upload-data',
-                        children=html.Div([
-                            'Drag and Drop your own file',
-                            html.A(' or Select Files (120MB Max)')
-                        ]),
-                        style={
-                            'width': '95%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin': '10px'
-                        },
-                        multiple=True,
-                        max_size=150000000 # 150MB
-                    ),
-                    html.Hr(),
                     # Linkouts
                     dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0),
                     html.Br(),
@@ -955,6 +939,11 @@ DEBUG_CARD = [
                 type="default",
             ),
             dcc.Loading(
+                id="debug-output-3",
+                children=[html.Div([html.Div(id="loading-output-23123")])],
+                type="default",
+            ),
+            dcc.Loading(
                 id="qrcode",
                 type="default"
             ),
@@ -1268,6 +1257,8 @@ BODY = dbc.Container(
                         dbc.Card(EXAMPLE_DASHBOARD),
                         html.Br(),
                         dbc.Card(SYCHRONIZATION_MODAL),
+                        html.Br(),
+                        dbc.Card(UPLOAD_MODAL),
                     ],
                         #className="w-50"
                     ),
@@ -1865,6 +1856,74 @@ def determine_url_only_parameters_synchronization(  search,
     return [synchronization_type, "DEPENDENCY"]
 
 
+def _handle_file_upload_small(filename , filecontent):
+    # This is the small file upload handler
+    upload_message = ""
+
+    if len(filecontent) > 180000000: # Limit of 180MiB
+        upload_message = "File Upload too big\n"
+        return None, upload_message
+
+    extension = os.path.splitext(filename)[1]
+    original_filename = os.path.splitext(filename)[0]
+    safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
+
+    usi = None
+    if extension == ".mzML":
+        temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension == ".mzXML":
+        temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension.lower() == ".cdf":
+        temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    return usi, upload_message
+
+def _handle_file_upload_big(filename, uploadid):
+    uploaded_filename = os.path.join(TEMP_UPLOADFOLDER, uploadid, filename)
+
+    extension = os.path.splitext(filename)[1]
+    original_filename = os.path.splitext(filename)[0]
+    safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
+    if extension == ".mzML":
+        temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+    if extension == ".mzXML":
+        temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension.lower() == ".cdf":
+        temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+    
+    return usi, ""
+
+
 # Handling file upload
 @app.callback([
                 Output('usi', 'value'), 
@@ -1875,15 +1934,17 @@ def determine_url_only_parameters_synchronization(  search,
               [
                 Input('url', 'search'), 
                 Input('url', 'hash'), 
-                Input('upload-data', 'contents'),
+                Input('upload-data1', 'contents'),
+                Input('upload-data2', 'isCompleted'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
                 Input('auto_import_parameters', 'children')
               ],
               [
-                  State('upload-data', 'filename'),
-                  State('upload-data', 'last_modified'),
+                  State('upload-data1', 'filename'),
+                  State('upload-data2', 'fileNames'),
+                  State('upload-data2', 'upload_id'),
                   State('sychronization_session_id', 'value'),
 
                   State('setting_json_area', 'value'),
@@ -1891,66 +1952,50 @@ def determine_url_only_parameters_synchronization(  search,
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, filecontent_list, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
-                filename_list, filedate_list, sychronization_session_id,
+def update_usi(search, url_hash, 
+                uploadfile1_filecontent_list,
+                uploadfile2_iscompleted, 
+                sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
+                uploadfile1_filename_list, uploadfile2_filenames, uploadfile2_uploadid, 
+                sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
                 existing_usi2):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
-    #print("UPLOADING FILE", filename_list)
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    if filename_list is not None:
+    print("USI TRIGGERING===============================", triggered_id)
+
+    if uploadfile1_filename_list is not None or uploadfile2_filenames is not None and "upload-data" in triggered_id:
+        total_files_uploaded = 0
         usi = existing_usi
         usi2 = existing_usi2
-
         upload_message = ""
-        total_files_uploaded = 0
 
-        for i, filename in enumerate(filename_list):
-            filecontent = filecontent_list[i]
+        # Handling the small many files upload
+        if uploadfile1_filename_list is not None and "upload-data1" in triggered_id:
+            for i, filename in enumerate(uploadfile1_filename_list):
+                filecontent = uploadfile1_filecontent_list[i]
+                new_usi, new_upload_message = _handle_file_upload_small(filename , filecontent)
+                
+                if new_usi is not None:
+                    total_files_uploaded += 1
+                    usi = new_usi + "\n" + usi
 
-            if len(filecontent) > 180000000: # Limit of 180MiB
-                upload_message += "File Upload too big\n"
-                continue
+        if uploadfile2_filenames is not None and "upload-data2" in triggered_id:
+            print("UPLOADING FILE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", uploadfile2_iscompleted, uploadfile2_filenames)
 
-            extension = os.path.splitext(filename)[1]
-            original_filename = os.path.splitext(filename)[0]
-            safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
-            if extension == ".mzML":
-                temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
+            for i, filename in enumerate(uploadfile2_filenames):
+                new_usi, new_upload_message = _handle_file_upload_big(filename, uploadfile2_uploadid)
 
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-            if extension == ".mzXML":
-                temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
-
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-            if extension.lower() == ".cdf":
-                temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
-
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-            total_files_uploaded += 1
+                if new_usi is not None:
+                    total_files_uploaded += 1
+                    usi = new_usi + "\n" + usi
 
         upload_message += "{} Files Uploaded".format(total_files_uploaded)
         return [usi.lstrip(), usi2.lstrip(), dash.no_update, upload_message]
-
-    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     session_dict = {}
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
@@ -1978,8 +2023,6 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 
     return [usi, usi2, "Using URL USI", dash.no_update]
     
-    
-
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
               [
@@ -3969,8 +4012,6 @@ app.callback(
     [State("advanced_usi_modal", "is_open")],
 )(toggle_modal)
 
-
-
 app.callback(
     Output("advanced_visualization_modal", "is_open"),
     [Input("advanced_visualization_modal_button", "n_clicks"), Input("advanced_visualization_modal_close", "n_clicks")],
@@ -3999,6 +4040,12 @@ app.callback(
     Output("advanced_xic_modal", "is_open"),
     [Input("advanced_xic_modal_button", "n_clicks"), Input("advanced_xic_modal_close", "n_clicks")],
     [State("advanced_xic_modal", "is_open")],
+)(toggle_modal)
+
+app.callback(
+    Output("advanced_upload_modal", "is_open"),
+    [Input("advanced_upload_modal_button", "n_clicks"), Input("advanced_upload_modal_close", "n_clicks")],
+    [State("advanced_upload_modal", "is_open")],
 )(toggle_modal)
 
 

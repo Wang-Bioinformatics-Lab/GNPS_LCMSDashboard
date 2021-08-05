@@ -7,6 +7,7 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
+import dash_uploader as du
 
 # Plotly Imports
 import plotly.express as px
@@ -502,5 +503,85 @@ ADVANCED_USI_MODAL = [
         style={
             "max-width": "1920px"
         }
+    ),
+]
+
+
+
+UPLOAD_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Upload Files"),
+            dbc.ModalBody([
+                html.Div("Upload your files here, we have two options, upload many small files at once, or one big file at one time. \
+                    Files are deleted after 30 days so if you would it more permanent, please make a public dataset at MassIVE. We currently support the upload of mzML, mzXML, and CDF files. If you have Thermo RAW files please deposit them in a repository."),
+
+                html.Hr(),
+                dbc.Row([
+                    dbc.Col([
+                        html.H3("Upload Several Small Files"),
+                        html.Hr(),
+                        html.Div(
+                            dcc.Upload(
+                                id='upload-data1',
+                                children=html.Div([
+                                    'Drag and Drop your own files',
+                                    html.A('(120MB Max and multiple at a time)')
+                                ]),
+                                style={
+                                    'width': '95%',
+                                    'height': '125px',
+                                    'lineHeight': '60px',
+                                    'borderWidth': '1px',
+                                    'borderStyle': 'dashed',
+                                    'borderRadius': '7px',
+                                    'textAlign': 'center',
+                                    'margin': '10px'
+                                },
+                                multiple=True,
+                                max_size=150000000 # 150MB
+                            ),
+                        )
+                    ]),
+                    dbc.Col([
+                        html.H3("Upload One Big File"),
+                        html.Hr(),
+                        html.Div(
+                            du.Upload(
+                                id="upload-data2",
+                                max_file_size=2048, 
+                                filetypes=['mzML', 'mzXML', "cdf"],
+                                max_files=1,
+                                pause_button=True,
+                                text="Drag and Drop your own files (up to 2GB)",
+                            ),
+                            style={
+                                'width': '95%',
+                                'height': '100px',
+                                'lineHeight': '100px',
+                                'borderWidth': '1px',
+                                'display': 'inline-block',
+                                'borderRadius': '5px',
+                                'textAlign': 'center',
+                                'margin': '10px'
+                            },
+                        )
+                    ]),
+                ]),
+                html.Hr(),
+                html.H3("Upload Status"),
+                html.Hr(),
+                dcc.Loading(
+                    id="upload_status",
+                    children=[html.Div([html.Div(id="loading-output-3423")])],
+                    type="default",
+                ),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_upload_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_upload_modal",
+        size="xl",
     ),
 ]
