@@ -513,7 +513,9 @@ UPLOAD_MODAL = [
         [
             dbc.ModalHeader("Upload Files"),
             dbc.ModalBody([
-                html.Div("Upload your files here, we have two options, upload many small files at once, or one big file at one time. Files are deleted after 30 days so if you would it more permanent, please make a public dataset at MassIVE."),
+                html.Div("Upload your files here, we have two options, upload many small files at once, or one big file at one time. \
+                    Files are deleted after 30 days so if you would it more permanent, please make a public dataset at MassIVE. We currently support the upload of mzML, mzXML, and CDF files. If you have Thermo RAW files please deposit them in a repository."),
+
                 html.Hr(),
                 dbc.Row([
                     dbc.Col([
@@ -521,7 +523,7 @@ UPLOAD_MODAL = [
                         html.Hr(),
                         html.Div(
                             dcc.Upload(
-                                id='upload-data',
+                                id='upload-data1',
                                 children=html.Div([
                                     'Drag and Drop your own files',
                                     html.A('(120MB Max and multiple at a time)')
@@ -566,6 +568,14 @@ UPLOAD_MODAL = [
                         )
                     ]),
                 ]),
+                html.Hr(),
+                html.H3("Upload Status"),
+                html.Hr(),
+                dcc.Loading(
+                    id="upload_status",
+                    children=[html.Div([html.Div(id="loading-output-3423")])],
+                    type="default",
+                ),
             ]),
             dbc.ModalFooter(
                 dbc.Button("Close", id="advanced_upload_modal_close", className="ml-auto")

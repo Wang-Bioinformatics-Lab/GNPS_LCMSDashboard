@@ -180,13 +180,6 @@ DATASELECTION_CARD = [
                 html.H5("Data Selection"),
             ),
             dbc.Col(
-                dcc.Loading(
-                    id="upload_status",
-                    children=[html.Div([html.Div(id="loading-output-3423")])],
-                    type="default",
-                ),
-            ),
-            dbc.Col(
                 dbc.Button("Show/Hide", 
                     id="data_selection_show_hide_button", 
                     color="primary", size="sm", 
@@ -1863,6 +1856,74 @@ def determine_url_only_parameters_synchronization(  search,
     return [synchronization_type, "DEPENDENCY"]
 
 
+def _handle_file_upload_small(filename , filecontent):
+    # This is the small file upload handler
+    upload_message = ""
+
+    if len(filecontent) > 180000000: # Limit of 180MiB
+        upload_message = "File Upload too big\n"
+        return None, upload_message
+
+    extension = os.path.splitext(filename)[1]
+    original_filename = os.path.splitext(filename)[0]
+    safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
+
+    usi = None
+    if extension == ".mzML":
+        temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension == ".mzXML":
+        temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension.lower() == ".cdf":
+        temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    return usi, upload_message
+
+def _handle_file_upload_big(filename, uploadid):
+    uploaded_filename = os.path.join(TEMP_UPLOADFOLDER, uploadid, filename)
+
+    extension = os.path.splitext(filename)[1]
+    original_filename = os.path.splitext(filename)[0]
+    safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
+    if extension == ".mzML":
+        temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+    if extension == ".mzXML":
+        temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension.lower() == ".cdf":
+        temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+    
+    return usi, ""
+
+
 # Handling file upload
 @app.callback([
                 Output('usi', 'value'), 
@@ -1873,6 +1934,7 @@ def determine_url_only_parameters_synchronization(  search,
               [
                 Input('url', 'search'), 
                 Input('url', 'hash'), 
+                Input('upload-data1', 'contents'),
                 Input('upload-data2', 'isCompleted'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
@@ -1880,6 +1942,7 @@ def determine_url_only_parameters_synchronization(  search,
                 Input('auto_import_parameters', 'children')
               ],
               [
+                  State('upload-data1', 'filename'),
                   State('upload-data2', 'fileNames'),
                   State('upload-data2', 'upload_id'),
                   State('sychronization_session_id', 'value'),
@@ -1890,53 +1953,49 @@ def determine_url_only_parameters_synchronization(  search,
                   State('usi2', 'value'),
               ])
 def update_usi(search, url_hash, 
-                uploadfile_iscompleted, 
+                uploadfile1_filecontent_list,
+                uploadfile2_iscompleted, 
                 sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
-                uploadfile_filenames, uploadfile_uploadid, sychronization_session_id,
+                uploadfile1_filename_list, uploadfile2_filenames, uploadfile2_uploadid, 
+                sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
                 existing_usi2):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
-    if uploadfile_filenames is not None:
-        print("UPLOADING FILE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", uploadfile_iscompleted, uploadfile_filenames)
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
+    print("USI TRIGGERING===============================", triggered_id)
+
+    if uploadfile1_filename_list is not None or uploadfile2_filenames is not None and "upload-data" in triggered_id:
+        total_files_uploaded = 0
         usi = existing_usi
         usi2 = existing_usi2
-
         upload_message = ""
-        total_files_uploaded = 0
 
-        for i, filename in enumerate(uploadfile_filenames):
-            uploaded_filename = os.path.join(TEMP_UPLOADFOLDER, uploadfile_uploadid, filename)
+        # Handling the small many files upload
+        if uploadfile1_filename_list is not None and "upload-data1" in triggered_id:
+            for i, filename in enumerate(uploadfile1_filename_list):
+                filecontent = uploadfile1_filecontent_list[i]
+                new_usi, new_upload_message = _handle_file_upload_small(filename , filecontent)
+                
+                if new_usi is not None:
+                    total_files_uploaded += 1
+                    usi = new_usi + "\n" + usi
 
-            extension = os.path.splitext(filename)[1]
-            original_filename = os.path.splitext(filename)[0]
-            safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
-            if extension == ".mzML":
-                temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
-                shutil.move(uploaded_filename, temp_filename)
+        if uploadfile2_filenames is not None and "upload-data2" in triggered_id:
+            print("UPLOADING FILE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", uploadfile2_iscompleted, uploadfile2_filenames)
 
-                usi = "mzspec:LOCAL:{}\n".format(os.path.basename(temp_filename)) + usi
-            if extension == ".mzXML":
-                temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
-                shutil.move(uploaded_filename, temp_filename)
+            for i, filename in enumerate(uploadfile2_filenames):
+                new_usi, new_upload_message = _handle_file_upload_big(filename, uploadfile2_uploadid)
 
-                usi = "mzspec:LOCAL:{}\n".format(os.path.basename(temp_filename)) + usi
-
-            if extension.lower() == ".cdf":
-                temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
-                shutil.move(uploaded_filename, temp_filename)
-
-                usi = "mzspec:LOCAL:{}\n".format(os.path.basename(temp_filename)) + usi
-
-            total_files_uploaded += 1
+                if new_usi is not None:
+                    total_files_uploaded += 1
+                    usi = new_usi + "\n" + usi
 
         upload_message += "{} Files Uploaded".format(total_files_uploaded)
         return [usi.lstrip(), usi2.lstrip(), dash.no_update, upload_message]
-
-    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     session_dict = {}
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
