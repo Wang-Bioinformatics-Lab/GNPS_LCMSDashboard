@@ -13,13 +13,11 @@ import dash_uploader as du
 
 
 # Plotly Imports
-
 import plotly.express as px
 import plotly.graph_objects as go 
 
 
 # Flask
-
 from flask import Flask, send_from_directory, send_file
 import werkzeug
 from flask_caching import Cache
@@ -68,6 +66,7 @@ from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
+from layout_misc import UPLOAD_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
 
@@ -203,9 +202,19 @@ DATASELECTION_CARD = [
         dbc.CardBody(dbc.Row(
             [   ## Left Panel
                 dbc.Col([
-                    dbc.Row(
+                    dbc.Row([
                         dbc.Col(html.H5(children='File Selection')),
-                    ),
+                        dbc.Col(
+                            dbc.Button("Upload Files", 
+                                id="advanced_upload_modal_button", 
+                                color="info", size="sm", 
+                                className="mr-1", 
+                                style={
+                                    "float" : "right"
+                                }
+                            ),
+                        ),
+                    ]),
                     html.Hr(),
                     dbc.InputGroup(
                         [
@@ -221,35 +230,6 @@ DATASELECTION_CARD = [
                         ],
                         className="mb-3",
                     ),
-                    dcc.Upload(
-                        id='upload-data',
-                        children=html.Div([
-                            'Drag and Drop your own file',
-                            html.A(' or Select Files (120MB Max)')
-                        ]),
-                        style={
-                            'width': '95%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin': '10px'
-                        },
-                        multiple=True,
-                        max_size=150000000 # 150MB
-                    ),
-                    html.Hr(),
-                    du.Upload(
-                        id="upload-data2",
-                        max_file_size=2048, 
-                        filetypes=['mzML', 'mzXML', "cdf"],
-                        max_files=1,
-                        pause_button=True,
-                        text="Drag and Drop your own files (deleted after 30 days)"
-                    ),
-                    html.Hr(),
                     # Linkouts
                     dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0),
                     html.Br(),
@@ -1284,6 +1264,8 @@ BODY = dbc.Container(
                         dbc.Card(EXAMPLE_DASHBOARD),
                         html.Br(),
                         dbc.Card(SYCHRONIZATION_MODAL),
+                        html.Br(),
+                        dbc.Card(UPLOAD_MODAL),
                     ],
                         #className="w-50"
                     ),
@@ -1907,7 +1889,9 @@ def determine_url_only_parameters_synchronization(  search,
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, uploadfile_iscompleted, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
+def update_usi(search, url_hash, 
+                uploadfile_iscompleted, 
+                sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
                 uploadfile_filenames, uploadfile_uploadid, sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
@@ -1915,9 +1899,9 @@ def update_usi(search, url_hash, uploadfile_iscompleted, sychronization_load_ses
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
-    #print("UPLOADING FILE", filename_list)
-
     if uploadfile_filenames is not None:
+        print("UPLOADING FILE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", uploadfile_iscompleted, uploadfile_filenames)
+
         usi = existing_usi
         usi2 = existing_usi2
 
@@ -3982,8 +3966,6 @@ app.callback(
     [State("advanced_usi_modal", "is_open")],
 )(toggle_modal)
 
-
-
 app.callback(
     Output("advanced_visualization_modal", "is_open"),
     [Input("advanced_visualization_modal_button", "n_clicks"), Input("advanced_visualization_modal_close", "n_clicks")],
@@ -4012,6 +3994,12 @@ app.callback(
     Output("advanced_xic_modal", "is_open"),
     [Input("advanced_xic_modal_button", "n_clicks"), Input("advanced_xic_modal_close", "n_clicks")],
     [State("advanced_xic_modal", "is_open")],
+)(toggle_modal)
+
+app.callback(
+    Output("advanced_upload_modal", "is_open"),
+    [Input("advanced_upload_modal_button", "n_clicks"), Input("advanced_upload_modal_close", "n_clicks")],
+    [State("advanced_upload_modal", "is_open")],
 )(toggle_modal)
 
 

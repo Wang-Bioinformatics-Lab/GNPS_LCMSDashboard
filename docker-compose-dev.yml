@@ -1,6 +1,7 @@
 version: '3'
 services:
   gnpslcms-dash:
+    command: /app/run_dev_server.sh
     environment:
       VIRTUAL_HOST: mingwangbeta.ucsd.edu
       VIRTUAL_PORT: 6548
