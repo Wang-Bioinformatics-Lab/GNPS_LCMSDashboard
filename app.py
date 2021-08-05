@@ -2023,19 +2023,6 @@ def update_usi(search, url_hash,
 
     return [usi, usi2, "Using URL USI", dash.no_update]
     
-# @app.callback(
-#     Output('debug-output-3', 'children'),
-#     [Input('upload-data2', 'isCompleted')],
-#     [State('upload-data2', 'fileNames'),
-#      State('upload-data2', 'upload_id')],
-# )
-# def callback_on_completion(iscompleted, filenames, upload_id):
-#     import sys
-#     print(filenames, file=sys.stderr)
-
-#     return str(iscompleted) + str(len(filenames))
-    
-
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
               [
