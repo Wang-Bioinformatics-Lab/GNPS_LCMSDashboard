@@ -796,7 +796,7 @@ DATASLICE_CARD = [
             dbc.ButtonGroup([
                 dbc.Button("Spectrum Details", block=False, id="spectrum_details_modal_button"),
                 dbc.Button("View Vector Metabolomics USI", block=False, id="advanced_usi_modal_button"),
-                dbc.Button("Quick Library Match", block=False, id="advanced_librarysearch_modal_button"),
+                dbc.Button("GNPS Library Match", block=False, id="advanced_librarysearch_modal_button"),
             ]),
 
             html.Br(),
@@ -1584,7 +1584,7 @@ def draw_fastsearch(usi, ms2_identifier):
     librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
 
     # Perform API call to get number of matches
-    search_text = "Quick Library Match"
+    search_text = "GNPS Library Match"
     try:
         search_api_url = "https://fastlibrarysearch.ucsd.edu/search?usi={}&library=gnpslibrary&analog=No".format(updated_usi)
         search_api_response = requests.get(search_api_url, timeout=10)
@@ -1592,7 +1592,7 @@ def draw_fastsearch(usi, ms2_identifier):
         num_matches = len(search_api_response_json["results"])
 
         if num_matches > 0:
-            search_text = "Quick Library Match ({} Putative Hits)".format(num_matches)
+            search_text = "GNPS Library Match ({} Putative Hits)".format(num_matches)
     #except requests.exceptions.Timeout:
     except:
         pass
