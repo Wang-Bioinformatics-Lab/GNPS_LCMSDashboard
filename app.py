@@ -1564,8 +1564,6 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
             interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url]
 
 @app.callback([
-                Output('advanced_librarysearch_modal_button', 'children'),
-                Output('librarysearch_frame', 'src'), 
                 Output('advanced_librarysearchmassivekb_modal_button', 'children'),
                 Output('librarysearchmassivekb_frame', 'src'), 
               ],
@@ -1573,7 +1571,46 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
                   Input('usi', 'value'), 
                   Input('ms2_identifier', 'value')
               ])
-def draw_fastsearch(usi, ms2_identifier):
+def draw_fastsearch_gnps(usi, ms2_identifier):
+    # Checking Values
+    if ms2_identifier is None or len(ms2_identifier) < 2:
+        return [dash.no_update] * 4
+
+    usi_first = usi.split("\n")[0]
+
+    usi_splits = usi_first.split(":")
+    dataset = usi_splits[1]
+    filename = usi_splits[2]
+    scan_number = str(ms2_identifier.split(":")[-1])
+    updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
+
+    massivekb_librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=massivekb_index&usi1={}".format(updated_usi)
+
+    # Perform API call to get number of matches for MassIVE-KB
+    massivekb_search_text = "MassIVE-KB Library"
+    try:
+        search_api_url = "https://fastlibrarysearch.ucsd.edu/search?usi={}&library=massivekb_index&analog=No".format(updated_usi)
+        search_api_response = requests.get(search_api_url, timeout=10)
+        search_api_response_json = search_api_response.json()
+        num_matches = len(search_api_response_json["results"])
+
+        if num_matches > 0:
+            massivekb_search_text = "MassIVE-KB Library ({} Putative Hits)".format(num_matches)
+    #except requests.exceptions.Timeout:
+    except:
+        pass
+
+    return [massivekb_search_text, massivekb_librarysearch_url]
+
+@app.callback([
+                Output('advanced_librarysearch_modal_button', 'children'),
+                Output('librarysearch_frame', 'src'), 
+              ],
+              [
+                  Input('usi', 'value'), 
+                  Input('ms2_identifier', 'value')
+              ])
+def draw_fastsearch_massivekb(usi, ms2_identifier):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
         return [dash.no_update] * 4
@@ -1602,23 +1639,7 @@ def draw_fastsearch(usi, ms2_identifier):
     except:
         pass
 
-    massivekb_librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=massivekb_index&usi1={}".format(updated_usi)
-
-    # Perform API call to get number of matches for MassIVE-KB
-    massivekb_search_text = "MassIVE-KB Library"
-    try:
-        search_api_url = "https://fastlibrarysearch.ucsd.edu/search?usi={}&library=massivekb_index&analog=No".format(updated_usi)
-        search_api_response = requests.get(search_api_url, timeout=10)
-        search_api_response_json = search_api_response.json()
-        num_matches = len(search_api_response_json["results"])
-
-        if num_matches > 0:
-            massivekb_search_text = "MassIVE-KB Library ({} Putative Hits)".format(num_matches)
-    #except requests.exceptions.Timeout:
-    except:
-        pass
-
-    return [gnps_search_text, gnps_librarysearch_url, massivekb_search_text, massivekb_librarysearch_url]
+    return [gnps_search_text, gnps_librarysearch_url]
 
 @app.callback([ 
                 Output("xic_formula", "value"),
