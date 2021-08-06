@@ -26,6 +26,8 @@ clear-cache:
 clear-flaskcache:
 	sudo rm temp/flask-cache/*
 
+clear-memorycache:
+	sudo rm temp/memory-cache/joblib/ -rf || true
 
 attach:
 	docker exec -i -t gnpslcms-dash /bin/bash
