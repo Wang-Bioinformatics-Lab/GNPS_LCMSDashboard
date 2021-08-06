@@ -561,13 +561,14 @@ UPLOAD_MODAL = [
                                 ]),
                                 style={
                                     'width': '95%',
-                                    'height': '125px',
+                                    'height': '120px',
                                     'lineHeight': '60px',
                                     'borderWidth': '1px',
                                     'borderStyle': 'dashed',
                                     'borderRadius': '7px',
                                     'textAlign': 'center',
-                                    'margin': '10px'
+                                    'margin': '10px',
+                                    'margin-top': '27px'
                                 },
                                 multiple=True,
                                 max_size=150000000 # 150MB
@@ -581,7 +582,7 @@ UPLOAD_MODAL = [
                             du.Upload(
                                 id="upload-data2",
                                 max_file_size=2048, 
-                                filetypes=['mzML', 'mzXML', "cdf"],
+                                filetypes=['mzML', 'mzml', 'mzXML', 'mzxml', 'cdf', 'CDF', 'RAW', 'raw'],
                                 max_files=1,
                                 pause_button=True,
                                 text="Drag and Drop your own files (up to 2GB)",
