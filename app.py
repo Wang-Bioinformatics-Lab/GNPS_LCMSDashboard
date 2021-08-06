@@ -1022,7 +1022,7 @@ INTEGRATION_CARD = [
         [
             dcc.Loading(
                 id="integration-table",
-                children=[html.Div([html.Div(id="loading-output-1001")])],
+                children="Please enter XIC values to view the XIC integration table",
                 type="default",
             ),
             html.Br(),
@@ -3045,8 +3045,6 @@ def determine_plot_zoom_bounds(url_search, usi,
     return [current_map_plot_zoom_string, highlight_box_string, min_rt, max_rt, min_mz, max_mz]
     
 # Downloading the files
-
-# Creating File Summary
 @app.callback([Output('loading_file_download', 'children')],
               [Input('usi', 'value'), Input('usi2', 'value')])
 def render_initial_file_load(usi, usi2):
