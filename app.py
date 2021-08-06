@@ -9,45 +9,43 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
-from time import sleep
+import dash_uploader as du
+
 
 # Plotly Imports
-
 import plotly.express as px
 import plotly.graph_objects as go 
 
-# Flask
 
+# Flask
 from flask import Flask, send_from_directory, send_file
 import werkzeug
 from flask_caching import Cache
 
 # Misc Library
-
 import sys
+import shutil
 import os
 import io
 from zipfile import ZipFile
 import urllib.parse
 from scipy import integrate
 import pandas as pd
-import requests
 import uuid
-import pymzml
 import numpy as np
 import datashader as ds
-from tqdm import tqdm
 import json
 from collections import defaultdict
 import uuid
 import base64
 import redis
-from molmass import Formula
-from pyteomics import mass
+from time import sleep
 from datetime import datetime
 
-# Project Imports
+from molmass import Formula
+from pyteomics import mass
 
+# Project Imports
 from utils import _calculate_file_stats
 from utils import _get_scan_polarity
 from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_generator
@@ -67,7 +65,10 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
-from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL, ADVANCED_LIBRARYSEARCH_MODAL
+
+from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
+from layout_misc import UPLOAD_MODAL
+from layout_misc import ADVANCED_LIBRARYSEARCH_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
 
@@ -75,6 +76,8 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 TEMPFOLDER = "./temp"
+TEMP_UPLOADFOLDER = "./temp/dash-uploader"
+du.configure_upload(app, TEMP_UPLOADFOLDER)
 
 server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
 
@@ -145,9 +148,9 @@ cvs = ds.Canvas(plot_width=1, plot_height=1)
 agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
-placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder', render_mode="svg")
-placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='Spectrum Placeholder', render_mode="svg")
+placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, title='Heatmap Plot - Please enter a USI or Upload a File', color_continuous_scale="Hot")
+placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Plot - Please Enter an m/z value', render_mode="svg")
+placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='MS Spectrum Plot - Please select a scan number', render_mode="svg")
 
 MAX_XIC_PLOT_LCMS_FILES = 30
 MAX_LCMS_FILES = 500
@@ -179,13 +182,6 @@ DATASELECTION_CARD = [
                 html.H5("Data Selection"),
             ),
             dbc.Col(
-                dcc.Loading(
-                    id="upload_status",
-                    children=[html.Div([html.Div(id="loading-output-3423")])],
-                    type="default",
-                ),
-            ),
-            dbc.Col(
                 dbc.Button("Show/Hide", 
                     id="data_selection_show_hide_button", 
                     color="primary", size="sm", 
@@ -201,9 +197,19 @@ DATASELECTION_CARD = [
         dbc.CardBody(dbc.Row(
             [   ## Left Panel
                 dbc.Col([
-                    dbc.Row(
+                    dbc.Row([
                         dbc.Col(html.H5(children='File Selection')),
-                    ),
+                        dbc.Col(
+                            dbc.Button("Upload Files", 
+                                id="advanced_upload_modal_button", 
+                                color="info", size="sm", 
+                                className="mr-1", 
+                                style={
+                                    "float" : "right"
+                                }
+                            ),
+                        ),
+                    ]),
                     html.Hr(),
                     dbc.InputGroup(
                         [
@@ -219,38 +225,20 @@ DATASELECTION_CARD = [
                         ],
                         className="mb-3",
                     ),
-                    dcc.Upload(
-                        id='upload-data',
-                        children=html.Div([
-                            'Drag and Drop your own file',
-                            html.A(' or Select Files (120MB Max)')
-                        ]),
-                        style={
-                            'width': '95%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'margin': '10px'
-                        },
-                        multiple=True,
-                        max_size=150000000 # 150MB
-                    ),
-                    html.Hr(),
                     # Linkouts
-                    dcc.Loading(
-                        id="link-button",
-                        children=[html.Div([html.Div(id="loading-output-9")])],
-                        type="default",
-                    ),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0),
+                        ),
+                        dbc.Col(
+                            dcc.Loading(
+                                id="network-link-button",
+                                children=[html.Div([html.Div(id="loading-output-232")])],
+                                type="default",
+                            ),
+                        ),
+                    ]),
                     html.Br(),
-                    dcc.Loading(
-                        id="network-link-button",
-                        children=[html.Div([html.Div(id="loading-output-232")])],
-                        type="default",
-                    ),
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Comment", addon_type="prepend"),
@@ -260,6 +248,7 @@ DATASELECTION_CARD = [
                     ),
                     html.Hr(),
                     html.H5(children='LCMS Viewer Options'),
+                    html.Hr(),
                     dbc.Row([
                         dbc.Col(
                             dbc.FormGroup(
@@ -390,6 +379,55 @@ DATASELECTION_CARD = [
                             )),
                         dbc.Col(),
                     ]),
+                    html.H5(children='Loading Status'),
+                    html.Hr(),
+                    dbc.Table([
+                        html.Tr([html.Td("File Download"), 
+                                 html.Td(dcc.Loading(
+                                        id="loading_file_download",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 ),
+                                 html.Td("XIC Drawing"), 
+                                 html.Td(
+                                     dcc.Loading(
+                                        id="loading_xic_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 )]),
+                        html.Tr([html.Td("Heatmap Drawing Left"), 
+                                 html.Td(dcc.Loading(
+                                        id="loading_map_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 ),
+                                 html.Td("Heatmap Drawing Right"), 
+                                 html.Td(
+                                     dcc.Loading(
+                                        id="loading_map_plot2",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 )]),
+                        html.Tr([html.Td("TIC Drawing Left"), 
+                                 html.Td(dcc.Loading(
+                                        id="loading_tic_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 ),
+                                 html.Td("TIC Drawing Right"), 
+                                 html.Td(
+                                     dcc.Loading(
+                                        id="loading_tic_plot2",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 )])
+                    ], bordered=True, size="sm")
                 ], className="col-sm"),
                 ## Right Panel
                 dbc.Col([
@@ -715,16 +753,6 @@ DATASLICE_CARD = [
                 html.H5("Details Panel"),
             ),
             dbc.Col(
-                dcc.Loading(
-                    id="loading_xic_plot",
-                    children="",
-                    type="dot"
-                ),
-                style={
-                    "margin-top" : "20px"
-                }
-            ),
-            dbc.Col(
                 dbc.Button("Clear XIC", 
                     id="xicmz_clear_button", 
                     color="info", size="sm", 
@@ -960,6 +988,11 @@ DEBUG_CARD = [
                 type="default",
             ),
             dcc.Loading(
+                id="debug-output-3",
+                children=[html.Div([html.Div(id="loading-output-23123")])],
+                type="default",
+            ),
+            dcc.Loading(
                 id="qrcode",
                 type="default"
             ),
@@ -1066,7 +1099,9 @@ CONTRIBUTORS_CARD = [
                 "Laura-Isobel McCall PhD - University of Oklahoma",
                 html.Br(),
                 "Benjamin Pullman - UC San Diego",
-                html.Br(),
+                html.Hr(),
+                html.H5("Citation"),
+                html.A("Petras, D., Phelan, V. V., Acharya, D. D., Allen, A. E., Aron, A. T., Bandeira, N., ... & Wang, M. (2021). GNPS Dashboard: Collaborative Analysis of Mass Spectrometry Data in the Web Browser. bioRxiv.", href="https://www.biorxiv.org/content/10.1101/2021.04.05.438475v1")
                 ]
             )
         ]
@@ -1100,14 +1135,6 @@ MIDDLE_DASHBOARD = [
                 html.H5("Data Exploration"),
             ),
             dbc.Col(
-                dcc.Loading(
-                    id="loading_map_plot",
-                    children="",
-                    type="dot"
-                ),
-                style={
-                    "margin-top" : "20px"
-                }
             )
         ])
     ]),
@@ -1169,7 +1196,15 @@ SECOND_DATAEXPLORATION_DASHBOARD = [
 
 BODY = dbc.Container(
     [
-        dcc.Location(id='url', refresh=False),
+        dcc.Location(id='url', refresh=False),        
+        html.Div(
+            [
+                dcc.Link(id="query_link", href="#", target="_blank"),
+            ],
+            style={
+                "display" : "none"
+            }
+        ),
         dcc.Interval(
             id='sychronization_interval',
             interval=1000000000*1000, # in milliseconds
@@ -1265,6 +1300,8 @@ BODY = dbc.Container(
                         dbc.Card(EXAMPLE_DASHBOARD),
                         html.Br(),
                         dbc.Card(SYCHRONIZATION_MODAL),
+                        html.Br(),
+                        dbc.Card(UPLOAD_MODAL),
                     ],
                         #className="w-50"
                     ),
@@ -1333,7 +1370,7 @@ def _resolve_usi(usi, temp_folder="temp"):
             while(1):
                 if result.ready():
                     break
-                sleep(3)
+                sleep(1)
             result = result.get()
             return result
         else:
@@ -1437,6 +1474,10 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
                   State('xic_mz', 'value')
               ])
 def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
+    # Checking Values
+    if ms2_identifier is None or len(ms2_identifier) < 2:
+        return [dash.no_update] * 6
+
     usi_first = usi.split("\n")[0]
 
     usi_splits = usi_first.split(":")
@@ -1866,6 +1907,74 @@ def determine_url_only_parameters_synchronization(  search,
     return [synchronization_type, "DEPENDENCY"]
 
 
+def _handle_file_upload_small(filename , filecontent):
+    # This is the small file upload handler
+    upload_message = ""
+
+    if len(filecontent) > 180000000: # Limit of 180MiB
+        upload_message = "File Upload too big\n"
+        return None, upload_message
+
+    extension = os.path.splitext(filename)[1]
+    original_filename = os.path.splitext(filename)[0]
+    safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
+
+    usi = None
+    if extension == ".mzML":
+        temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension == ".mzXML":
+        temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension.lower() == ".cdf":
+        temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+        data = filecontent.encode("utf8").split(b";base64,")[1]
+
+        with open(temp_filename, "wb") as temp_file:
+            temp_file.write(base64.decodebytes(data))
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    return usi, upload_message
+
+def _handle_file_upload_big(filename, uploadid):
+    uploaded_filename = os.path.join(TEMP_UPLOADFOLDER, uploadid, filename)
+
+    extension = os.path.splitext(filename)[1]
+    original_filename = os.path.splitext(filename)[0]
+    safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
+    if extension == ".mzML":
+        temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+    if extension == ".mzXML":
+        temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+
+    if extension.lower() == ".cdf":
+        temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+        shutil.move(uploaded_filename, temp_filename)
+
+        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
+    
+    return usi, ""
+
+
 # Handling file upload
 @app.callback([
                 Output('usi', 'value'), 
@@ -1876,15 +1985,17 @@ def determine_url_only_parameters_synchronization(  search,
               [
                 Input('url', 'search'), 
                 Input('url', 'hash'), 
-                Input('upload-data', 'contents'),
+                Input('upload-data1', 'contents'),
+                Input('upload-data2', 'isCompleted'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
                 Input('auto_import_parameters', 'children')
               ],
               [
-                  State('upload-data', 'filename'),
-                  State('upload-data', 'last_modified'),
+                  State('upload-data1', 'filename'),
+                  State('upload-data2', 'fileNames'),
+                  State('upload-data2', 'upload_id'),
                   State('sychronization_session_id', 'value'),
 
                   State('setting_json_area', 'value'),
@@ -1892,66 +2003,48 @@ def determine_url_only_parameters_synchronization(  search,
                   State('usi', 'value'),
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, filecontent_list, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
-                filename_list, filedate_list, sychronization_session_id,
+def update_usi(search, url_hash, 
+                uploadfile1_filecontent_list,
+                uploadfile2_iscompleted, 
+                sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
+                uploadfile1_filename_list, uploadfile2_filenames, uploadfile2_uploadid, 
+                sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
                 existing_usi2):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
-    #print("UPLOADING FILE", filename_list)
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    if filename_list is not None:
+    if uploadfile1_filename_list is not None or uploadfile2_filenames is not None and "upload-data" in triggered_id:
+        total_files_uploaded = 0
         usi = existing_usi
         usi2 = existing_usi2
-
         upload_message = ""
-        total_files_uploaded = 0
 
-        for i, filename in enumerate(filename_list):
-            filecontent = filecontent_list[i]
+        # Handling the small many files upload
+        if uploadfile1_filename_list is not None and "upload-data1" in triggered_id:
+            for i, filename in enumerate(uploadfile1_filename_list):
+                filecontent = uploadfile1_filecontent_list[i]
+                new_usi, new_upload_message = _handle_file_upload_small(filename , filecontent)
+                
+                if new_usi is not None:
+                    total_files_uploaded += 1
+                    usi = new_usi + "\n" + usi
 
-            if len(filecontent) > 180000000: # Limit of 180MiB
-                upload_message += "File Upload too big\n"
-                continue
+        if uploadfile2_filenames is not None and "upload-data2" in triggered_id:
+            print("UPLOADING FILE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", uploadfile2_iscompleted, uploadfile2_filenames)
 
-            extension = os.path.splitext(filename)[1]
-            original_filename = os.path.splitext(filename)[0]
-            safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
-            if extension == ".mzML":
-                temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
+            for i, filename in enumerate(uploadfile2_filenames):
+                new_usi, new_upload_message = _handle_file_upload_big(filename, uploadfile2_uploadid)
 
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-            if extension == ".mzXML":
-                temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
-
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-            if extension.lower() == ".cdf":
-                temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
-                data = filecontent.encode("utf8").split(b";base64,")[1]
-
-                with open(temp_filename, "wb") as temp_file:
-                    temp_file.write(base64.decodebytes(data))
-
-                usi += "\nmzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-            total_files_uploaded += 1
+                if new_usi is not None:
+                    total_files_uploaded += 1
+                    usi = new_usi + "\n" + usi
 
         upload_message += "{} Files Uploaded".format(total_files_uploaded)
         return [usi.lstrip(), usi2.lstrip(), dash.no_update, upload_message]
-
-    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     session_dict = {}
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
@@ -1979,8 +2072,6 @@ def update_usi(search, url_hash, filecontent_list, sychronization_load_session_b
 
     return [usi, usi2, "Using URL USI", dash.no_update]
     
-    
-
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
               [
@@ -2293,7 +2384,11 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
     return lcms_fig
 
 # Creating TIC plot
-@app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
+@app.callback([
+                Output('tic-plot', 'figure'), 
+                Output('tic-plot', 'config'),
+                Output('loading_tic_plot', 'children')
+              ],
               [Input('usi', 'value'), 
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value"), 
@@ -2303,6 +2398,9 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
 def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
+
+    fig = dash.no_update
+    status = "No Data"
 
     RENDER_MODE = "auto"
     # Making sure the data in the browser is actually svg
@@ -2324,10 +2422,21 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
                 pass
 
         merged_tic_df = pd.concat(all_usi_tic_df)
-        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
-    else:
+        try:
+            fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
+            status = "Ready"
+        except:
+            fig = dash.no_update
+            status = "Draw Error"
+    elif len(all_usi) > 0:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
-        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+        try:
+            fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+            status = "Ready"
+        except:
+            fig = dash.no_update
+            status = "Draw Error"
+        
 
 
     # For Drawing and Exporting
@@ -2340,12 +2449,13 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
         }
     }
 
-    return [fig, graph_config]
+    return [fig, graph_config, status]
 
 # Creating TIC plot
 @app.callback([
                   Output('tic-plot2', 'figure'), 
-                  Output('tic-plot2', 'config')
+                  Output('tic-plot2', 'config'),
+                  Output('loading_tic_plot2', 'children')
               ],
               [
                   Input('usi2', 'value'), 
@@ -2358,6 +2468,10 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
 def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
+    all_usi = [x for x in all_usi if len(x) > 2]
+
+    fig = dash.no_update
+    status = "No Data"
 
     RENDER_MODE = "auto"
     # Making sure the data in the browser is actually svg
@@ -2380,9 +2494,11 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
 
         merged_tic_df = pd.concat(all_usi_tic_df)
         fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
-    else:
+        status = "Ready"
+    elif len(all_usi) > 0:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+        status = "Ready"
 
     # For Drawing and Exporting
     graph_config = {
@@ -2394,7 +2510,7 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
         }
     }
 
-    return [fig, graph_config]
+    return [fig, graph_config, status]
 
 @cache.memoize()
 def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
@@ -2950,6 +3066,38 @@ def determine_plot_zoom_bounds(url_search, usi,
 
     return [current_map_plot_zoom_string, highlight_box_string, min_rt, max_rt, min_mz, max_mz]
     
+# Downloading the files
+
+# Creating File Summary
+@app.callback([Output('loading_file_download', 'children')],
+              [Input('usi', 'value'), Input('usi2', 'value')])
+def render_initial_file_load(usi, usi2):
+    usi1_list = usi.split("\n")
+    usi2_list = usi2.split("\n")
+
+    usi1_list = [usi for usi in usi1_list if len(usi) > 8] # Filtering out empty USIs
+    usi2_list = [usi for usi in usi2_list if len(usi) > 8] # Filtering out empty USIs
+    
+    usi_list = usi1_list + usi2_list
+    usi_list = usi_list[:MAX_LCMS_FILES]
+
+    status = "Ready"
+    if len(usi1_list) > 0:
+        try:
+            _resolve_usi(usi1_list[0])
+        except:
+            status = "USI1 Loading Error"
+            return [status]
+            
+    if len(usi2_list) > 0:
+        try:
+            _resolve_usi(usi2_list[0])
+        except:
+            status = "USI2 Loading Error"
+            return [status]
+
+    return [status]
+
 
 # Inspiration for structure from
 # https://github.com/plotly/dash-datashader
@@ -3086,12 +3234,13 @@ def draw_file(url_search, usi,
         }
     }
 
-    return [map_fig, graph_config, remote_link, table_graph, dash.no_update]
+    return [map_fig, graph_config, remote_link, table_graph, "Ready"]
 
 
 @app.callback([
                 Output('map-plot2', 'figure'),
                 Output('map-plot2', 'config'), 
+                Output('loading_map_plot2', 'children')
               ],
               [
                 Input('usi2', 'value'), 
@@ -3109,7 +3258,7 @@ def draw_file2( usi,
                 show_ms2_markers, show_lcms_2nd_map, polarity_filter, export_format, plot_theme):
 
     if show_lcms_2nd_map is False:
-        return [dash.no_update]
+        return [dash.no_update, dash.no_update, "Not Shown"]
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -3143,7 +3292,7 @@ def draw_file2( usi,
         }
     }
 
-    return [map_fig, graph_config]
+    return [map_fig, graph_config, "Ready"]
 
 
 @app.callback(Output('run-gnps-mzmine-link', 'href'),
@@ -3202,7 +3351,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 
 
 @app.callback([
-                Output('link-button', 'children'),
+                Output('query_link', 'href'),
                 Output('page_parameters', 'children'),
                 Output('qrcode', 'children'),
               ],  
@@ -3333,9 +3482,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     hash_params["usi"] = usi
     hash_params["usi2"] = usi2
 
-    full_url = "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
-    url_provenance = dbc.Button("Link to these plots", block=True, color="primary", className="mr-1")
-    provenance_link_object = dcc.Link(url_provenance, href=full_url, target="_blank")
+    full_url = request.host_url + "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
 
     full_json_settings = url_params
     full_json_settings["usi"] = usi
@@ -3356,8 +3503,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     qr_html_img = dash.no_update
     try:
-        url = request.url.replace('/_dash-update-component', full_url)
-        qr_html_img = _generate_qrcode_img(url) 
+        qr_html_img = _generate_qrcode_img(full_url) 
     except:
         pass
 
@@ -3380,8 +3526,40 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     # Removing Sync token for json area
     full_json_settings.pop("sychronization_session_id", None)
 
+    return [full_url, json.dumps(full_json_settings, indent=4), qr_html_img]
 
-    return [provenance_link_object, json.dumps(full_json_settings, indent=4), qr_html_img]
+
+app.clientside_callback(
+    """
+    function(n_clicks, text_to_copy) {
+        original_text = "Copy URL Link to this Visualization"
+        if (n_clicks > 0) {
+            const el = document.createElement('textarea');
+            el.value = text_to_copy;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setTimeout(function(){ 
+                    document.getElementById("copy_link_button").textContent = original_text
+                }, 1000);
+            document.getElementById("copy_link_button").textContent = "Copied!"
+            return 'Copied!';
+        } else {
+            document.getElementById("copy_link_button").textContent = original_text
+            return original_text;
+        }
+    }
+    """,
+    Output('copy_link_button', 'children'),
+    [
+        Input('copy_link_button', 'n_clicks')
+    ],
+    [
+        State('query_link', 'href'),
+    ]
+)
+
 
 # This helps write the json string that we can use to load parameters in the whole page
 @app.callback([
@@ -3599,7 +3777,6 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
                   Input('usi2', 'value'), 
               ])
 def create_networking_link(usi, usi2):
-
     full_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
 
     g1_list = []
@@ -3623,7 +3800,7 @@ def create_networking_link(usi, usi2):
         except:
             pass
 
-    if len(g1_list) > 0 or len(g0_list) > 0:
+    if len(g1_list) > 0 or len(g2_list) > 0:
         parameters = {}
         parameters["workflow"] = "METABOLOMICS-SNETS-V2"
         parameters["spec_on_server"] = ";".join(g1_list)
@@ -3732,6 +3909,9 @@ def get_overlay_options(overlay_usi, overlay_tabular_data):
     Returns:
         [type]: [description]
     """
+    
+    if overlay_usi is None:
+        return [dash.no_update] * 5
 
     overlay_df = _resolve_overlay(overlay_usi, "", "", "", "", "", "", "", overlay_tabular_data=overlay_tabular_data)
 
@@ -3941,13 +4121,12 @@ app.callback(
     [State("advanced_usi_modal", "is_open")],
 )(toggle_modal)
 
+
 app.callback(
     Output("advanced_librarysearch_modal", "is_open"),
     [Input("advanced_librarysearch_modal_button", "n_clicks"), Input("advanced_librarysearch_modal_close", "n_clicks")],
     [State("advanced_librarysearch_modal", "is_open")],
 )(toggle_modal)
-
-
 
 app.callback(
     Output("advanced_visualization_modal", "is_open"),
@@ -3977,6 +4156,12 @@ app.callback(
     Output("advanced_xic_modal", "is_open"),
     [Input("advanced_xic_modal_button", "n_clicks"), Input("advanced_xic_modal_close", "n_clicks")],
     [State("advanced_xic_modal", "is_open")],
+)(toggle_modal)
+
+app.callback(
+    Output("advanced_upload_modal", "is_open"),
+    [Input("advanced_upload_modal_button", "n_clicks"), Input("advanced_upload_modal_close", "n_clicks")],
+    [State("advanced_upload_modal", "is_open")],
 )(toggle_modal)
 
 
@@ -4053,6 +4238,14 @@ def settingsdownload():
         attachment_filename=output_filename,
         mimetype='text/json'
     )
+
+@server.route("/downloadlink")
+def downloadlink():
+    usi = request.args.get("usi")
+    download_remote_link = download._resolve_usi_remotelink(usi)
+    
+    return download_remote_link
+
 
 
 

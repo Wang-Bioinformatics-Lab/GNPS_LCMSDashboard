@@ -7,6 +7,7 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
+import dash_uploader as du
 
 # Plotly Imports
 import plotly.express as px
@@ -72,6 +73,8 @@ EXAMPLE_DASHBOARD = [
             html.A("Thermo LCMS - Q Exactive - Proteomics - mzXML from MassIVE, imported from PRIDE", href='/?usi=mzspec:PXD002854:20150414_QEp1_LC7_GaPI_SA_Serum_DT_03_150416181741.mzXML:scan:2308:[+314.188]-QQKPGQAPR/2'),
             html.Br(),
             html.A("Sciex SWATH - Proteomics - mzML from MassIVE", href='/?usi=mzspec:MSV000085570:170425_01_Edith_120417_CCF_01'),
+            html.Br(),
+            html.A("LC/MS without MS1 data - from PRIDE", href='/?xic_mz=&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=MZ&xic_integration_type=AUC&show_ms2_markers=True&ms2marker_color=blue&ms2marker_size=5&ms2_identifier=&show_lcms_2nd_map=False&map_plot_zoom=%7B%22xaxis.autorange%22%3A+true%2C+%22yaxis.autorange%22%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=None&overlay_mz=row+m%2Fz&overlay_rt=row+retention+time&overlay_color=&overlay_size=&overlay_hover=&overlay_filter_column=&overlay_filter_value=&feature_finding_type=Off&feature_finding_ppm=10&feature_finding_noise=10000&feature_finding_min_peak_rt=0.05&feature_finding_max_peak_rt=1.5&feature_finding_rt_tolerance=0.3&sychronization_session_id=060c1de5066e49788d8d4ad33201b797&chromatogram_options=%5B%5D&comment=&map_plot_color_scale=Hot_r&map_plot_quantization_level=Medium&plot_theme=plotly_white#%7B%22usi%22%3A%20%22mzspec%3APXD023659%3AV200409_13.mzML%22%2C%20%22usi2%22%3A%20%22%22%7D'),
             html.Br(),
             html.Br(),
 
@@ -506,6 +509,7 @@ ADVANCED_USI_MODAL = [
 ]
 
 
+
 ADVANCED_LIBRARYSEARCH_MODAL = [
     dbc.Modal(
         [
@@ -529,5 +533,85 @@ ADVANCED_LIBRARYSEARCH_MODAL = [
         style={
             "max-width": "1920px"
         }
+    ),
+]
+
+
+UPLOAD_MODAL = [
+    dbc.Modal(
+        [
+            dbc.ModalHeader("Upload Files"),
+            dbc.ModalBody([
+                html.Div("Upload your files here, we have two options, upload many small files at once (up to 120MB), or one big file at one time (up to 2GB). \
+                    Files are deleted after 30 days so if you would it more permanent, please make a public dataset at MassIVE. We currently support the upload of mzML, mzXML, and CDF files. If you have Thermo RAW files please deposit them in a repository."),
+                html.Br(),
+                dbc.Alert("Note: If you are uploading a 2GB file, please do so on an internet connection with at least a 100 mbps upload speed!", color="primary"),
+                html.Hr(),
+                dbc.Row([
+                    dbc.Col([
+                        html.H3("Upload Several Small Files"),
+                        html.Hr(),
+                        html.Div(
+                            dcc.Upload(
+                                id='upload-data1',
+                                children=html.Div([
+                                    'Drag and Drop your own files',
+                                    html.A('(120MB Max and multiple at a time)')
+                                ]),
+                                style={
+                                    'width': '95%',
+                                    'height': '125px',
+                                    'lineHeight': '60px',
+                                    'borderWidth': '1px',
+                                    'borderStyle': 'dashed',
+                                    'borderRadius': '7px',
+                                    'textAlign': 'center',
+                                    'margin': '10px'
+                                },
+                                multiple=True,
+                                max_size=150000000 # 150MB
+                            ),
+                        )
+                    ]),
+                    dbc.Col([
+                        html.H3("Upload One Big File"),
+                        html.Hr(),
+                        html.Div(
+                            du.Upload(
+                                id="upload-data2",
+                                max_file_size=2048, 
+                                filetypes=['mzML', 'mzXML', "cdf"],
+                                max_files=1,
+                                pause_button=True,
+                                text="Drag and Drop your own files (up to 2GB)",
+                            ),
+                            style={
+                                'width': '95%',
+                                'height': '100px',
+                                'lineHeight': '100px',
+                                'borderWidth': '1px',
+                                'display': 'inline-block',
+                                'borderRadius': '5px',
+                                'textAlign': 'center',
+                                'margin': '10px'
+                            },
+                        )
+                    ]),
+                ]),
+                html.Hr(),
+                html.H3("Upload Status"),
+                html.Hr(),
+                dcc.Loading(
+                    id="upload_status",
+                    children=[html.Div([html.Div(id="loading-output-3423")])],
+                    type="default",
+                ),
+            ]),
+            dbc.ModalFooter(
+                dbc.Button("Close", id="advanced_upload_modal_close", className="ml-auto")
+            ),
+        ],
+        id="advanced_upload_modal",
+        size="xl",
     ),
 ]
