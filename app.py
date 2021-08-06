@@ -386,10 +386,40 @@ DATASELECTION_CARD = [
                                         type="dot"
                                     )
                                  ),
-                                 html.Td("Heatmap Drawing"), 
+                                 html.Td("XIC Drawing"), 
                                  html.Td(
                                      dcc.Loading(
+                                        id="loading_xic_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 )]),
+                        html.Tr([html.Td("Heatmap Drawing Left"), 
+                                 html.Td(dcc.Loading(
                                         id="loading_map_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 ),
+                                 html.Td("Heatmap Drawing Right"), 
+                                 html.Td(
+                                     dcc.Loading(
+                                        id="loading_map_plot2",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 )]),
+                        html.Tr([html.Td("TIC Drawing Left"), 
+                                 html.Td(dcc.Loading(
+                                        id="loading_tic_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 ),
+                                 html.Td("TIC Drawing Right"), 
+                                 html.Td(
+                                     dcc.Loading(
+                                        id="loading_tic_plot2",
                                         children="Ready",
                                         type="dot"
                                     )
@@ -718,16 +748,6 @@ DATASLICE_CARD = [
         dbc.Row([
             dbc.Col(
                 html.H5("Details Panel"),
-            ),
-            dbc.Col(
-                dcc.Loading(
-                    id="loading_xic_plot",
-                    children="",
-                    type="dot"
-                ),
-                style={
-                    "margin-top" : "20px"
-                }
             ),
             dbc.Col(
                 dbc.Button("Clear XIC", 
@@ -1346,7 +1366,7 @@ def _resolve_usi(usi, temp_folder="temp"):
             while(1):
                 if result.ready():
                     break
-                sleep(3)
+                sleep(1)
             result = result.get()
             return result
         else:
@@ -2356,7 +2376,11 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
     return lcms_fig
 
 # Creating TIC plot
-@app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
+@app.callback([
+                Output('tic-plot', 'figure'), 
+                Output('tic-plot', 'config'),
+                Output('loading_tic_plot', 'children')
+              ],
               [Input('usi', 'value'), 
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value"), 
@@ -2366,6 +2390,9 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
 def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
+
+    fig = dash.no_update
+    status = "No Data"
 
     RENDER_MODE = "auto"
     # Making sure the data in the browser is actually svg
@@ -2388,9 +2415,11 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
 
         merged_tic_df = pd.concat(all_usi_tic_df)
         fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
-    else:
+        status = "Ready"
+    elif len(all_usi) > 0:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+        status = "Ready"
 
 
     # For Drawing and Exporting
@@ -2403,12 +2432,13 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
         }
     }
 
-    return [fig, graph_config]
+    return [fig, graph_config, status]
 
 # Creating TIC plot
 @app.callback([
                   Output('tic-plot2', 'figure'), 
-                  Output('tic-plot2', 'config')
+                  Output('tic-plot2', 'config'),
+                  Output('loading_tic_plot2', 'children')
               ],
               [
                   Input('usi2', 'value'), 
@@ -2423,8 +2453,8 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
     all_usi = usi.split("\n")
     all_usi = [x for x in all_usi if len(x) > 2]
 
-    print("YYYYYYYYYYYYYYYYYYYYY", all_usi)
     fig = dash.no_update
+    status = "No Data"
 
     RENDER_MODE = "auto"
     # Making sure the data in the browser is actually svg
@@ -2447,9 +2477,11 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
 
         merged_tic_df = pd.concat(all_usi_tic_df)
         fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
+        status = "Ready"
     elif len(all_usi) > 0:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+        status = "Ready"
 
     # For Drawing and Exporting
     graph_config = {
@@ -2461,7 +2493,7 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
         }
     }
 
-    return [fig, graph_config]
+    return [fig, graph_config, status]
 
 @cache.memoize()
 def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
@@ -3045,7 +3077,6 @@ def render_initial_file_load(usi, usi2):
             _resolve_usi(usi2_list[0])
         except:
             status = "USI2 Loading Error"
-            raise
             return [status]
 
     return [status]
@@ -3192,6 +3223,7 @@ def draw_file(url_search, usi,
 @app.callback([
                 Output('map-plot2', 'figure'),
                 Output('map-plot2', 'config'), 
+                Output('loading_map_plot2', 'children')
               ],
               [
                 Input('usi2', 'value'), 
@@ -3209,7 +3241,7 @@ def draw_file2( usi,
                 show_ms2_markers, show_lcms_2nd_map, polarity_filter, export_format, plot_theme):
 
     if show_lcms_2nd_map is False:
-        return [dash.no_update, dash.no_update]
+        return [dash.no_update] * 3
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -3243,7 +3275,7 @@ def draw_file2( usi,
         }
     }
 
-    return [map_fig, graph_config]
+    return [map_fig, graph_config, "Ready"]
 
 
 @app.callback(Output('run-gnps-mzmine-link', 'href'),

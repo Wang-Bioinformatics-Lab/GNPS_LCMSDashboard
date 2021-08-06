@@ -21,6 +21,7 @@ clear-cache:
 	sudo rm temp/flask-cache/*  || true
 	sudo rm temp/memory-cache/joblib/ -rf
 	sudo rm temp/image_previews/*.png
+	sudo rm temp/temp/dash-uploader/* -rf
 
 clear-flaskcache:
 	sudo rm temp/flask-cache/*
