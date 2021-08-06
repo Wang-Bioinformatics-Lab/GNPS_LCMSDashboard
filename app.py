@@ -69,9 +69,10 @@ from flask_limiter.util import get_remote_address
 
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
 from layout_misc import UPLOAD_MODAL
-from layout_misc import ADVANCED_LIBRARYSEARCH_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
+from layout_fastsearch import ADVANCED_LIBRARYSEARCH_MODAL, ADVANCED_LIBRARYSEARCHMASSIVEKB_MODAL
+
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -794,9 +795,10 @@ DATASLICE_CARD = [
             ),
 
             dbc.ButtonGroup([
-                dbc.Button("Spectrum Details", block=False, id="spectrum_details_modal_button"),
-                dbc.Button("View Vector Metabolomics USI", block=False, id="advanced_usi_modal_button"),
-                dbc.Button("GNPS Library Match", block=False, id="advanced_librarysearch_modal_button"),
+                dbc.Button("MS Details", block=False, id="spectrum_details_modal_button"),
+                dbc.Button("View Metabolomics USI", block=False, id="advanced_usi_modal_button"),
+                dbc.Button("GNPS Library", block=False, id="advanced_librarysearch_modal_button"),
+                dbc.Button("MassIVE-KB Library", block=False, id="advanced_librarysearchmassivekb_modal_button"),
             ]),
 
             html.Br(),
@@ -1332,6 +1334,7 @@ BODY = dbc.Container(
         dbc.Row(ADVANCED_XIC_MODAL),
         dbc.Row(ADVANCED_USI_MODAL),
         dbc.Row(ADVANCED_LIBRARYSEARCH_MODAL),
+        dbc.Row(ADVANCED_LIBRARYSEARCHMASSIVEKB_MODAL)
     ],
     fluid=True,
     className="",
@@ -1563,6 +1566,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 @app.callback([
                 Output('advanced_librarysearch_modal_button', 'children'),
                 Output('librarysearch_frame', 'src'), 
+                Output('advanced_librarysearchmassivekb_modal_button', 'children'),
+                Output('librarysearchmassivekb_frame', 'src'), 
               ],
               [
                   Input('usi', 'value'), 
@@ -1571,7 +1576,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 def draw_fastsearch(usi, ms2_identifier):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
-        return [dash.no_update] * 2
+        return [dash.no_update] * 4
 
     usi_first = usi.split("\n")[0]
 
@@ -1581,10 +1586,10 @@ def draw_fastsearch(usi, ms2_identifier):
     scan_number = str(ms2_identifier.split(":")[-1])
     updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
 
-    librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
+    gnps_librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
 
-    # Perform API call to get number of matches
-    search_text = "GNPS Library Match"
+    # Perform API call to get number of matches for GNPS
+    gnps_search_text = "GNPS Library"
     try:
         search_api_url = "https://fastlibrarysearch.ucsd.edu/search?usi={}&library=gnpslibrary&analog=No".format(updated_usi)
         search_api_response = requests.get(search_api_url, timeout=10)
@@ -1592,12 +1597,28 @@ def draw_fastsearch(usi, ms2_identifier):
         num_matches = len(search_api_response_json["results"])
 
         if num_matches > 0:
-            search_text = "GNPS Library Match ({} Putative Hits)".format(num_matches)
+            gnps_search_text = "GNPS Library ({} Putative Hits)".format(num_matches)
     #except requests.exceptions.Timeout:
     except:
         pass
 
-    return [search_text, librarysearch_url]
+    massivekb_librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=massivekb_index&usi1={}".format(updated_usi)
+
+    # Perform API call to get number of matches for MassIVE-KB
+    massivekb_search_text = "MassIVE-KB Library"
+    try:
+        search_api_url = "https://fastlibrarysearch.ucsd.edu/search?usi={}&library=massivekb_index&analog=No".format(updated_usi)
+        search_api_response = requests.get(search_api_url, timeout=10)
+        search_api_response_json = search_api_response.json()
+        num_matches = len(search_api_response_json["results"])
+
+        if num_matches > 0:
+            massivekb_search_text = "MassIVE-KB Library ({} Putative Hits)".format(num_matches)
+    #except requests.exceptions.Timeout:
+    except:
+        pass
+
+    return [gnps_search_text, gnps_librarysearch_url, massivekb_search_text, massivekb_librarysearch_url]
 
 @app.callback([ 
                 Output("xic_formula", "value"),
@@ -4139,6 +4160,15 @@ app.callback(
     [Input("advanced_librarysearch_modal_button", "n_clicks"), Input("advanced_librarysearch_modal_close", "n_clicks")],
     [State("advanced_librarysearch_modal", "is_open")],
 )(toggle_modal)
+
+
+app.callback(
+    Output("advanced_librarysearchmassivekb_modal", "is_open"),
+    [Input("advanced_librarysearchmassivekb_modal_button", "n_clicks"), Input("advanced_librarysearchmassivekb_modal_close", "n_clicks")],
+    [State("advanced_librarysearchmassivekb_modal", "is_open")],
+)(toggle_modal)
+
+
 
 app.callback(
     Output("advanced_visualization_modal", "is_open"),
