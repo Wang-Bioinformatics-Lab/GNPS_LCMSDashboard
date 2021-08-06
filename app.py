@@ -65,8 +65,10 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
+
 from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
 from layout_misc import UPLOAD_MODAL
+from layout_misc import ADVANCED_LIBRARYSEARCH_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
 
@@ -794,6 +796,7 @@ DATASLICE_CARD = [
             dbc.ButtonGroup([
                 dbc.Button("Spectrum Details", block=False, id="spectrum_details_modal_button"),
                 dbc.Button("View Vector Metabolomics USI", block=False, id="advanced_usi_modal_button"),
+                dbc.Button("Quick Library Match", block=False, id="advanced_librarysearch_modal_button"),
             ]),
 
             html.Br(),
@@ -1327,8 +1330,8 @@ BODY = dbc.Container(
         dbc.Row(ADVANCED_REPLAY_MODAL),
         dbc.Row(ADVANCED_VISUALIZATION_MODAL),
         dbc.Row(ADVANCED_XIC_MODAL),
-        dbc.Row(ADVANCED_USI_MODAL)
-        
+        dbc.Row(ADVANCED_USI_MODAL),
+        dbc.Row(ADVANCED_LIBRARYSEARCH_MODAL),
     ],
     fluid=True,
     className="",
@@ -1462,6 +1465,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
                 Output('ms2-plot-buttons', 'children'),
                 Output('spectrum_details_area', 'children'),
                 Output('usi_frame', 'src'),
+                Output('librarysearch_frame', 'src'),
               ],
               [
                   Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")
@@ -1496,6 +1500,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     remote_link, local_filename = _resolve_usi(usi_first)
     peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
     usi_url = "https://metabolomics-usi.ucsd.edu/dashinterface/?usi={}".format(updated_usi)
+
+    librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
 
     spectrum_type = "MS"
     button_elements = []
@@ -1554,7 +1560,8 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 
         button_elements = []
 
-    return [spectrum_type, interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url]
+    return [spectrum_type, 
+            interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url, librarysearch_url]
 
 @app.callback([ 
                 Output("xic_formula", "value"),
@@ -4112,6 +4119,13 @@ app.callback(
     Output("advanced_usi_modal", "is_open"),
     [Input("advanced_usi_modal_button", "n_clicks"), Input("advanced_usi_modal_close", "n_clicks")],
     [State("advanced_usi_modal", "is_open")],
+)(toggle_modal)
+
+
+app.callback(
+    Output("advanced_librarysearch_modal", "is_open"),
+    [Input("advanced_librarysearch_modal_button", "n_clicks"), Input("advanced_librarysearch_modal_close", "n_clicks")],
+    [State("advanced_librarysearch_modal", "is_open")],
 )(toggle_modal)
 
 app.callback(
