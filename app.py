@@ -40,6 +40,7 @@ import uuid
 import base64
 import redis
 from time import sleep
+import requests
 from datetime import datetime
 
 from molmass import Formula
@@ -1464,7 +1465,6 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
                 Output('ms2-plot-buttons', 'children'),
                 Output('spectrum_details_area', 'children'),
                 Output('usi_frame', 'src'),
-                Output('librarysearch_frame', 'src'),
               ],
               [
                   Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")
@@ -1475,7 +1475,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
 def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
-        return [dash.no_update] * 7
+        return [dash.no_update] * 6
 
     usi_first = usi.split("\n")[0]
 
@@ -1499,8 +1499,6 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     remote_link, local_filename = _resolve_usi(usi_first)
     peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
     usi_url = "https://metabolomics-usi.ucsd.edu/dashinterface/?usi={}".format(updated_usi)
-
-    librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
 
     spectrum_type = "MS"
     button_elements = []
@@ -1560,7 +1558,45 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
         button_elements = []
 
     return [spectrum_type, 
-            interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url, librarysearch_url]
+            interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url]
+
+@app.callback([
+                Output('advanced_librarysearch_modal_button', 'children'),
+                Output('librarysearch_frame', 'src'), 
+              ],
+              [
+                  Input('usi', 'value'), 
+                  Input('ms2_identifier', 'value')
+              ])
+def draw_fastsearch(usi, ms2_identifier):
+    # Checking Values
+    if ms2_identifier is None or len(ms2_identifier) < 2:
+        return [dash.no_update] * 2
+
+    usi_first = usi.split("\n")[0]
+
+    usi_splits = usi_first.split(":")
+    dataset = usi_splits[1]
+    filename = usi_splits[2]
+    scan_number = str(ms2_identifier.split(":")[-1])
+    updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
+
+    librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
+
+    # Perform API call to get number of matches
+    search_text = "Quick Library Match"
+    try:
+        search_api_url = "https://fastlibrarysearch.ucsd.edu/search?usi={}&library=gnpslibrary&analog=No".format(updated_usi)
+        search_api_response = requests.get(search_api_url, timeout=10)
+        search_api_response_json = search_api_response.json()
+        num_matches = len(search_api_response_json["results"])
+
+        if num_matches > 0:
+            search_text = "Quick Library Match ({} Putative Hits)".format(num_matches)
+    except requests.exceptions.Timeout:
+        pass
+
+    return [search_text, librarysearch_url]
 
 @app.callback([ 
                 Output("xic_formula", "value"),
