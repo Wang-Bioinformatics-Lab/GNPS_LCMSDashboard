@@ -219,6 +219,19 @@ def _resolve_exists_local(usi, temp_folder="temp"):
 
 # Returns remote_link and local filepath
 def _resolve_usi(usi, temp_folder="temp", cleanup=True):
+    """
+    This code attempts to resolve the USI and make sure the files are converted to open formats
+
+    Args:
+        usi ([type]): [description]
+        temp_folder (str, optional): [description]. Defaults to "temp".
+        cleanup (bool, optional): [description]. Defaults to True.
+
+    Returns:
+        string: remote_link to refer where the file came from
+        string: local path of the converted filename
+    """    
+
     usi_splits = usi.split(":")
 
     converted_local_filename = os.path.join(temp_folder, _usi_to_local_filename(usi))
@@ -234,8 +247,10 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         if not os.path.isfile(converted_local_filename):
             temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
             # Lets do a conversion
-            if file_extension == ".cdf":
+            if file_extension.lower() == ".cdf":
                 _convert_cdf_to_mzML(local_filename, temp_filename)
+            elif file_extension.lower() == ".raw":
+                _convert_raw_to_mzML(local_filename, temp_filename)
             else:
                 _convert_mzML(local_filename, temp_filename)
 

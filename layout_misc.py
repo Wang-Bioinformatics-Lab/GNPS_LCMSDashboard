@@ -543,7 +543,8 @@ UPLOAD_MODAL = [
             dbc.ModalHeader("Upload Files"),
             dbc.ModalBody([
                 html.Div("Upload your files here, we have two options, upload many small files at once (up to 120MB), or one big file at one time (up to 2GB). \
-                    Files are deleted after 30 days so if you would it more permanent, please make a public dataset at MassIVE. We currently support the upload of mzML, mzXML, and CDF files. If you have Thermo RAW files please deposit them in a repository."),
+                    Files are deleted after 30 days so if you would it more permanent, \
+                    please make a public dataset at MassIVE. We currently support the upload of mzML, mzXML, CDF, and Thermo RAW files."),
                 html.Br(),
                 dbc.Alert("Note: If you are uploading a 2GB file, please do so on an internet connection with at least a 100 mbps upload speed!", color="primary"),
                 html.Hr(),
