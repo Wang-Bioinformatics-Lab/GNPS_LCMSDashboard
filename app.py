@@ -246,7 +246,6 @@ DATASELECTION_CARD = [
                         ],
                         className="mb-3",
                     ),
-                    html.Hr(),
                     html.H5(children='LCMS Viewer Options'),
                     html.Hr(),
                     dbc.Row([
