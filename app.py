@@ -1593,7 +1593,8 @@ def draw_fastsearch(usi, ms2_identifier):
 
         if num_matches > 0:
             search_text = "Quick Library Match ({} Putative Hits)".format(num_matches)
-    except requests.exceptions.Timeout:
+    #except requests.exceptions.Timeout:
+    except:
         pass
 
     return [search_text, librarysearch_url]
