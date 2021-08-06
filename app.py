@@ -146,9 +146,9 @@ cvs = ds.Canvas(plot_width=1, plot_height=1)
 agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
-placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder', render_mode="svg")
-placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='Spectrum Placeholder', render_mode="svg")
+placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, title='Heatmap Plot - Please enter a USI or Upload a File', color_continuous_scale="Hot")
+placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Plot - Please Enter an m/z value', render_mode="svg")
+placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='MS Spectrum Plot - Please select a scan number', render_mode="svg")
 
 MAX_XIC_PLOT_LCMS_FILES = 30
 MAX_LCMS_FILES = 500
@@ -236,6 +236,7 @@ DATASELECTION_CARD = [
                             ),
                         ),
                     ]),
+                    html.Br(),
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Comment", addon_type="prepend"),
@@ -2414,12 +2415,21 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
                 pass
 
         merged_tic_df = pd.concat(all_usi_tic_df)
-        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
-        status = "Ready"
+        try:
+            fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
+            status = "Ready"
+        except:
+            fig = dash.no_update
+            status = "Draw Error"
     elif len(all_usi) > 0:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
-        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
-        status = "Ready"
+        try:
+            fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+            status = "Ready"
+        except:
+            fig = dash.no_update
+            status = "Draw Error"
+        
 
 
     # For Drawing and Exporting
@@ -3241,7 +3251,7 @@ def draw_file2( usi,
                 show_ms2_markers, show_lcms_2nd_map, polarity_filter, export_format, plot_theme):
 
     if show_lcms_2nd_map is False:
-        return [dash.no_update] * 3
+        return [dash.no_update, dash.no_update, "Not Shown"]
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -3760,7 +3770,6 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
                   Input('usi2', 'value'), 
               ])
 def create_networking_link(usi, usi2):
-
     full_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
 
     g1_list = []
@@ -3783,8 +3792,6 @@ def create_networking_link(usi, usi2):
                 g2_list.append(ccms_path)
         except:
             pass
-
-    print("HERE", g1_list, g2_list)
 
     if len(g1_list) > 0 or len(g2_list) > 0:
         parameters = {}

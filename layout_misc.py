@@ -74,6 +74,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Sciex SWATH - Proteomics - mzML from MassIVE", href='/?usi=mzspec:MSV000085570:170425_01_Edith_120417_CCF_01'),
             html.Br(),
+            html.A("LC/MS without MS1 data - from PRIDE", href='/?xic_mz=&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=False&xic_file_grouping=MZ&xic_integration_type=AUC&show_ms2_markers=True&ms2marker_color=blue&ms2marker_size=5&ms2_identifier=&show_lcms_2nd_map=False&map_plot_zoom=%7B%22xaxis.autorange%22%3A+true%2C+%22yaxis.autorange%22%3A+true%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=None&overlay_mz=row+m%2Fz&overlay_rt=row+retention+time&overlay_color=&overlay_size=&overlay_hover=&overlay_filter_column=&overlay_filter_value=&feature_finding_type=Off&feature_finding_ppm=10&feature_finding_noise=10000&feature_finding_min_peak_rt=0.05&feature_finding_max_peak_rt=1.5&feature_finding_rt_tolerance=0.3&sychronization_session_id=060c1de5066e49788d8d4ad33201b797&chromatogram_options=%5B%5D&comment=&map_plot_color_scale=Hot_r&map_plot_quantization_level=Medium&plot_theme=plotly_white#%7B%22usi%22%3A%20%22mzspec%3APXD023659%3AV200409_13.mzML%22%2C%20%22usi2%22%3A%20%22%22%7D'),
+            html.Br(),
             html.Br(),
 
             html.H5("Different Data Sources Examples - LC/MS Metabolomics"),
