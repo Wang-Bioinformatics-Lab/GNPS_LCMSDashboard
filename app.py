@@ -146,9 +146,9 @@ cvs = ds.Canvas(plot_width=1, plot_height=1)
 agg = cvs.points(df,'rt','mz', agg=ds.sum("i"))
 zero_mask = agg.values == 0
 agg.values = np.log10(agg.values, where=np.logical_not(zero_mask))
-placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, color_continuous_scale="Hot")
-placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Placeholder', render_mode="svg")
-placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='Spectrum Placeholder', render_mode="svg")
+placeholder_map_plot = px.imshow(agg, origin='lower', labels={'color':'Log10(Abundance)'}, title='Heatmap Plot - Please enter a USI or Upload a File', color_continuous_scale="Hot")
+placeholder_xic_plot = px.line(df, x="rt", y="mz", title='XIC Plot - Please Enter an m/z value', render_mode="svg")
+placeholder_ms2_plot = px.line(df, x="rt", y="mz", title='MS Spectrum Plot - Please select a scan number', render_mode="svg")
 
 MAX_XIC_PLOT_LCMS_FILES = 30
 MAX_LCMS_FILES = 500
@@ -224,13 +224,19 @@ DATASELECTION_CARD = [
                         className="mb-3",
                     ),
                     # Linkouts
-                    dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0),
+                    dbc.Row([
+                        dbc.Col(
+                            dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0),
+                        ),
+                        dbc.Col(
+                            dcc.Loading(
+                                id="network-link-button",
+                                children=[html.Div([html.Div(id="loading-output-232")])],
+                                type="default",
+                            ),
+                        ),
+                    ]),
                     html.Br(),
-                    dcc.Loading(
-                        id="network-link-button",
-                        children=[html.Div([html.Div(id="loading-output-232")])],
-                        type="default",
-                    ),
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Comment", addon_type="prepend"),
@@ -240,6 +246,7 @@ DATASELECTION_CARD = [
                     ),
                     html.Hr(),
                     html.H5(children='LCMS Viewer Options'),
+                    html.Hr(),
                     dbc.Row([
                         dbc.Col(
                             dbc.FormGroup(
@@ -370,6 +377,55 @@ DATASELECTION_CARD = [
                             )),
                         dbc.Col(),
                     ]),
+                    html.H5(children='Loading Status'),
+                    html.Hr(),
+                    dbc.Table([
+                        html.Tr([html.Td("File Download"), 
+                                 html.Td(dcc.Loading(
+                                        id="loading_file_download",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 ),
+                                 html.Td("XIC Drawing"), 
+                                 html.Td(
+                                     dcc.Loading(
+                                        id="loading_xic_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 )]),
+                        html.Tr([html.Td("Heatmap Drawing Left"), 
+                                 html.Td(dcc.Loading(
+                                        id="loading_map_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 ),
+                                 html.Td("Heatmap Drawing Right"), 
+                                 html.Td(
+                                     dcc.Loading(
+                                        id="loading_map_plot2",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 )]),
+                        html.Tr([html.Td("TIC Drawing Left"), 
+                                 html.Td(dcc.Loading(
+                                        id="loading_tic_plot",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 ),
+                                 html.Td("TIC Drawing Right"), 
+                                 html.Td(
+                                     dcc.Loading(
+                                        id="loading_tic_plot2",
+                                        children="Ready",
+                                        type="dot"
+                                    )
+                                 )])
+                    ], bordered=True, size="sm")
                 ], className="col-sm"),
                 ## Right Panel
                 dbc.Col([
@@ -693,16 +749,6 @@ DATASLICE_CARD = [
         dbc.Row([
             dbc.Col(
                 html.H5("Details Panel"),
-            ),
-            dbc.Col(
-                dcc.Loading(
-                    id="loading_xic_plot",
-                    children="",
-                    type="dot"
-                ),
-                style={
-                    "margin-top" : "20px"
-                }
             ),
             dbc.Col(
                 dbc.Button("Clear XIC", 
@@ -1086,14 +1132,6 @@ MIDDLE_DASHBOARD = [
                 html.H5("Data Exploration"),
             ),
             dbc.Col(
-                dcc.Loading(
-                    id="loading_map_plot",
-                    children="",
-                    type="dot"
-                ),
-                style={
-                    "margin-top" : "20px"
-                }
             )
         ])
     ]),
@@ -1160,7 +1198,9 @@ BODY = dbc.Container(
             [
                 dcc.Link(id="query_link", href="#", target="_blank"),
             ],
-            style="display:none"
+            style={
+                "display" : "none"
+            }
         ),
         dcc.Interval(
             id='sychronization_interval',
@@ -1327,7 +1367,7 @@ def _resolve_usi(usi, temp_folder="temp"):
             while(1):
                 if result.ready():
                     break
-                sleep(3)
+                sleep(1)
             result = result.get()
             return result
         else:
@@ -1430,6 +1470,10 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
                   State('xic_mz', 'value')
               ])
 def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
+    # Checking Values
+    if ms2_identifier is None or len(ms2_identifier) < 2:
+        return [dash.no_update] * 6
+
     usi_first = usi.split("\n")[0]
 
     usi_splits = usi_first.split(":")
@@ -1966,8 +2010,6 @@ def update_usi(search, url_hash,
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    print("USI TRIGGERING===============================", triggered_id)
-
     if uploadfile1_filename_list is not None or uploadfile2_filenames is not None and "upload-data" in triggered_id:
         total_files_uploaded = 0
         usi = existing_usi
@@ -2335,7 +2377,11 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
     return lcms_fig
 
 # Creating TIC plot
-@app.callback([Output('tic-plot', 'figure'), Output('tic-plot', 'config')],
+@app.callback([
+                Output('tic-plot', 'figure'), 
+                Output('tic-plot', 'config'),
+                Output('loading_tic_plot', 'children')
+              ],
               [Input('usi', 'value'), 
               Input('image_export_format', 'value'), 
               Input("plot_theme", "value"), 
@@ -2345,6 +2391,9 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
 def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
+
+    fig = dash.no_update
+    status = "No Data"
 
     RENDER_MODE = "auto"
     # Making sure the data in the browser is actually svg
@@ -2366,10 +2415,21 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
                 pass
 
         merged_tic_df = pd.concat(all_usi_tic_df)
-        fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
-    else:
+        try:
+            fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
+            status = "Ready"
+        except:
+            fig = dash.no_update
+            status = "Draw Error"
+    elif len(all_usi) > 0:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
-        fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+        try:
+            fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+            status = "Ready"
+        except:
+            fig = dash.no_update
+            status = "Draw Error"
+        
 
 
     # For Drawing and Exporting
@@ -2382,12 +2442,13 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
         }
     }
 
-    return [fig, graph_config]
+    return [fig, graph_config, status]
 
 # Creating TIC plot
 @app.callback([
                   Output('tic-plot2', 'figure'), 
-                  Output('tic-plot2', 'config')
+                  Output('tic-plot2', 'config'),
+                  Output('loading_tic_plot2', 'children')
               ],
               [
                   Input('usi2', 'value'), 
@@ -2400,6 +2461,10 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
 def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
+    all_usi = [x for x in all_usi if len(x) > 2]
+
+    fig = dash.no_update
+    status = "No Data"
 
     RENDER_MODE = "auto"
     # Making sure the data in the browser is actually svg
@@ -2422,9 +2487,11 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
 
         merged_tic_df = pd.concat(all_usi_tic_df)
         fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
-    else:
+        status = "Ready"
+    elif len(all_usi) > 0:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
+        status = "Ready"
 
     # For Drawing and Exporting
     graph_config = {
@@ -2436,7 +2503,7 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
         }
     }
 
-    return [fig, graph_config]
+    return [fig, graph_config, status]
 
 @cache.memoize()
 def _perform_tic(usi, tic_option="TIC", polarity_filter="None"):
@@ -2992,6 +3059,38 @@ def determine_plot_zoom_bounds(url_search, usi,
 
     return [current_map_plot_zoom_string, highlight_box_string, min_rt, max_rt, min_mz, max_mz]
     
+# Downloading the files
+
+# Creating File Summary
+@app.callback([Output('loading_file_download', 'children')],
+              [Input('usi', 'value'), Input('usi2', 'value')])
+def render_initial_file_load(usi, usi2):
+    usi1_list = usi.split("\n")
+    usi2_list = usi2.split("\n")
+
+    usi1_list = [usi for usi in usi1_list if len(usi) > 8] # Filtering out empty USIs
+    usi2_list = [usi for usi in usi2_list if len(usi) > 8] # Filtering out empty USIs
+    
+    usi_list = usi1_list + usi2_list
+    usi_list = usi_list[:MAX_LCMS_FILES]
+
+    status = "Ready"
+    if len(usi1_list) > 0:
+        try:
+            _resolve_usi(usi1_list[0])
+        except:
+            status = "USI1 Loading Error"
+            return [status]
+            
+    if len(usi2_list) > 0:
+        try:
+            _resolve_usi(usi2_list[0])
+        except:
+            status = "USI2 Loading Error"
+            return [status]
+
+    return [status]
+
 
 # Inspiration for structure from
 # https://github.com/plotly/dash-datashader
@@ -3128,12 +3227,13 @@ def draw_file(url_search, usi,
         }
     }
 
-    return [map_fig, graph_config, remote_link, table_graph, dash.no_update]
+    return [map_fig, graph_config, remote_link, table_graph, "Ready"]
 
 
 @app.callback([
                 Output('map-plot2', 'figure'),
                 Output('map-plot2', 'config'), 
+                Output('loading_map_plot2', 'children')
               ],
               [
                 Input('usi2', 'value'), 
@@ -3151,7 +3251,7 @@ def draw_file2( usi,
                 show_ms2_markers, show_lcms_2nd_map, polarity_filter, export_format, plot_theme):
 
     if show_lcms_2nd_map is False:
-        return [dash.no_update]
+        return [dash.no_update, dash.no_update, "Not Shown"]
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -3185,7 +3285,7 @@ def draw_file2( usi,
         }
     }
 
-    return [map_fig, graph_config]
+    return [map_fig, graph_config, "Ready"]
 
 
 @app.callback(Output('run-gnps-mzmine-link', 'href'),
@@ -3670,7 +3770,6 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
                   Input('usi2', 'value'), 
               ])
 def create_networking_link(usi, usi2):
-
     full_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
 
     g1_list = []
@@ -3694,7 +3793,7 @@ def create_networking_link(usi, usi2):
         except:
             pass
 
-    if len(g1_list) > 0 or len(g0_list) > 0:
+    if len(g1_list) > 0 or len(g2_list) > 0:
         parameters = {}
         parameters["workflow"] = "METABOLOMICS-SNETS-V2"
         parameters["spec_on_server"] = ";".join(g1_list)
@@ -3803,6 +3902,9 @@ def get_overlay_options(overlay_usi, overlay_tabular_data):
     Returns:
         [type]: [description]
     """
+    
+    if overlay_usi is None:
+        return [dash.no_update] * 5
 
     overlay_df = _resolve_overlay(overlay_usi, "", "", "", "", "", "", "", overlay_tabular_data=overlay_tabular_data)
 
