@@ -219,6 +219,19 @@ def _resolve_exists_local(usi, temp_folder="temp"):
 
 # Returns remote_link and local filepath
 def _resolve_usi(usi, temp_folder="temp", cleanup=True):
+    """
+    This code attempts to resolve the USI and make sure the files are converted to open formats
+
+    Args:
+        usi ([type]): [description]
+        temp_folder (str, optional): [description]. Defaults to "temp".
+        cleanup (bool, optional): [description]. Defaults to True.
+
+    Returns:
+        string: remote_link to refer where the file came from
+        string: local path of the converted filename
+    """    
+
     usi_splits = usi.split(":")
 
     converted_local_filename = os.path.join(temp_folder, _usi_to_local_filename(usi))
@@ -234,12 +247,21 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         if not os.path.isfile(converted_local_filename):
             temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
             # Lets do a conversion
-            if file_extension == ".cdf":
+            if file_extension.lower() == ".cdf":
                 _convert_cdf_to_mzML(local_filename, temp_filename)
+            elif file_extension.lower() == ".raw":
+                _convert_raw_to_mzML(local_filename, temp_filename)
             else:
                 _convert_mzML(local_filename, temp_filename)
 
             os.rename(temp_filename, converted_local_filename)
+
+            # Cleanup
+            try:
+                if local_filename != converted_local_filename and cleanup:
+                    os.remove(local_filename)
+            except:
+                pass
 
         return "", converted_local_filename
 
@@ -277,7 +299,7 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     return remote_link, converted_local_filename
 
 
-def _convert_raw_to_mzML(input_raw, output_mzML):
+def _convert_raw_to_mzML(input_raw, output_mzML, cleanup=True):
     """
     This will convert Thermo RAW to mzML
     """
@@ -289,10 +311,13 @@ def _convert_raw_to_mzML(input_raw, output_mzML):
     conversion_cmd = ["mono", "/src/bin/x64/Debug/ThermoRawFileParser.exe", "-i={}".format(input_raw), "-o={}".format(output_directory), "-f=1"]
     subprocess.check_call(" ".join(conversion_cmd), shell=True)
 
-
     #conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold count 500 most-intense'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
     conversion_cmd = "export LC_ALL=C && ./bin/msconvert {} --mzML --32 --outfile {} --outdir {} --filter 'threshold absolute 1 most-intense' --filter 'msLevel 1-4'".format(thermo_converted_filename, output_mzML, os.path.dirname(output_mzML))
     os.system(conversion_cmd)
+
+    # Cleaning up
+    if thermo_converted_filename != output_mzML and cleanup:
+        os.remove(thermo_converted_filename)
 
 
 # First try msconvert, if the output fails, then we will do pyteomics to mzML and then msconvert

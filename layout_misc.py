@@ -543,7 +543,8 @@ UPLOAD_MODAL = [
             dbc.ModalHeader("Upload Files"),
             dbc.ModalBody([
                 html.Div("Upload your files here, we have two options, upload many small files at once (up to 120MB), or one big file at one time (up to 2GB). \
-                    Files are deleted after 30 days so if you would it more permanent, please make a public dataset at MassIVE. We currently support the upload of mzML, mzXML, and CDF files. If you have Thermo RAW files please deposit them in a repository."),
+                    Files are deleted after 30 days so if you would it more permanent, \
+                    please make a public dataset at MassIVE. We currently support the upload of mzML, mzXML, CDF, and Thermo RAW files."),
                 html.Br(),
                 dbc.Alert("Note: If you are uploading a 2GB file, please do so on an internet connection with at least a 100 mbps upload speed!", color="primary"),
                 html.Hr(),
@@ -560,13 +561,14 @@ UPLOAD_MODAL = [
                                 ]),
                                 style={
                                     'width': '95%',
-                                    'height': '125px',
+                                    'height': '120px',
                                     'lineHeight': '60px',
                                     'borderWidth': '1px',
                                     'borderStyle': 'dashed',
                                     'borderRadius': '7px',
                                     'textAlign': 'center',
-                                    'margin': '10px'
+                                    'margin': '10px',
+                                    'margin-top': '27px'
                                 },
                                 multiple=True,
                                 max_size=150000000 # 150MB
@@ -580,7 +582,7 @@ UPLOAD_MODAL = [
                             du.Upload(
                                 id="upload-data2",
                                 max_file_size=2048, 
-                                filetypes=['mzML', 'mzXML', "cdf"],
+                                filetypes=['mzML', 'mzml', 'mzXML', 'mzxml', 'cdf', 'CDF', 'RAW', 'raw'],
                                 max_files=1,
                                 pause_button=True,
                                 text="Drag and Drop your own files (up to 2GB)",

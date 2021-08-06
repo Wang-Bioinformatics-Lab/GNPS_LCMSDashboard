@@ -246,7 +246,6 @@ DATASELECTION_CARD = [
                         ],
                         className="mb-3",
                     ),
-                    html.Hr(),
                     html.H5(children='LCMS Viewer Options'),
                     html.Hr(),
                     dbc.Row([
@@ -382,7 +381,7 @@ DATASELECTION_CARD = [
                     html.H5(children='Loading Status'),
                     html.Hr(),
                     dbc.Table([
-                        html.Tr([html.Td("File Download"), 
+                        html.Tr([html.Td("File Download/Conversion"), 
                                  html.Td(dcc.Loading(
                                         id="loading_file_download",
                                         children="Ready",
@@ -1022,7 +1021,7 @@ INTEGRATION_CARD = [
         [
             dcc.Loading(
                 id="integration-table",
-                children=[html.Div([html.Div(id="loading-output-1001")])],
+                children="Please enter XIC values to view the XIC integration table",
                 type="default",
             ),
             html.Br(),
@@ -1476,7 +1475,7 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
 def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
-        return [dash.no_update] * 6
+        return [dash.no_update] * 7
 
     usi_first = usi.split("\n")[0]
 
@@ -1920,8 +1919,11 @@ def _handle_file_upload_small(filename , filecontent):
     safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
 
     usi = None
-    if extension == ".mzML":
-        temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
+
+    acceptable_extensions = [".mzML", ".mzXML", ".cdf", ".mzml", "mzxml", ".CDF", ".raw", ".RAW"]
+
+    if extension in acceptable_extensions:
+        temp_filename = os.path.join("temp", "{}{}".format(safe_filename, extension))
         data = filecontent.encode("utf8").split(b";base64,")[1]
 
         with open(temp_filename, "wb") as temp_file:
@@ -1929,23 +1931,6 @@ def _handle_file_upload_small(filename , filecontent):
 
         usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
-    if extension == ".mzXML":
-        temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
-        data = filecontent.encode("utf8").split(b";base64,")[1]
-
-        with open(temp_filename, "wb") as temp_file:
-            temp_file.write(base64.decodebytes(data))
-
-        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-    if extension.lower() == ".cdf":
-        temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
-        data = filecontent.encode("utf8").split(b";base64,")[1]
-
-        with open(temp_filename, "wb") as temp_file:
-            temp_file.write(base64.decodebytes(data))
-
-        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
 
     return usi, upload_message
 
@@ -1955,19 +1940,11 @@ def _handle_file_upload_big(filename, uploadid):
     extension = os.path.splitext(filename)[1]
     original_filename = os.path.splitext(filename)[0]
     safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
-    if extension == ".mzML":
-        temp_filename = os.path.join("temp", "{}.mzML".format(safe_filename))
-        shutil.move(uploaded_filename, temp_filename)
 
-        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-    if extension == ".mzXML":
-        temp_filename = os.path.join("temp", "{}.mzXML".format(safe_filename))
-        shutil.move(uploaded_filename, temp_filename)
+    acceptable_extensions = [".mzML", ".mzXML", ".cdf", ".mzml", "mzxml", ".CDF", ".raw", ".RAW"]
 
-        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-
-    if extension.lower() == ".cdf":
-        temp_filename = os.path.join("temp", "{}.cdf".format(safe_filename))
+    if extension in acceptable_extensions:
+        temp_filename = os.path.join("temp", "{}{}".format(safe_filename, extension))
         shutil.move(uploaded_filename, temp_filename)
 
         usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
@@ -3067,8 +3044,6 @@ def determine_plot_zoom_bounds(url_search, usi,
     return [current_map_plot_zoom_string, highlight_box_string, min_rt, max_rt, min_mz, max_mz]
     
 # Downloading the files
-
-# Creating File Summary
 @app.callback([Output('loading_file_download', 'children')],
               [Input('usi', 'value'), Input('usi2', 'value')])
 def render_initial_file_load(usi, usi2):
