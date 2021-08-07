@@ -124,7 +124,7 @@ def massql_cache(filename):
         raise
         _task_massql_cache(filename)
 
-@celery_instance.task(time_limit=480, base=QueueOnce)
+@celery_instance.task(time_limit=600, base=QueueOnce)
 def _task_massql_cache(filename):
     # TODO: Lets cache if cache files are already there
 
