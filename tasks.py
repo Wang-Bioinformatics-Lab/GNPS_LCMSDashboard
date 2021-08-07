@@ -106,6 +106,8 @@ def task_chromatogram_options(local_filename):
 
 @celery_instance.task(time_limit=90, base=QueueOnce)
 def task_featurefinding(filename, params):
+    print("FEATURE FINDING TASK")
+
     # Caching
     perform_feature_finding = memory.cache(feature_finding.perform_feature_finding)
 

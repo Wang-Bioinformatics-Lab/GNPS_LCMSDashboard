@@ -2,5 +2,8 @@ temp
 test
 logs
 notebook
-feature_finding
+feature_finding/dinosaur
+feature_finding/peakonly
+feature_finding/mzmine2
+feature_finding/batch_files
 __pycache__*

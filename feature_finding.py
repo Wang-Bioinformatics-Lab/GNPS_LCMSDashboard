@@ -2,6 +2,8 @@ import pandas as pd
 from utils import _spectrum_generator
 from utils import _get_scan_polarity
 import uuid
+import os
+import pathlib
 import subprocess
 
 
@@ -24,6 +26,10 @@ def perform_feature_finding(filename, params, timeout=90):
     
     if params["type"] == "Dinosaur":
         return _dinosaur_feature_finding(filename, timeout=timeout)
+
+    if params["type"] == "MassQL":
+        return _massql_feature_finding(filename, params["params"])
+    
     
 
 def _test_feature_finding(filename):
@@ -102,7 +108,6 @@ def _tidyms_feature_finding(filename):
 # TODO: 
 def _mzmine_feature_finding(filename, parameters, timeout=90):
     import xmltodict
-    import os
 
     batch_base = "feature_finding/batch_files/Generic_Batchbase.xml"
 
@@ -166,8 +171,6 @@ def _openms_feature_finding(filename):
 
 
 def _dinosaur_feature_finding(filename, timeout=90):
-    import os
-
     output_folder = os.path.abspath(os.path.join("temp", "feature-finding"))
     output_filename = "{}_{}".format(os.path.basename(filename), str(uuid.uuid4()).replace("-", ""))
 
@@ -184,6 +187,44 @@ def _dinosaur_feature_finding(filename, timeout=90):
     features_df['rt'] = temp_features_df['rtApex']
     
     return features_df
+
+def _massql_feature_finding(filename, params):
+    massql_statement = params["massql_statement"]
+
+    print(massql_statement)
+
+    # Making sure output exists
+    output_folder = os.path.abspath(os.path.join("temp", "feature-finding", "massql"))
+    pathlib.Path(output_folder).mkdir(parents=True, exist_ok=True)
+    
+    output_results = os.path.join(output_folder,  str(uuid.uuid4()).replace("-", "") + ".tsv")
+
+    # Staging input file
+    temp_input_filename = os.path.join(output_folder, os.path.basename(filename))
+    if not os.path.exists(temp_input_filename):
+        os.symlink(os.path.abspath(filename), temp_input_filename)
+
+    # Lets do the command
+    cmd = "python feature_finding/massql/MassQueryLanguage/msql_cmd.py '{}' '{}' --output_file {}".format(temp_input_filename, massql_statement, output_results)
+    print(cmd)
+    _call_feature_finding_tool(cmd, timeout=60)
+
+    temp_features_df = pd.read_csv(output_results, sep='\t')
+
+    result_df = pd.DataFrame()
+
+    if "precmz" in temp_features_df:
+        result_df["mz"] = temp_features_df["precmz"]
+        result_df["i"] = temp_features_df["i"]
+        result_df["rt"] = temp_features_df["rt"]
+    elif "comment" in temp_features_df:
+        result_df["mz"] = temp_features_df["comment"]
+        result_df["i"] = temp_features_df["i"]
+        result_df["rt"] = temp_features_df["rt"]
+
+    # TODO: Cleanup
+    
+    return result_df
 
 def _call_feature_finding_tool(cmd, timeout=90):
     """This calls the feature finding tool but also does proper cleanup by killing all child processes

@@ -33,6 +33,10 @@ RUN conda install -c conda-forge openjdk=11.0.9.1
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+# MassQL Dependencies
+COPY ./feature_finding/massql/MassQueryLanguage/requirements.txt requirements-massql.txt
+RUN pip install -r requirements-massql.txt
+
 COPY . /app
 WORKDIR /app
 

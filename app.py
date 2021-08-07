@@ -72,6 +72,7 @@ from layout_misc import UPLOAD_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
 from layout_fastsearch import ADVANCED_LIBRARYSEARCH_MODAL, ADVANCED_LIBRARYSEARCHMASSIVEKB_MODAL
+from layout_massql import MASSSPEC_QUERY_PANEL
 
 
 server = Flask(__name__)
@@ -344,6 +345,7 @@ DATASELECTION_CARD = [
                                             # {'label': 'TidyMS', 'value': 'TidyMS'},
                                             {'label': 'MZmine2 (Metabolomics)', 'value': 'MZmine2'},
                                             {'label': 'Dinosaur (Proteomics)', 'value': 'Dinosaur'},
+                                            {'label': 'MassQL Query', 'value': 'MassQL'},
                                         ],
                                         searchable=False,
                                         clearable=False,
@@ -1278,6 +1280,22 @@ BODY = dbc.Container(
                 ],
                 id='overlay-collapse',
                 is_open=True,
+                style={"width": "50%", "marginTop": 30}
+            )
+        ]),
+
+        # MassQL Query Panel
+        dbc.Row([
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(MASSSPEC_QUERY_PANEL),
+                    ],
+                        #className="w-50"
+                    ),
+                ],
+                id='massql-collapse',
+                is_open=False,
                 style={"width": "50%", "marginTop": 30}
             )
         ]),
@@ -2361,6 +2379,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
 
             lcms_fig.add_trace(_intermediate_fig)
         except:
+            #raise #DEBUG
             pass
 
     return lcms_fig, features_df
@@ -3187,6 +3206,8 @@ def render_initial_file_load(usi, usi2):
 
                 Input('feature_finding_type', 'value'),
                 Input('run_feature_finding_button', 'n_clicks'),
+                Input('run_massql_query_button', 'n_clicks'),
+
                 Input('image_export_format', 'value'),
                 Input("plot_theme", "value")
               ],
@@ -3196,20 +3217,23 @@ def render_initial_file_load(usi, usi2):
                 State('feature_finding_min_peak_rt', 'value'),
                 State('feature_finding_max_peak_rt', 'value'),
                 State('feature_finding_rt_tolerance', 'value'),
+                State('massql_statement', 'value'),
               ])
 def draw_file(url_search, usi, 
                 map_plot_zoom, highlight_box_zoom, map_plot_quantization_level, map_plot_color_scale,
                 show_ms2_markers, ms2marker_color, ms2marker_size, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_tabular_data,
                 feature_finding_type,
-                feature_finding_click,
+                run_feature_finding_button_click,
+                run_massql_query_button_click,
                 export_format,
                 plot_theme,
                 feature_finding_ppm,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
                 feature_finding_max_peak_rt, 
-                feature_finding_rt_tolerance):
+                feature_finding_rt_tolerance,
+                massql_statement):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -3237,6 +3261,10 @@ def draw_file(url_search, usi,
         feature_finding_params["params"]["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
         feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
         feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
+
+        feature_finding_params["params"]["massql_statement"] = massql_statement
+
+        print(feature_finding_params)
 
     current_map_selection = json.loads(map_plot_zoom)
     highlight_box = None
@@ -4132,6 +4160,14 @@ def toggle_collapse1(show_lcms_1st_map, is_open):
 def toggle_collapse_filters(show_filters):
     return [show_filters, show_filters]
 
+@app.callback(
+    [Output("massql-collapse", "is_open")],
+    [Input("feature_finding_type", "value")],
+)
+def toggle_collapse_massql(feature_finding_type):
+    if feature_finding_type == "MassQL":
+        return [True]
+    return [False]
 
 @app.callback(
     [Output("feature-finding-collapse", "is_open")],
