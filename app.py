@@ -1574,7 +1574,7 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
 def draw_fastsearch_gnps(usi, ms2_identifier):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
-        return [dash.no_update] * 4
+        return [dash.no_update] * 2
 
     usi_first = usi.split("\n")[0]
 
@@ -1613,7 +1613,7 @@ def draw_fastsearch_gnps(usi, ms2_identifier):
 def draw_fastsearch_massivekb(usi, ms2_identifier):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
-        return [dash.no_update] * 4
+        return [dash.no_update] * 2
 
     usi_first = usi.split("\n")[0]
 
@@ -3447,7 +3447,9 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("feature_finding_min_peak_rt", "value"),
                 Input("feature_finding_max_peak_rt", "value"),
                 Input("feature_finding_rt_tolerance", "value"),
+
                 Input("sychronization_save_session_button", "n_clicks"),
+                Input("sychronization_set_type_button", "n_clicks"),
                 Input("sychronization_session_id", "value"),
                 Input("synchronization_leader_token", "value"),
 
@@ -3469,7 +3471,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
-                sychronization_save_session_button_clicks, sychronization_session_id, synchronization_leader_token, 
+                sychronization_save_session_button_clicks, sychronization_set_type_button_clicks, sychronization_session_id, synchronization_leader_token, 
                 chromatogram_options, 
                 comment,
                 map_plot_color_scale, map_plot_quantization_level, plot_theme,
@@ -3544,7 +3546,8 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     # Determining Savings
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if "sychronization_save_session_button" in triggered_id or synchronization_type == "LEADER":
+    if "sychronization_save_session_button" in triggered_id or synchronization_type == "LEADER" or \
+        ("sychronization_set_type_button" in triggered_id and synchronization_type == "COLLAB"):
         if len(sychronization_session_id) > 0:
             # Lets save this to redis
             _sychronize_save_state(sychronization_session_id, full_json_settings, redis_client, synchronization_token=synchronization_leader_token)
