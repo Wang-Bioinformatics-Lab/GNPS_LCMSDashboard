@@ -145,6 +145,8 @@ def _resolve_usi_remotelink(usi):
         remote_link = _resolve_msv_usi(usi, force_massive=True)
     elif "GNPS" in usi_splits[1]:
         remote_link = _resolve_gnps_usi(usi)
+    elif "MassIVE" in usi_splits[1]: # MassIVE Task data
+        remote_link = _resolve_gnps_usi(usi)
     elif "MTBLS" in usi_splits[1]:
         remote_link = _resolve_mtbls_usi(usi)
     elif "ST" in usi_splits[1]:
