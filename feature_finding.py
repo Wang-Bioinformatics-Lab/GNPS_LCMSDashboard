@@ -191,7 +191,8 @@ def _dinosaur_feature_finding(filename, timeout=90):
 def _massql_feature_finding(filename, params):
     massql_statement = params["massql_statement"]
 
-    print(massql_statement)
+    if len(massql_statement) < 3:
+        return None
 
     # Making sure output exists
     output_folder = os.path.abspath(os.path.join("temp", "feature-finding", "massql"))
