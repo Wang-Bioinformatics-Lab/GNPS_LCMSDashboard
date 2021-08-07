@@ -3157,7 +3157,10 @@ def render_initial_file_load(usi, usi2):
     status = "Ready"
     if len(usi1_list) > 0:
         try:
-            _resolve_usi(usi1_list[0])
+            remote_link, local_filename = _resolve_usi(usi1_list[0])
+
+            # Kicking off caching of data, asychronously
+            tasks.massql_cache(local_filename)
         except:
             status = "USI1 Loading Error"
             return [status]
@@ -3168,6 +3171,9 @@ def render_initial_file_load(usi, usi2):
         except:
             status = "USI2 Loading Error"
             return [status]
+    
+    
+
 
     return [status]
 
@@ -3263,8 +3269,6 @@ def draw_file(url_search, usi,
         feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
 
         feature_finding_params["params"]["massql_statement"] = massql_statement
-
-        print(feature_finding_params)
 
     current_map_selection = json.loads(map_plot_zoom)
     highlight_box = None
