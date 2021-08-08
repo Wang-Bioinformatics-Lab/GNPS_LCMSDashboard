@@ -121,7 +121,6 @@ def massql_cache(filename):
     try:
         _task_massql_cache.delay(filename)
     except redis.exceptions.ConnectionError:
-        raise
         _task_massql_cache(filename)
 
 @celery_instance.task(time_limit=600, base=QueueOnce)
