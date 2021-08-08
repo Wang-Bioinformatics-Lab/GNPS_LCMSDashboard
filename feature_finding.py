@@ -188,7 +188,7 @@ def _dinosaur_feature_finding(filename, timeout=90):
     
     return features_df
 
-def _massql_feature_finding(filename, params):
+def _massql_feature_finding(filename, params, timeout=60):
     massql_statement = params["massql_statement"]
 
     if len(massql_statement) < 3:
@@ -208,7 +208,7 @@ def _massql_feature_finding(filename, params):
     # Lets do the command
     cmd = "python feature_finding/massql/MassQueryLanguage/msql_cmd.py '{}' '{}' --output_file {}".format(temp_input_filename, massql_statement, output_results)
     print(cmd)
-    _call_feature_finding_tool(cmd, timeout=60)
+    _call_feature_finding_tool(cmd, timeout=timeout)
 
     temp_features_df = pd.read_csv(output_results, sep='\t')
 

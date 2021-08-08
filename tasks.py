@@ -131,7 +131,7 @@ def _task_massql_cache(filename):
     # Run most basic query to make sure cache files are present
     params = {}
     params["massql_statement"] = "QUERY scaninfo(MS2DATA)"
-    feature_finding._massql_feature_finding(filename, params)
+    feature_finding._massql_feature_finding(filename, params, timeout=560)
     
 
 @celery_instance.task(time_limit=1)
@@ -211,6 +211,7 @@ celery_instance.conf.task_routes = {
     'tasks.task_xic': {'queue': 'compute'},
     'tasks.task_featurefinding': {'queue': 'compute'},
     'tasks._task_massql_cache': {'queue': 'compute'},
+
     'tasks.task_computeheartbeat': {'queue': 'compute'},
 
     'tasks.task_collabsync': {'queue': 'sync'},
