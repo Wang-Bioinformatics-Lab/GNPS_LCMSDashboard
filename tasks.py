@@ -166,6 +166,7 @@ import sys
 @celery_instance.task(time_limit=480)
 def _task_cleanup():
     all_temp_files = glob.glob("/app/temp/*")
+    all_temp_files += glob.glob("/app/temp/feature-finding/massql/*")
 
     MAX_TIME_SECONDS = 2592000 # This is one month
     #MAX_TIME_SECONDS = 604800 # This is one week
