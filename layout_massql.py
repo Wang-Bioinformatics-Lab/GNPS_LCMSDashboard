@@ -18,7 +18,11 @@ MASSSPEC_QUERY_PANEL = [
     dbc.CardBody(
         [   
             dbc.Row([
-                "Welcome to MassQL. Please read the full documentation. Queries here are meant to be simple and fast. If you want to do many files or complex queries, please use the GNPS Workflow!"
+                dbc.Col(
+                    html.P(
+                        "Welcome to MassQL. Please read the full documentation. Queries here are meant to be simple and fast. If you want to do many files or complex queries, please use the GNPS Workflow!"
+                    )
+                )
             ]),
             dbc.Row([
                 dbc.Col(

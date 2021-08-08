@@ -1693,6 +1693,9 @@ def draw_fastsearch_massivekb(usi, ms2_identifier):
                 Output("feature_finding_min_peak_rt", "value"),
                 Output("feature_finding_max_peak_rt", "value"),
                 Output("feature_finding_rt_tolerance", "value"),
+
+                Output("massql_statement", "value"),
+
                 Output("sychronization_session_id", "value"),
 
                 Output("chromatogram_options", "value"),
@@ -1751,6 +1754,8 @@ def draw_fastsearch_massivekb(usi, ms2_identifier):
                   State('feature_finding_min_peak_rt', 'value'),
                   State('feature_finding_max_peak_rt', 'value'),
                   State('feature_finding_rt_tolerance', 'value'),
+
+                  State("massql_statement", "value"),
                   
                   State('sychronization_session_id', 'value'),
 
@@ -1813,6 +1818,8 @@ def determine_url_only_parameters(  search,
                                     existing_feature_finding_min_peak_rt,
                                     existing_feature_finding_max_peak_rt,
                                     existing_feature_finding_rt_tolerance,
+
+                                    existing_massql_statement,
 
                                     existing_sychronization_session_id,
 
@@ -1897,6 +1904,9 @@ def determine_url_only_parameters(  search,
     feature_finding_max_peak_rt = _get_param_from_url(search, "", "feature_finding_max_peak_rt", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_max_peak_rt, no_change_default=dash.no_update)
     feature_finding_rt_tolerance = _get_param_from_url(search, "", "feature_finding_rt_tolerance", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_rt_tolerance, no_change_default=dash.no_update)
 
+    # MassQL
+    massql_statement = _get_param_from_url(search, "", "massql_statement", dash.no_update, session_dict=session_dict, old_value=existing_massql_statement, no_change_default=dash.no_update)
+
     # Sychronization
     default_session_id = str(uuid.uuid4()).replace("-", "")
     if len(existing_sychronization_session_id) > 0:
@@ -1972,6 +1982,7 @@ def determine_url_only_parameters(  search,
             polarity_filtering2, 
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
+            massql_statement,
             sychronization_session_id,
             chromatogram_options, 
             comment,
@@ -3480,6 +3491,8 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("feature_finding_max_peak_rt", "value"),
                 Input("feature_finding_rt_tolerance", "value"),
 
+                Input("massql_statement", "value"),
+
                 Input("sychronization_save_session_button", "n_clicks"),
                 Input("sychronization_set_type_button", "n_clicks"),
                 Input("sychronization_session_id", "value"),
@@ -3503,6 +3516,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
                 ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
+                massql_statement,
                 sychronization_save_session_button_clicks, sychronization_set_type_button_clicks, sychronization_session_id, synchronization_leader_token, 
                 chromatogram_options, 
                 comment,
@@ -3550,6 +3564,9 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
     url_params["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
     url_params["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
+
+    # MassQL
+    url_params["massql_statement"] = massql_statement
 
     # Sychronization Options
     url_params["sychronization_session_id"] = sychronization_session_id
