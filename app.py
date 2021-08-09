@@ -67,11 +67,12 @@ from flask_limiter.util import get_remote_address
 
 # Importing layout for HTML
 
-from layout_misc import EXAMPLE_DASHBOARD, SYCHRONIZATION_MODAL, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
+from layout_misc import EXAMPLE_DASHBOARD, SPECTRUM_DETAILS_MODAL, ADVANCED_VISUALIZATION_MODAL, ADVANCED_IMPORT_MODAL, ADVANCED_REPLAY_MODAL, ADVANCED_USI_MODAL
 from layout_misc import UPLOAD_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
 from layout_fastsearch import ADVANCED_LIBRARYSEARCH_MODAL, ADVANCED_LIBRARYSEARCHMASSIVEKB_MODAL
+from layout_sync import SYCHRONIZATION_MODAL
 
 
 server = Flask(__name__)
@@ -3617,6 +3618,102 @@ app.clientside_callback(
     ]
 )
 
+# Sychronization Callbacks
+app.clientside_callback(
+    """
+    function(n_clicks, button_id, text_to_copy) {
+        original_text = "Copy Follower URL"
+        if (n_clicks > 0) {
+            const el = document.createElement('textarea');
+            el.value = text_to_copy;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setTimeout(function(){ 
+                    document.getElementById(button_id).textContent = original_text
+                }, 1000);
+            document.getElementById(button_id).textContent = "Copied!"
+            return 'Copied!';
+        } else {
+            document.getElementById(button_id).textContent = original_text
+            return original_text;
+        }
+    }
+    """,
+    Output('copy_follower_link_button', 'children'),
+    [
+        Input('copy_follower_link_button', 'n_clicks'),
+        Input('copy_follower_link_button', 'id'),
+    ],
+    [
+        State('follower_query_link', 'href'),
+    ]
+)
+
+app.clientside_callback(
+    """
+    function(n_clicks, button_id, text_to_copy) {
+        original_text = "Copy Leader URL"
+        if (n_clicks > 0) {
+            const el = document.createElement('textarea');
+            el.value = text_to_copy;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setTimeout(function(){ 
+                    document.getElementById(button_id).textContent = original_text
+                }, 1000);
+            document.getElementById(button_id).textContent = "Copied!"
+            return 'Copied!';
+        } else {
+            document.getElementById(button_id).textContent = original_text
+            return original_text;
+        }
+    }
+    """,
+    Output('copy_leader_link_button', 'children'),
+    [
+        Input('copy_leader_link_button', 'n_clicks'),
+        Input('copy_leader_link_button', 'id'),
+    ],
+    [
+        State('leader_query_link', 'href'),
+    ]
+)
+
+app.clientside_callback(
+    """
+    function(n_clicks, button_id, text_to_copy) {
+        original_text = "Copy Collab URL"
+        if (n_clicks > 0) {
+            const el = document.createElement('textarea');
+            el.value = text_to_copy;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setTimeout(function(){ 
+                    document.getElementById(button_id).textContent = original_text
+                }, 1000);
+            document.getElementById(button_id).textContent = "Copied!"
+            return 'Copied!';
+        } else {
+            document.getElementById(button_id).textContent = original_text
+            return original_text;
+        }
+    }
+    """,
+    Output('copy_collab_link_button', 'children'),
+    [
+        Input('copy_collab_link_button', 'n_clicks'),
+        Input('copy_collab_link_button', 'id'),
+    ],
+    [
+        State('collab_query_link', 'href'),
+    ]
+)
 
 # This helps write the json string that we can use to load parameters in the whole page
 @app.callback([
@@ -3777,7 +3874,12 @@ def create_replay_link(replay_json_area, replay_json_area_previous):
 
 
 
-@app.callback(Output('sychronization_teaching_links', 'children'),
+@app.callback([
+                Output('leader_query_link', 'href'),
+                Output('follower_query_link', 'href'),
+                Output('collab_query_link', 'href'),
+                Output('follower_qr_code', 'children'),
+              ],
               [
                 Input("sychronization_session_id", "value"),
                 Input("synchronization_leader_token", "value")
@@ -3788,44 +3890,21 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
     url_params["sychronization_session_id"] = sychronization_session_id
     url_params["synchronization_type"] = "FOLLOWER"
 
-    follower_url = "/?{}".format(urllib.parse.urlencode(url_params))
+    follower_url = request.host_url + "/?{}".format(urllib.parse.urlencode(url_params))
 
     url_params["synchronization_leader_token"] = synchronization_leader_token
     url_params["synchronization_type"] = "LEADER"
 
-    leader_url = "/?{}".format(urllib.parse.urlencode(url_params))
+    leader_url = request.host_url + "/?{}".format(urllib.parse.urlencode(url_params))
 
     url_params["synchronization_leader_token"] = synchronization_leader_token
     url_params["synchronization_type"] = "COLLAB"
 
-    collab_url = "/?{}".format(urllib.parse.urlencode(url_params))
+    collab_url = request.host_url + "/?{}".format(urllib.parse.urlencode(url_params))
 
-    follower_full_url = request.url.replace('/_dash-update-component', follower_url)
-    follower_img = _generate_qrcode_img(follower_full_url)
+    follower_img = _generate_qrcode_img(follower_url)
 
-    return [
-        dbc.Row([
-            dbc.Col(
-                dcc.Link(dbc.Button("Follower URL", block=True, color="primary", className="mr-1"), href=follower_url, target="_blank")
-            ),
-            dbc.Col(
-                dcc.Link(dbc.Button("Leader URL", block=True, color="primary", className="mr-1"), href=leader_url, target="_blank")
-            ),
-            dbc.Col(
-                dcc.Link(dbc.Button("Collab URL", block=True, color="primary", className="mr-1"), href=collab_url, target="_blank")
-            ),
-        ]),
-        dbc.Row([
-            dbc.Col(
-                follower_img
-            ),
-            dbc.Col()
-            
-        ])
-    ]
-
-
-
+    return [leader_url, follower_url, collab_url, follower_img]
 
 
 @app.callback(Output('network-link-button', 'children'),
