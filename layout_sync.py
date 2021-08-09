@@ -100,7 +100,9 @@ SYCHRONIZATION_MODAL = [
                         dcc.Link(id="leader_query_link", href="#", target="_blank"),
                         dcc.Link(id="collab_query_link", href="#", target="_blank"),
                     ],
-                    style="display:none"
+                    style={
+                        "display":"none"
+                    }
                 ),
                 dbc.Row([
                     dbc.Col(id="follower_qr_code"),

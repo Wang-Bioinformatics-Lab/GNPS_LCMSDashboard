@@ -3551,6 +3551,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
         ("sychronization_set_type_button" in triggered_id and synchronization_type == "COLLAB"):
         if len(sychronization_session_id) > 0:
             # Lets save this to redis
+            print("SAVING SESSION")
             _sychronize_save_state(sychronization_session_id, full_json_settings, redis_client, synchronization_token=synchronization_leader_token)
 
     # For Live Synchronization
@@ -3589,7 +3590,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
 app.clientside_callback(
     """
-    function(n_clicks, text_to_copy) {
+    function(n_clicks, button_id, text_to_copy) {
         original_text = "Copy URL Link to this Visualization"
         if (n_clicks > 0) {
             const el = document.createElement('textarea');
@@ -3599,19 +3600,21 @@ app.clientside_callback(
             document.execCommand('copy');
             document.body.removeChild(el);
             setTimeout(function(){ 
-                    document.getElementById("copy_link_button").textContent = original_text
+                return function(id_to_update, text_to_update){
+                    document.getElementById(id_to_update).textContent = text_to_update
+                }(button_id, original_text)
                 }, 1000);
-            document.getElementById("copy_link_button").textContent = "Copied!"
+            document.getElementById(button_id).textContent = "Copied!"
             return 'Copied!';
         } else {
-            document.getElementById("copy_link_button").textContent = original_text
             return original_text;
         }
     }
     """,
     Output('copy_link_button', 'children'),
     [
-        Input('copy_link_button', 'n_clicks')
+        Input('copy_link_button', 'n_clicks'),
+        Input('copy_link_button', 'id'),
     ],
     [
         State('query_link', 'href'),
@@ -3630,13 +3633,13 @@ app.clientside_callback(
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            setTimeout(function(){ 
-                    document.getElementById(button_id).textContent = original_text
-                }, 1000);
+            setTimeout(function(id_to_update, text_to_update){ 
+                return function(){
+                    document.getElementById(id_to_update).textContent = text_to_update
+                }}(button_id, original_text), 1000);
             document.getElementById(button_id).textContent = "Copied!"
             return 'Copied!';
         } else {
-            document.getElementById(button_id).textContent = original_text
             return original_text;
         }
     }
@@ -3662,13 +3665,13 @@ app.clientside_callback(
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            setTimeout(function(){ 
-                    document.getElementById(button_id).textContent = original_text
-                }, 1000);
+            setTimeout(function(id_to_update, text_to_update){ 
+                return function(){
+                    document.getElementById(id_to_update).textContent = text_to_update
+                }}(button_id, original_text), 1000);
             document.getElementById(button_id).textContent = "Copied!"
             return 'Copied!';
         } else {
-            document.getElementById(button_id).textContent = original_text
             return original_text;
         }
     }
@@ -3694,13 +3697,13 @@ app.clientside_callback(
             el.select();
             document.execCommand('copy');
             document.body.removeChild(el);
-            setTimeout(function(){ 
-                    document.getElementById(button_id).textContent = original_text
-                }, 1000);
+            setTimeout(function(id_to_update, text_to_update){ 
+                return function(){
+                    document.getElementById(id_to_update).textContent = text_to_update
+                }}(button_id, original_text), 1000);
             document.getElementById(button_id).textContent = "Copied!"
             return 'Copied!';
         } else {
-            document.getElementById(button_id).textContent = original_text
             return original_text;
         }
     }
