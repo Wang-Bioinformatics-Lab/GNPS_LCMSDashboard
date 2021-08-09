@@ -3906,30 +3906,6 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
 
     return [leader_url, follower_url, collab_url, follower_img]
 
-    # return [
-    #     dbc.Row([
-    #         dbc.Col(
-    #             dcc.Link(dbc.Button("Follower URL", block=True, color="primary", className="mr-1"), href=follower_url, target="_blank")
-    #         ),
-    #         dbc.Col(
-    #             dcc.Link(dbc.Button("Leader URL", block=True, color="primary", className="mr-1"), href=leader_url, target="_blank")
-    #         ),
-    #         dbc.Col(
-    #             dcc.Link(dbc.Button("Collab URL", block=True, color="primary", className="mr-1"), href=collab_url, target="_blank")
-    #         ),
-    #     ]),
-    #     dbc.Row([
-    #         dbc.Col(
-    #             follower_img
-    #         ),
-    #         dbc.Col()
-            
-    #     ])
-    # ]
-
-
-
-
 
 @app.callback(Output('network-link-button', 'children'),
               [
