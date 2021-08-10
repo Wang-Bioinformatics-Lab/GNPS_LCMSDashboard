@@ -3555,7 +3555,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
             _sychronize_save_state(sychronization_session_id, full_json_settings, redis_client, synchronization_token=synchronization_leader_token)
 
     # For Live Synchronization
-    if synchronization_type == "COLLAB":
+    if synchronization_type == "COLLAB" and not "sychronization_set_type_button" in triggered_id:
         all_triggered_list = [p['prop_id'] for p in dash.callback_context.triggered]
         if len(sychronization_session_id) > 0:
             _synchronize_collab_action(sychronization_session_id, all_triggered_list, full_json_settings, synchronization_token=synchronization_leader_token)
