@@ -2147,9 +2147,8 @@ def update_usi(search, url_hash,
                     total_files_uploaded += 1
                     usi = new_usi + "\n" + usi
 
+        # Uploading Big Files
         if uploadfile2_filenames is not None and "upload-data2" in triggered_id:
-            print("UPLOADING FILE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", uploadfile2_iscompleted, uploadfile2_filenames)
-
             for i, filename in enumerate(uploadfile2_filenames):
                 new_usi, new_upload_message = _handle_file_upload_big(filename, uploadfile2_uploadid)
 
@@ -2158,7 +2157,9 @@ def update_usi(search, url_hash,
                     usi = new_usi + "\n" + usi
 
         upload_message += "{} Files Uploaded".format(total_files_uploaded)
-        return [usi.lstrip(), new_usi, usi2.lstrip(), dash.no_update, upload_message]
+
+        usi_options, usi_select = _parse_usis(usi.lstrip())
+        return [usi.lstrip(), usi_select, usi_options, usi2.lstrip(), dash.no_update, upload_message]
 
     session_dict = {}
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
@@ -2188,7 +2189,11 @@ def update_usi(search, url_hash,
     usi_select = usi
     usi_options = []
     try:
-        usi_options, usi_select = _parse_usis(usi)
+        new_usi = usi
+        if new_usi == dash.no_update:
+            new_usi = existing_usi
+
+        usi_options, usi_select = _parse_usis(new_usi)
         usi_select = _get_param_from_url(search, url_hash, "usi_select", usi_select, session_dict=session_dict, old_value=existing_usi_select, no_change_default=dash.no_update)
 
         # TODO: Have an option where we read from the USI explicitly if it changed and not from URL
