@@ -223,6 +223,17 @@ DATASELECTION_CARD = [
                     ),
                     dbc.InputGroup(
                         [
+                            dbc.InputGroupAddon("USI View Selection", addon_type="prepend"),
+                            dbc.Select(
+                                id="usi_select",
+                                options=[],
+                                value=""
+                            )
+                        ],
+                        className="mb-3",
+                    ),
+                    dbc.InputGroup(
+                        [
                             dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
                             dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
                         ],
@@ -1405,6 +1416,7 @@ def _synchronize_collab_action(session_id, triggered_fields, full_params, synchr
               [
                   Input('url', 'search'),
                   Input('usi', 'value'),
+                  Input('usi_select', 'value'),
                   Input('map-plot', 'clickData'), 
                   Input('xic-plot', 'clickData'), 
                   Input('tic-plot', 'clickData'),
@@ -1417,7 +1429,8 @@ def _synchronize_collab_action(session_id, triggered_fields, full_params, synchr
                   State('setting_json_area', 'value'),
                   State('ms2_identifier', 'value'),
               ])
-def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, 
+def click_plot(url_search, usi, usi_select, 
+                mapclickData, xicclickData, ticclickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, 
                 sychronization_session_id,
                 setting_json_area, 
                 existing_ms2_identifier):
@@ -1462,10 +1475,10 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
     if clicked_target["curveNumber"] == 0:
         rt_target = clicked_target["x"]
 
-        usi_first = usi.split("\n")[0]
-        remote_link, local_filename = _resolve_usi(usi_first)
+        plot_usi = utils.determine_usi_to_use(usi, usi_select)
+        remote_link, local_filename = _resolve_usi(plot_usi)
 
-        closest_scan = ms2.determine_scan_by_rt(usi_first, local_filename, rt_target)
+        closest_scan = ms2.determine_scan_by_rt(plot_usi, local_filename, rt_target)
 
         return ["MS1:{}".format(closest_scan)]
 
@@ -1480,17 +1493,21 @@ def click_plot(url_search, usi, mapclickData, xicclickData, ticclickData, sychro
                 Output('usi_frame', 'src'),
               ],
               [
-                  Input('usi', 'value'), Input('ms2_identifier', 'value'), Input('image_export_format', 'value'), Input("plot_theme", "value")
+                  Input('usi', 'value'), 
+                  Input('usi_select', 'value'),
+                  Input('ms2_identifier', 'value'), 
+                  Input('image_export_format', 'value'), 
+                  Input("plot_theme", "value")
               ], 
               [
                   State('xic_mz', 'value')
               ])
-def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
+def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xic_mz):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
         return [dash.no_update] * 6
 
-    usi_first = usi.split("\n")[0]
+    usi_first = utils.determine_usi_to_use(usi, usi_select)
 
     usi_splits = usi_first.split(":")
     dataset = usi_splits[1]
@@ -1579,14 +1596,15 @@ def draw_spectrum(usi, ms2_identifier, export_format, plot_theme, xic_mz):
               ],
               [
                   Input('usi', 'value'), 
+                  Input('usi_select', 'value'), 
                   Input('ms2_identifier', 'value')
               ])
-def draw_fastsearch_gnps(usi, ms2_identifier):
+def draw_fastsearch_gnps(usi, usi_select, ms2_identifier):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
         return [dash.no_update] * 2
 
-    usi_first = usi.split("\n")[0]
+    usi_first = utils.determine_usi_to_use(usi, usi_select)
 
     usi_splits = usi_first.split(":")
     dataset = usi_splits[1]
@@ -1618,14 +1636,15 @@ def draw_fastsearch_gnps(usi, ms2_identifier):
               ],
               [
                   Input('usi', 'value'), 
+                  Input('usi_select', 'value'),
                   Input('ms2_identifier', 'value')
               ])
-def draw_fastsearch_massivekb(usi, ms2_identifier):
+def draw_fastsearch_massivekb(usi, usi_select, ms2_identifier):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
         return [dash.no_update] * 2
 
-    usi_first = usi.split("\n")[0]
+    usi_first = utils.determine_usi_to_use(usi, usi_select)
 
     usi_splits = usi_first.split(":")
     dataset = usi_splits[1]
@@ -2041,9 +2060,36 @@ def _handle_file_upload_big(filename, uploadid):
     return usi, ""
 
 
+def _parse_usis(usi_string):
+    """
+    This takes a USI and returns the set of options and default value
+
+    Args:
+        usi_string ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+
+    try:
+        splits = usi_string.split("\n")
+        first_usi = splits[0]
+
+        splits = [split for split in splits if len(split) > 1]
+
+        options = [{"label": split, "value": split} for split in splits]
+
+        return options, first_usi
+
+    except:
+        return [], None
+
+
 # Handling file upload
 @app.callback([
                 Output('usi', 'value'), 
+                Output('usi_select', 'value'), 
+                Output('usi_select', 'options'), 
                 Output('usi2', 'value'), 
                 Output('debug-output-2', 'children'),
                 Output('upload_status', 'children'),
@@ -2067,6 +2113,7 @@ def _handle_file_upload_big(filename, uploadid):
                   State('setting_json_area', 'value'),
 
                   State('usi', 'value'),
+                  State('usi_select', 'value'), 
                   State('usi2', 'value'),
               ])
 def update_usi(search, url_hash, 
@@ -2077,13 +2124,14 @@ def update_usi(search, url_hash,
                 sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
+                existing_usi_select,
                 existing_usi2):
     usi = "mzspec:MSV000084494:GNPS00002_A3_p"
     usi2 = ""
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    if uploadfile1_filename_list is not None or uploadfile2_filenames is not None and "upload-data" in triggered_id:
+    if (uploadfile1_filename_list is not None or uploadfile2_filenames is not None) and "upload-data" in triggered_id:
         total_files_uploaded = 0
         usi = existing_usi
         usi2 = existing_usi2
@@ -2099,9 +2147,8 @@ def update_usi(search, url_hash,
                     total_files_uploaded += 1
                     usi = new_usi + "\n" + usi
 
+        # Uploading Big Files
         if uploadfile2_filenames is not None and "upload-data2" in triggered_id:
-            print("UPLOADING FILE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", uploadfile2_iscompleted, uploadfile2_filenames)
-
             for i, filename in enumerate(uploadfile2_filenames):
                 new_usi, new_upload_message = _handle_file_upload_big(filename, uploadfile2_uploadid)
 
@@ -2110,9 +2157,12 @@ def update_usi(search, url_hash,
                     usi = new_usi + "\n" + usi
 
         upload_message += "{} Files Uploaded".format(total_files_uploaded)
-        return [usi.lstrip(), usi2.lstrip(), dash.no_update, upload_message]
+
+        usi_options, usi_select = _parse_usis(usi.lstrip())
+        return [usi.lstrip(), usi_select, usi_options, usi2.lstrip(), dash.no_update, upload_message]
 
     session_dict = {}
+
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         try:
             session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
@@ -2136,7 +2186,21 @@ def update_usi(search, url_hash,
     usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict, old_value=existing_usi, no_change_default=dash.no_update)
     usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict, old_value=existing_usi2, no_change_default=dash.no_update)
 
-    return [usi, usi2, "Using URL USI", dash.no_update]
+    # Resolving USI selection
+    usi_select = usi
+    usi_options = []
+    try:
+        new_usi = usi
+        if new_usi == dash.no_update:
+            new_usi = existing_usi
+
+        usi_options, usi_select = _parse_usis(new_usi)
+        usi_select = _get_param_from_url(search, url_hash, "usi_select", usi_select, session_dict=session_dict, old_value=existing_usi_select, no_change_default=dash.no_update)
+        
+    except:
+        pass
+
+    return [usi, usi_select, usi_options, usi2, "Using URL USI", dash.no_update]
     
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
@@ -2455,13 +2519,16 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
                 Output('tic-plot', 'config'),
                 Output('loading_tic_plot', 'children')
               ],
-              [Input('usi', 'value'), 
-              Input('image_export_format', 'value'), 
-              Input("plot_theme", "value"), 
-              Input("tic_option", "value"),
-              Input("polarity_filtering", "value"),
-              Input("show_multiple_tic", "value")])
-def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
+              [
+                Input('usi', 'value'),
+                Input('usi_select', 'value'),
+                Input('image_export_format', 'value'), 
+                Input("plot_theme", "value"), 
+                Input("tic_option", "value"),
+                Input("polarity_filtering", "value"),
+                Input("show_multiple_tic", "value")
+              ])
+def draw_tic(usi, usi_select, export_format, plot_theme, tic_option, polarity_filter, show_multiple_tic):
     # Calculating all TICs for all USIs
     all_usi = usi.split("\n")
 
@@ -2495,7 +2562,9 @@ def draw_tic(usi, export_format, plot_theme, tic_option, polarity_filter, show_m
             fig = dash.no_update
             status = "Draw Error"
     elif len(all_usi) > 0:
-        tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
+        plot_usi = utils.determine_usi_to_use(usi, usi_select)
+
+        tic_df = _perform_tic(plot_usi, tic_option=tic_option, polarity_filter=polarity_filter)
         try:
             fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
             status = "Ready"
@@ -2759,12 +2828,13 @@ def _integrate_files(long_data_df, xic_integration_type):
 ##################################
 @app.callback(Output('chromatogram_options', 'options'),
               [
-                  Input('usi', 'value'), 
+                  Input('usi', 'value'),
+                  Input('usi_select', 'value'),
                   Input('usi2', 'value'), 
               ])
-def create_chromatogram_options(usi, usi2):
-    all_usi = usi.split("\n")
-    remote_link, local_filename = _resolve_usi(all_usi[0])
+def create_chromatogram_options(usi, usi_select, usi2):
+    plot_usi = utils.determine_usi_to_use(usi, usi_select)
+    remote_link, local_filename = _resolve_usi(plot_usi)
 
     chromatogram_list = tasks.task_chromatogram_options(local_filename)
 
@@ -3040,6 +3110,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
               [
                 Input('url', 'search'), 
                 Input('usi', 'value'), 
+                Input('usi_select', 'value'), 
                 Input('map-plot', 'relayoutData'),
                 Input('map_plot_update_range_button', 'n_clicks'),
                 Input('sychronization_load_session_button', 'n_clicks'),
@@ -3059,7 +3130,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
 
                 State('setting_json_area', 'value'),
               ])
-def determine_plot_zoom_bounds(url_search, usi, 
+def determine_plot_zoom_bounds(url_search, usi, usi_select,
                                 map_selection, map_plot_update_range_button, sychronization_load_session_button, sychronization_interval, advanced_import_update_button, auto_import_parameters,
                                 map_plot_rt_min, map_plot_rt_max, map_plot_mz_min, map_plot_mz_max, existing_map_plot_zoom, 
                                 sychronization_session_id, setting_json_area):
@@ -3068,9 +3139,9 @@ def determine_plot_zoom_bounds(url_search, usi,
     print("ALL TRIGGERS", [p['prop_id'] for p in dash.callback_context.triggered], file=sys.stderr, flush=True)
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-
-    usi_list = usi.split("\n")
-    remote_link, local_filename = _resolve_usi(usi_list[0])
+    
+    plot_usi = utils.determine_usi_to_use(usi, usi_select)
+    remote_link, local_filename = _resolve_usi(plot_usi)
 
     session_dict = {}
 
@@ -3134,8 +3205,12 @@ def determine_plot_zoom_bounds(url_search, usi,
     
 # Downloading the files
 @app.callback([Output('loading_file_download', 'children')],
-              [Input('usi', 'value'), Input('usi2', 'value')])
-def render_initial_file_load(usi, usi2):
+              [
+                  Input('usi', 'value'), 
+                  Input('usi_select', 'value'),
+                  Input('usi2', 'value')
+              ])
+def render_initial_file_load(usi, usi_select, usi2):
     usi1_list = usi.split("\n")
     usi2_list = usi2.split("\n")
 
@@ -3148,7 +3223,8 @@ def render_initial_file_load(usi, usi2):
     status = "Ready"
     if len(usi1_list) > 0:
         try:
-            _resolve_usi(usi1_list[0])
+            plot_usi = utils.determine_usi_to_use(usi, usi_select)
+            _resolve_usi(plot_usi)
         except:
             status = "USI1 Loading Error"
             return [status]
@@ -3177,6 +3253,7 @@ def render_initial_file_load(usi, usi2):
               [
                 Input('url', 'search'), 
                 Input('usi', 'value'), 
+                Input('usi_select', 'value'),
                 Input('map_plot_zoom', 'children'), 
                 Input('highlight_box', 'children'),
                 Input('map_plot_quantization_level', 'value'), 
@@ -3207,7 +3284,7 @@ def render_initial_file_load(usi, usi2):
                 State('feature_finding_max_peak_rt', 'value'),
                 State('feature_finding_rt_tolerance', 'value'),
               ])
-def draw_file(url_search, usi, 
+def draw_file(url_search, usi, usi_select,
                 map_plot_zoom, highlight_box_zoom, map_plot_quantization_level, map_plot_color_scale,
                 show_ms2_markers, ms2marker_color, ms2marker_size, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_tabular_data,
@@ -3225,9 +3302,8 @@ def draw_file(url_search, usi,
 
     print("TRIGGERED MAP PLOT", triggered_id, file=sys.stderr, flush=True)
 
-    usi_list = usi.split("\n")
-
-    remote_link, local_filename = _resolve_usi(usi_list[0])
+    plot_usi = utils.determine_usi_to_use(usi, usi_select)
+    remote_link, local_filename = _resolve_usi(plot_usi)
 
     if show_ms2_markers == 1:
         show_ms2_markers = True
@@ -3361,14 +3437,14 @@ def draw_file2( usi,
 
 @app.callback(Output('run-gnps-mzmine-link', 'href'),
               [
-              Input("usi", "value"),
-              Input("usi2", "value"),
-              Input("feature_finding_type", "value"),
-              Input("feature_finding_ppm", "value"),
-              Input("feature_finding_noise", "value"),
-              Input("feature_finding_min_peak_rt", "value"),
-              Input("feature_finding_max_peak_rt", "value"),
-              Input("feature_finding_rt_tolerance", "value"),
+                Input("usi", "value"),
+                Input("usi2", "value"),
+                Input("feature_finding_type", "value"),
+                Input("feature_finding_ppm", "value"),
+                Input("feature_finding_noise", "value"),
+                Input("feature_finding_min_peak_rt", "value"),
+                Input("feature_finding_max_peak_rt", "value"),
+                Input("feature_finding_rt_tolerance", "value"),
               ])
 def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance):
     import urllib.parse
@@ -3422,6 +3498,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
               ],  
               [
                 Input('usi', 'value'), 
+                Input('usi_select', 'value'),
                 Input('usi2', 'value'), 
                 Input('xic_mz', 'value'), 
                 Input('xic_formula', 'value'), 
@@ -3476,7 +3553,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
               [
                   State('synchronization_type', 'value')
               ])
-def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide, 
+def create_link(usi, usi_select, usi2, xic_mz, xic_formula, xic_peptide, 
                 xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_norm, xic_file_grouping, 
                 xic_integration_type, show_ms2_markers, ms2marker_color, ms2marker_size,
                 ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
@@ -3547,6 +3624,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     hash_params = {}
     hash_params["usi"] = usi
+    hash_params["usi_select"] = usi_select
     hash_params["usi2"] = usi2
 
     full_url = request.host_url + "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
@@ -3557,6 +3635,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     full_json_settings = url_params
     full_json_settings["usi"] = usi
     full_json_settings["usi2"] = usi2
+    full_json_settings["usi_select"] = usi_select
 
     # Determining Savings
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
