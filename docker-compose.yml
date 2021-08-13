@@ -90,7 +90,7 @@ services:
         limits:
           memory: 32000M
 
-  redis:
+  gnpslcms-redis:
     image: redis
     networks:
       - default
