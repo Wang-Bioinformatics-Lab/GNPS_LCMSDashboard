@@ -2200,8 +2200,6 @@ def update_usi(search, url_hash,
     except:
         pass
 
-    print(triggered_id, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", file=sys.stderr, flush=True)
-
     return [usi, usi_select, usi_options, usi2, "Using URL USI", dash.no_update]
     
 # Calculating which xic value to use
