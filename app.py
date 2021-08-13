@@ -18,7 +18,7 @@ import plotly.graph_objects as go
 
 
 # Flask
-from flask import Flask, send_from_directory, send_file
+from flask import Flask, send_from_directory, send_file, redirect
 import werkzeug
 from flask_caching import Cache
 
@@ -53,14 +53,14 @@ from utils import _resolve_map_plot_selection, _get_param_from_url, _spectrum_ge
 from utils import MS_precisions
 import utils
 
-from sync import _sychronize_save_state, _sychronize_load_state
-
 import download
 import ms2
 import lcms_map
 import tasks
 from formula_utils import get_adduct_mass
 import xic
+from sync import _sychronize_save_state, _sychronize_load_state
+import shorturl
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -112,7 +112,7 @@ else:
         'CACHE_THRESHOLD': 1000000
     })
 
-    redis_client = redis.Redis(host='redis', port=6379, db=0)
+    redis_client = redis.Redis(host='gnpslcms-redis', port=6379, db=0)
 
 server = app.server
 
@@ -231,8 +231,14 @@ DATASELECTION_CARD = [
                     # Linkouts
                     dbc.Row([
                         dbc.Col(
-                            dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0),
+                            dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0, size="sm"),
                         ),
+                        dbc.Col(
+                            dbc.Button("Copy Short Temporary URL", block=True, color="info", id="copy_shortlink_button", n_clicks=0, size="sm"),
+                        ),
+                    ]),
+                    html.Br(),
+                    dbc.Row([
                         dbc.Col(
                             dcc.Loading(
                                 id="network-link-button",
@@ -241,7 +247,6 @@ DATASELECTION_CARD = [
                             ),
                         ),
                     ]),
-                    html.Br(),
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("Comment", addon_type="prepend"),
@@ -1203,6 +1208,7 @@ BODY = dbc.Container(
         html.Div(
             [
                 dcc.Link(id="query_link", href="#", target="_blank"),
+                dcc.Link(id="query_shortlink", href="#", target="_blank"),
             ],
             style={
                 "display" : "none"
@@ -1383,6 +1389,9 @@ def _resolve_usi(usi, temp_folder="temp"):
             return tasks._download_convert_file(usi, temp_folder=temp_folder)
 
 
+def _save_redis(key, value, expiration_in_seconds):
+
+    return 
 
         
 def _synchronize_collab_action(session_id, triggered_fields, full_params, synchronization_token=None):
@@ -3407,6 +3416,7 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
 
 @app.callback([
                 Output('query_link', 'href'),
+                Output('query_shortlink', 'href'),
                 Output('page_parameters', 'children'),
                 Output('qrcode', 'children'),
               ],  
@@ -3541,6 +3551,9 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
 
     full_url = request.host_url + "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
 
+    # Saving to redis temporarily
+    shortened_url = request.host_url + "shorturl?uuid={}".format(shorturl.shorten_url(full_url, redis_client))
+
     full_json_settings = url_params
     full_json_settings["usi"] = usi
     full_json_settings["usi2"] = usi2
@@ -3585,7 +3598,7 @@ def create_link(usi, usi2, xic_mz, xic_formula, xic_peptide,
     # Removing Sync token for json area
     full_json_settings.pop("sychronization_session_id", None)
 
-    return [full_url, json.dumps(full_json_settings, indent=4), qr_html_img]
+    return [full_url, shortened_url, json.dumps(full_json_settings, indent=4), qr_html_img]
 
 
 app.clientside_callback(
@@ -3618,6 +3631,40 @@ app.clientside_callback(
     ],
     [
         State('query_link', 'href'),
+    ]
+)
+
+# Copy for Short URL
+app.clientside_callback(
+    """
+    function(n_clicks, button_id, text_to_copy) {
+        original_text = "Copy Short Temporary URL"
+        if (n_clicks > 0) {
+            const el = document.createElement('textarea');
+            el.value = text_to_copy;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            setTimeout(function(){ 
+                return function(id_to_update, text_to_update){
+                    document.getElementById(id_to_update).textContent = text_to_update
+                }(button_id, original_text)
+                }, 1000);
+            document.getElementById(button_id).textContent = "Copied!"
+            return 'Copied!';
+        } else {
+            return original_text;
+        }
+    }
+    """,
+    Output('copy_shortlink_button', 'children'),
+    [
+        Input('copy_shortlink_button', 'n_clicks'),
+        Input('copy_shortlink_button', 'id'),
+    ],
+    [
+        State('query_shortlink', 'href'),
     ]
 )
 
@@ -3948,7 +3995,7 @@ def create_networking_link(usi, usi2):
         gnps_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
         gnps_url = gnps_url + urllib.parse.quote(json.dumps(parameters))
 
-        url_provenance = dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), block=True, color="secondary", className="mr-1")
+        url_provenance = dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), block=True, color="secondary", className="mr-1", size="sm")
         provenance_link_object = dcc.Link(url_provenance, href=gnps_url, target="_blank")
 
         return [provenance_link_object, html.Br()]
@@ -4394,8 +4441,15 @@ def downloadlink():
     
     return download_remote_link
 
+@server.route("/shorturl")
+def shorturlresolve():
+    uuid = request.args.get("uuid")
+    full_url = shorturl.get_shorturl(uuid, redis_client)
 
-
+    if full_url is None:
+        return "UUID is not Found, it has likely expired", 404
+    
+    return redirect(full_url)
 
 if __name__ == "__main__":
     app.run_server(debug=True, port=5000, host="0.0.0.0")

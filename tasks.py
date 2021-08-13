@@ -17,13 +17,13 @@ from sync import _sychronize_save_state, _sychronize_load_state
 memory = Memory("temp/memory-cache", verbose=0)
 
 # Setting up celery
-celery_instance = Celery('lcms_tasks', backend='redis://redis', broker='redis://redis')
+celery_instance = Celery('lcms_tasks', backend='redis://gnpslcms-redis', broker='redis://gnpslcms-redis')
 
 # Limiting the once queue for celery tasks, will give an error for idempotent tasks within an hour interval
 celery_instance.conf.ONCE = {
   'backend': 'celery_once.backends.Redis',
   'settings': {
-    'url': 'redis://redis:6379/0',
+    'url': 'redis://gnpslcms-redis:6379/0',
     'default_timeout': 60 * 10,
     'blocking': True,
     'blocking_timeout': 120
