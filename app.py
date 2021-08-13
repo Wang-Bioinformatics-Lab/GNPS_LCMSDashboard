@@ -2131,7 +2131,7 @@ def update_usi(search, url_hash,
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    if uploadfile1_filename_list is not None or uploadfile2_filenames is not None and "upload-data" in triggered_id:
+    if (uploadfile1_filename_list is not None or uploadfile2_filenames is not None) and "upload-data" in triggered_id:
         total_files_uploaded = 0
         usi = existing_usi
         usi2 = existing_usi2
@@ -2162,6 +2162,7 @@ def update_usi(search, url_hash,
         return [usi.lstrip(), usi_select, usi_options, usi2.lstrip(), dash.no_update, upload_message]
 
     session_dict = {}
+
     if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
         try:
             session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
@@ -2195,10 +2196,11 @@ def update_usi(search, url_hash,
 
         usi_options, usi_select = _parse_usis(new_usi)
         usi_select = _get_param_from_url(search, url_hash, "usi_select", usi_select, session_dict=session_dict, old_value=existing_usi_select, no_change_default=dash.no_update)
-
-        # TODO: Have an option where we read from the USI explicitly if it changed and not from URL
+        
     except:
         pass
+
+    print(triggered_id, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", file=sys.stderr, flush=True)
 
     return [usi, usi_select, usi_options, usi2, "Using URL USI", dash.no_update]
     
