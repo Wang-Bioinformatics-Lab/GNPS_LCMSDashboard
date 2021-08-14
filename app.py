@@ -2087,10 +2087,8 @@ def _parse_usis(usi_string):
 
 # Handling file upload
 @app.callback([
-                Output('usi', 'value'), 
-                Output('usi_select', 'value'), 
-                Output('usi_select', 'options'), 
-                Output('usi2', 'value'), 
+                Output('usi', 'value'),
+                Output('usi2', 'value'),
                 Output('debug-output-2', 'children'),
                 Output('upload_status', 'children'),
               ],
@@ -2159,7 +2157,7 @@ def update_usi(search, url_hash,
         upload_message += "{} Files Uploaded".format(total_files_uploaded)
 
         usi_options, usi_select = _parse_usis(usi.lstrip())
-        return [usi.lstrip(), usi_select, usi_options, usi2.lstrip(), dash.no_update, upload_message]
+        return [usi.lstrip(), usi2.lstrip(), dash.no_update, upload_message]
 
     session_dict = {}
 
@@ -2186,22 +2184,58 @@ def update_usi(search, url_hash,
     usi = _get_param_from_url(search, url_hash, "usi", usi, session_dict=session_dict, old_value=existing_usi, no_change_default=dash.no_update)
     usi2 = _get_param_from_url(search, url_hash, "usi2", usi2, session_dict=session_dict, old_value=existing_usi2, no_change_default=dash.no_update)
 
-    # Resolving USI selection
-    usi_select = usi
-    usi_options = []
-    try:
-        new_usi = usi
-        if new_usi == dash.no_update:
-            new_usi = existing_usi
-
-        usi_options, usi_select = _parse_usis(new_usi)
-        usi_select = _get_param_from_url(search, url_hash, "usi_select", usi_select, session_dict=session_dict, old_value=existing_usi_select, no_change_default=dash.no_update)
-        
-    except:
-        pass
-
-    return [usi, usi_select, usi_options, usi2, "Using URL USI", dash.no_update]
+    return [usi, usi2, "Using URL USI", dash.no_update]
     
+@app.callback([
+                Output('usi_select', 'options'),
+                Output('usi_select', 'value'),
+             ],
+              [
+                Input('url', 'search'),
+                Input('url', 'hash'), 
+                Input('usi', 'value'),
+                Input('sychronization_load_session_button', 'n_clicks'),
+                Input('sychronization_interval', 'n_intervals'),
+                Input('advanced_import_update_button', "n_clicks"),
+                Input('auto_import_parameters', 'children'),
+              ], 
+              [
+                  State('usi_select', 'value'),
+                  State('sychronization_session_id', 'value'),
+
+                  State('setting_json_area', 'value'),
+              ])
+def update_usi_options(search, url_hash, usi, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
+                        existing_usi_select, sychronization_session_id, setting_json_area):
+    usi_options, usi_select = _parse_usis(usi)
+
+    triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+
+    session_dict = {}
+    if "sychronization_load_session_button" in triggered_id or "sychronization_interval" in triggered_id:
+        try:
+            session_dict = _sychronize_load_state(sychronization_session_id, redis_client)
+        except:
+            pass
+
+    # We clicked the button so we are going to load from the text area
+    if "advanced_import_update_button" in triggered_id:
+        try:
+            session_dict = json.loads(setting_json_area)
+        except:
+            pass
+
+    if "auto_import_parameters" in triggered_id:
+        try:
+            session_dict = json.loads(auto_import_parameters)
+        except:
+            pass
+
+    usi_select = _get_param_from_url(search, url_hash, "usi_select", usi_select, session_dict=session_dict, old_value=existing_usi_select, no_change_default=dash.no_update)
+
+    return [usi_options, usi_select]
+
+
 # Calculating which xic value to use
 @app.callback(Output('xic_mz', 'value'),
               [
