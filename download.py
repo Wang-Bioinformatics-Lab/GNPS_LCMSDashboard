@@ -64,7 +64,7 @@ def _usi_to_local_filename(usi):
 
     # Cleaning it up
     if len(converted_local_filename) > 250:
-        converted_local_filename = "convertedfile_" + str(uuid.uuid4()) + "_" + converted_local_filename[-200:]
+        converted_local_filename = "convertedfile_" + str(uuid.uuid4()) + "_" + converted_local_filename[-150:]
 
     return converted_local_filename
 
@@ -271,7 +271,7 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     remote_link = _resolve_usi_remotelink(usi)
 
     # Getting Data Local, TODO: likely should serialize it
-    local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-200:])
+    local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
     filename, file_extension = os.path.splitext(local_filename)
 
     temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
