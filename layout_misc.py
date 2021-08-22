@@ -89,6 +89,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML#%7B%7D"),
             html.Br(),
+            html.A("LCMS from Glycopost", href="/?usi=mzspec:GPST000082:VV_PGM_200204.raw"),
+            html.Br(),
             html.Br(),
 
             html.H5("Basic Examples - GC/MS Metabolomics"),

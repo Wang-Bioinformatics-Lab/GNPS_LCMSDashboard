@@ -104,7 +104,14 @@ def _resolve_mtbls_usi(usi):
 
     return remote_link
 
+def _resolve_glycopost_usi(usi):
+    usi_splits = usi.split(':')
 
+    dataset_accession = usi_splits[1] + ".0"
+    filename = usi_splits[2]
+    remote_link = "https://glycopost.glycosmos.org/data/{}/{}".format(dataset_accession, urllib.parse.quote(filename))
+
+    return remote_link
 
 def _resolve_pxd_usi(usi):
     usi_splits = usi.split(':')
@@ -150,6 +157,8 @@ def _resolve_usi_remotelink(usi):
         remote_link = _resolve_gnps_usi(usi)
     elif "MTBLS" in usi_splits[1]:
         remote_link = _resolve_mtbls_usi(usi)
+    elif "GPST" in usi_splits[1]:
+        remote_link = _resolve_glycopost_usi(usi)
     elif "ST" in usi_splits[1]:
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
     elif "PXD" in usi_splits[1]:
@@ -275,7 +284,7 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     filename, file_extension = os.path.splitext(local_filename)
 
     temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
-    wget_cmd = "wget '{}' -O {} 2> /dev/null".format(remote_link, temp_filename)
+    wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
     os.system(wget_cmd)
     os.rename(temp_filename, local_filename)
 
