@@ -111,9 +111,6 @@ def _resolve_glycopost_usi(usi):
     filename = usi_splits[2]
     remote_link = "https://glycopost.glycosmos.org/data/{}/{}".format(dataset_accession, urllib.parse.quote(filename))
 
-    #r = requests.get("https://glycopost.glycosmos.org/data/GPST000082.0/VV_PGM_200204.raw", headers={'referer': 'https://glycopost.glycosmos.org/data/GPST
-    #...: 000082.0/VV_PGM_200204.raw'}) 
-
     return remote_link
 
 def _resolve_pxd_usi(usi):
