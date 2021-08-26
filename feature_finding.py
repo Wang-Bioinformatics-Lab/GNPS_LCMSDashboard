@@ -5,6 +5,7 @@ import uuid
 import os
 import pathlib
 import subprocess
+from massql import msql_engine
 
 
 def perform_feature_finding(filename, params, timeout=90):
@@ -197,23 +198,20 @@ def _massql_feature_finding(filename, params, timeout=60):
     # Making sure output exists
     output_folder = os.path.abspath(os.path.join("temp", "feature-finding", "massql"))
     pathlib.Path(output_folder).mkdir(parents=True, exist_ok=True)
-    
-    output_results = os.path.join(output_folder,  str(uuid.uuid4()).replace("-", "") + ".tsv")
 
     # Staging input file
     temp_input_filename = os.path.join(output_folder, os.path.basename(filename))
     if not os.path.exists(temp_input_filename):
         os.symlink(os.path.abspath(filename), temp_input_filename)
 
-    # Lets do the command
-    cmd = "python feature_finding/massql/MassQueryLanguage/msql_cmd.py '{}' '{}' --output_file {}".format(temp_input_filename, massql_statement, output_results)
-    print(cmd)
-    _call_feature_finding_tool(cmd, timeout=timeout)
-
-    temp_features_df = pd.read_csv(output_results, sep='\t')
-
+    # Lets do the query
     result_df = pd.DataFrame()
+    temp_features_df = msql_engine.process_query(massql_statement, temp_input_filename)
 
+    # Let's not return too much stuff
+    if len(temp_features_df) > 10000:
+        return None
+    
     if "precmz" in temp_features_df:
         result_df["mz"] = temp_features_df["precmz"]
         result_df["i"] = temp_features_df["i"]
@@ -222,8 +220,6 @@ def _massql_feature_finding(filename, params, timeout=60):
         result_df["mz"] = temp_features_df["comment"]
         result_df["i"] = temp_features_df["i"]
         result_df["rt"] = temp_features_df["rt"]
-
-    # TODO: Cleanup
     
     return result_df
 
