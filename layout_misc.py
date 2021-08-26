@@ -89,6 +89,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("Thermo LCMS from GNPS Analysis Classical Molecular Networking Task", href="/?usi=mzspec:GNPS:TASK-5ecfcf81cb3c471698995b194d8246a0-f.MSV000085444/ccms_peak/peak/Hui_N1_fe.mzML#%7B%7D"),
             html.Br(),
+            html.A("LCMS from Glycopost", href="/?usi=mzspec:GPST000082:VV_PGM_200204.raw"),
+            html.Br(),
             html.Br(),
 
             html.H5("Basic Examples - GC/MS Metabolomics"),
@@ -134,87 +136,6 @@ EXAMPLE_DASHBOARD = [
 ]
 
 
-SYCHRONIZATION_MODAL = [
-    dbc.Modal(
-        [
-            dbc.ModalHeader("Sychronization Options"),
-            dbc.ModalBody([
-                dbc.Row([
-                        dbc.Col(
-                            dbc.InputGroup(
-                                [
-                                    dbc.InputGroupAddon("Session ID", addon_type="prepend"),
-                                    dbc.Input(id='sychronization_session_id', placeholder="Enter Session ID", value=""),
-                                ],
-                                className="mb-3",
-                            ),
-                        ),
-                    ]
-                ),
-                dbc.Row([
-                        dbc.Col(
-                            dbc.Button("Save Session", block=True, id="sychronization_save_session_button"),
-                        ),
-                        dbc.Col(
-                            dbc.Button("Load Session", block=True, id="sychronization_load_session_button"),
-                        ),
-                    ]
-                ),
-                html.Hr(),
-                html.H5("Dashboard Sychronization Type"),
-                dbc.Row([
-                    dbc.Col(
-                        dcc.Dropdown(
-                            id='synchronization_type',
-                            options=[
-                                {'label': 'MANUAL (Default)', 'value': 'MANUAL'},
-                                {'label': 'COLLAB (Bidirectional sync)', 'value': 'COLLAB'},
-                                {'label': 'LEADER', 'value': 'LEADER'},
-                                {'label': 'FOLLOWER', 'value': 'FOLLOWER'},
-                            ],
-                            searchable=False,
-                            clearable=False,
-                            value="MANUAL",
-                            style={
-                                "width":"100%"
-                            }
-                        ),
-                    ),
-                    dbc.Col(
-                        dbc.Button("Set Synchronization", block=True, id="sychronization_set_type_button"),
-                    )
-                ]),
-                html.Hr(),
-                dbc.InputGroup(
-                    [
-                        dbc.InputGroupAddon("Leader Session Token", addon_type="prepend"),
-                        dbc.Input(id='synchronization_leader_token', placeholder="Enter Token", value=""),
-                    ],
-                    className="mb-3",
-                ),
-                dbc.Row([
-                        dbc.Col(
-                            dbc.Button("Get New Token", block=True, id="synchronization_leader_newtoken_button"),
-                        ),
-                        dbc.Col(
-                            dbc.Button("Check Token", block=True, id="synchronization_leader_checktoken_button"),
-                        ),
-                    ]
-                ),
-                html.Br(),
-                html.Div(id="sychronization_output1"),
-                html.Div(id="sychronization_output2"),
-                html.Br(),
-                html.Div(id="sychronization_teaching_links"),
-            ]),
-            dbc.ModalFooter(
-                dbc.Button("Close", id="sychronization_options_modal_close", className="ml-auto")
-            ),
-        ],
-        id="sychronization_options_modal",
-        size="xl",
-    )
-]
 
 
 

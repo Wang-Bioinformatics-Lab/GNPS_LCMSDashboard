@@ -38,7 +38,7 @@ services:
     command: /app/run_worker_conversion.sh
     restart: unless-stopped
     depends_on: 
-      - redis
+      - gnpslcms-redis
     networks:
       - default
       - nginx-net
@@ -60,7 +60,7 @@ services:
     command: /app/run_worker_compute.sh
     restart: unless-stopped
     depends_on: 
-      - redis
+      - gnpslcms-redis
     networks:
       - default
       - nginx-net
@@ -81,7 +81,7 @@ services:
     command: /app/run_worker_sync.sh
     restart: unless-stopped
     depends_on: 
-      - redis
+      - gnpslcms-redis
     networks:
       - default
       - nginx-net
@@ -90,10 +90,14 @@ services:
         limits:
           memory: 32000M
 
-  redis:
+  gnpslcms-redis:
     image: redis
     networks:
       - default
+    deploy:
+      resources:
+        limits:
+          memory: 1000M
 
 networks:
   nginx-net:

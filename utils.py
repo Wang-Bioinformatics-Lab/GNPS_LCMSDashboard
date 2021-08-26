@@ -368,3 +368,13 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
         overlay_df["hover"] = overlay_df[overlay_hover]
 
     return overlay_df
+
+def determine_usi_to_use(usi_string, usi_select):
+    """
+    More intelligently decide whether to use the usi select or the default first USI
+    """
+    plot_usi = usi_string.split("\n")[0]
+    if usi_select is not None and len(usi_select) > 3:
+        plot_usi = usi_select
+
+    return plot_usi

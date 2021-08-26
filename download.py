@@ -25,47 +25,48 @@ def _usi_to_local_filename(usi):
     """
     usi_splits = usi.split(":")
 
+    converted_local_filename = ""
+
     if "LOCAL" in usi_splits[1]:
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
         filename, file_extension = os.path.splitext(converted_local_filename)
         converted_local_filename = filename + ".mzML"
-        return  converted_local_filename
     
-    if "MSV" in usi_splits[1]:
+    elif "MSV" in usi_splits[1]:
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
-        return converted_local_filename.replace(".mzML.mzML", ".mzML")
+        converted_local_filename =  converted_local_filename.replace(".mzML.mzML", ".mzML")
 
-    if "GNPS" in usi_splits[1]:
+    elif "GNPS" in usi_splits[1]:
         if "TASK-" in usi_splits[2]:
             converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
             filename, file_extension = os.path.splitext(converted_local_filename)
             converted_local_filename = filename + ".mzML"
-            return converted_local_filename
         elif "QUICKSTART-" in usi_splits[2]:
             converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
             filename, file_extension = os.path.splitext(converted_local_filename)
             converted_local_filename = filename + ".mzML"
-            return converted_local_filename
         elif "GNPS" in usi_splits[2] and "accession" in usi_splits[3]:
-            return werkzeug.utils.secure_filename(":".join(usi_splits[:5])) + ".mzML"
+            converted_local_filename =  werkzeug.utils.secure_filename(":".join(usi_splits[:5])) + ".mzML"
 
-    if "MTBLS" in usi_splits[1]:
+    elif "MTBLS" in usi_splits[1]:
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
         filename, file_extension = os.path.splitext(converted_local_filename)
         converted_local_filename = filename + ".mzML"
-        return converted_local_filename
 
-    if "ST" in usi_splits[1]:
+    elif "ST" in usi_splits[1]:
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]))
         filename, file_extension = os.path.splitext(converted_local_filename)
         converted_local_filename = filename + ".mzML"
-        return converted_local_filename
 
-    if "PXD" in usi_splits[1]:
+    elif "PXD" in usi_splits[1]:
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
-        print(converted_local_filename, file=sys.stderr)
-        return converted_local_filename.replace(".mzML.mzML", ".mzML")
+        converted_local_filename = converted_local_filename.replace(".mzML.mzML", ".mzML")
 
+    # Cleaning it up
+    if len(converted_local_filename) > 250:
+        converted_local_filename = "convertedfile_" + str(uuid.uuid4()) + "_" + converted_local_filename[-150:]
+
+    return converted_local_filename
 
 
 def _resolve_gnps_usi(usi):
@@ -103,7 +104,14 @@ def _resolve_mtbls_usi(usi):
 
     return remote_link
 
+def _resolve_glycopost_usi(usi):
+    usi_splits = usi.split(':')
 
+    dataset_accession = usi_splits[1] + ".0"
+    filename = usi_splits[2]
+    remote_link = "https://glycopost.glycosmos.org/data/{}/{}".format(dataset_accession, urllib.parse.quote(filename))
+
+    return remote_link
 
 def _resolve_pxd_usi(usi):
     usi_splits = usi.split(':')
@@ -149,6 +157,8 @@ def _resolve_usi_remotelink(usi):
         remote_link = _resolve_gnps_usi(usi)
     elif "MTBLS" in usi_splits[1]:
         remote_link = _resolve_mtbls_usi(usi)
+    elif "GPST" in usi_splits[1]:
+        remote_link = _resolve_glycopost_usi(usi)
     elif "ST" in usi_splits[1]:
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
     elif "PXD" in usi_splits[1]:
@@ -270,11 +280,11 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     remote_link = _resolve_usi_remotelink(usi)
 
     # Getting Data Local, TODO: likely should serialize it
-    local_filename = os.path.join(temp_folder, werkzeug.utils.secure_filename(remote_link))
+    local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
     filename, file_extension = os.path.splitext(local_filename)
 
     temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
-    wget_cmd = "wget '{}' -O {} 2> /dev/null".format(remote_link, temp_filename)
+    wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
     os.system(wget_cmd)
     os.rename(temp_filename, local_filename)
 
