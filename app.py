@@ -2329,7 +2329,7 @@ def _perform_feature_finding(filename, feature_finding=None):
         while(1):
             if result.ready():
                 break
-            sleep(3)
+            sleep(1)
         features_list = result.get()
     else:
         features_list = tasks.task_featurefinding(filename, json.dumps(feature_finding))
@@ -2337,8 +2337,20 @@ def _perform_feature_finding(filename, feature_finding=None):
     features_df = pd.DataFrame(features_list)
     
     # Forcing Types
-    features_df["rt"] = features_df["rt"].astype(float)
-    features_df["mz"] = features_df["mz"].astype(float)
+    if "rt" in features_df:
+        features_df["rt"] = features_df["rt"].astype(float)
+    else:
+        features_df["rt"] = 1.0
+    
+    if "mz" in features_df:
+        features_df["mz"] = features_df["mz"].astype(float)
+    else:
+        features_df["mz"] = 100.0
+
+    if "i" in features_df:
+        features_df["i"] = features_df["i"].astype(float)
+    else:
+        features_df["i"] = 0.0
 
     return features_df
 
@@ -2392,7 +2404,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
 
             lcms_fig.add_trace(_intermediate_fig)
         except:
-            #raise #DEBUG
+            raise #DEBUG
             pass
 
     return lcms_fig, features_df
@@ -3323,6 +3335,16 @@ def draw_file(url_search, usi,
         )
 
         feature_finding_figures.append(table_graph)
+    except:
+        pass
+
+    # Creating a feature finding figure
+    try:
+        scatter_plot_figure = px.scatter(features_df, x="rt", y="i", title="{} - RT vs Intensity".format(feature_finding_type))
+        feature_finding_figures.append(dcc.Graph(figure=scatter_plot_figure))
+
+        scatter_plot_figure = px.scatter(features_df, x="rt", y="mz", size="i", title="{} - RT vs m/z".format(feature_finding_type))
+        feature_finding_figures.append(dcc.Graph(figure=scatter_plot_figure))
     except:
         pass
 

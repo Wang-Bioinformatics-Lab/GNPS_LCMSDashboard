@@ -220,6 +220,10 @@ def _massql_feature_finding(filename, params, timeout=60):
         result_df["mz"] = temp_features_df["comment"]
         result_df["i"] = temp_features_df["i"]
         result_df["rt"] = temp_features_df["rt"]
+    else:
+        result_df["rt"] = temp_features_df["rt"]
+        result_df["i"] = temp_features_df["i"]
+        result_df["mz"] = 100.0
     
     return result_df
 
