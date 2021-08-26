@@ -1863,7 +1863,7 @@ def determine_url_only_parameters(  search,
 
     # Here we clicked a button
     if "darkmode_button" in triggered_id:
-        output = [dash.no_update] * 36
+        output = [dash.no_update] * 37
         output[-1] = "plotly_dark"
         output[-3] = "Turbo"
         return output
