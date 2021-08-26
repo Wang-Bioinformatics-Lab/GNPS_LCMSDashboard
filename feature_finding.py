@@ -192,8 +192,10 @@ def _dinosaur_feature_finding(filename, timeout=90):
 def _massql_feature_finding(filename, params, timeout=60):
     massql_statement = params["massql_statement"]
 
+    result_df = pd.DataFrame()
+
     if len(massql_statement) < 3:
-        return None
+        return result_df
 
     # Making sure output exists
     output_folder = os.path.abspath(os.path.join("temp", "feature-finding", "massql"))
@@ -205,12 +207,11 @@ def _massql_feature_finding(filename, params, timeout=60):
         os.symlink(os.path.abspath(filename), temp_input_filename)
 
     # Lets do the query
-    result_df = pd.DataFrame()
     temp_features_df = msql_engine.process_query(massql_statement, temp_input_filename)
 
     # Let's not return too much stuff
-    if len(temp_features_df) > 10000:
-        return None
+    if len(temp_features_df) > 50000:
+        return pd.DataFrame()
     
     if "precmz" in temp_features_df:
         result_df["mz"] = temp_features_df["precmz"]

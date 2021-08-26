@@ -3462,6 +3462,9 @@ def draw_file(url_search, usi, usi_select,
 
     # Creating a feature finding figure
     try:
+        feature_finding_figures.append(html.Br())
+        feature_finding_figures.append(html.Br())
+        
         scatter_plot_figure = px.scatter(features_df, x="rt", y="i", title="{} - RT vs Intensity".format(feature_finding_type))
         feature_finding_figures.append(dcc.Graph(figure=scatter_plot_figure))
 
