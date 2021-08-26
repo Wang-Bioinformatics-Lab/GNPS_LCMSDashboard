@@ -3302,12 +3302,12 @@ def render_initial_file_load(usi, usi_select, usi2):
     status = "Ready"
     if len(usi1_list) > 0:
         try:
-            # Kicking off caching of data, asychronously
-            tasks.massql_cache(local_filename)
-            
             # Resolving USI
             plot_usi = utils.determine_usi_to_use(usi, usi_select)
-            _resolve_usi(plot_usi)
+            remote_link, local_filename = _resolve_usi(plot_usi)
+
+            # Kicking off caching of data, asychronously
+            tasks.massql_cache(local_filename)
         except:
             status = "USI1 Loading Error"
             return [status]
