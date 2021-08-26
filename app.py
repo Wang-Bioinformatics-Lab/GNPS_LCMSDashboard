@@ -1290,13 +1290,11 @@ BODY = dbc.Container(
                 [
                     dbc.Col([
                         dbc.Card(MASSSPEC_QUERY_PANEL),
-                    ],
-                        #className="w-50"
-                    ),
+                    ]),
                 ],
                 id='massql-collapse',
                 is_open=False,
-                style={"width": "50%", "marginTop": 30}
+                style={"width": "100%", "marginTop": 30}
             )
         ]),
 
@@ -3310,6 +3308,7 @@ def draw_file(url_search, usi,
     # Adding on Overlay Data
     map_fig = _integrate_overlay(overlay_usi, map_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=current_map_selection, overlay_tabular_data=overlay_tabular_data)
 
+    feature_finding_figures = []
     try:
         # Creating a table
         table_graph = dash_table.DataTable(
@@ -3322,6 +3321,8 @@ def draw_file(url_search, usi,
             filter_action="native",
             export_format="csv"
         )
+
+        feature_finding_figures.append(table_graph)
     except:
         pass
 
@@ -3335,7 +3336,7 @@ def draw_file(url_search, usi,
         }
     }
 
-    return [map_fig, graph_config, remote_link, table_graph, "Ready"]
+    return [map_fig, graph_config, remote_link, feature_finding_figures, "Ready"]
 
 
 @app.callback([
