@@ -406,7 +406,7 @@ DATASELECTION_CARD = [
                         html.Tr([html.Td("File Download/Conversion"), 
                                  html.Td(dcc.Loading(
                                         id="loading_file_download",
-                                        children="Ready",
+                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
                                         type="dot"
                                     )
                                  ),
@@ -414,14 +414,14 @@ DATASELECTION_CARD = [
                                  html.Td(
                                      dcc.Loading(
                                         id="loading_xic_plot",
-                                        children="Ready",
+                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
                                         type="dot"
                                     )
                                  )]),
                         html.Tr([html.Td("Heatmap Drawing Left"), 
                                  html.Td(dcc.Loading(
                                         id="loading_map_plot",
-                                        children="Ready",
+                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
                                         type="dot"
                                     )
                                  ),
@@ -429,14 +429,14 @@ DATASELECTION_CARD = [
                                  html.Td(
                                      dcc.Loading(
                                         id="loading_map_plot2",
-                                        children="Ready",
+                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
                                         type="dot"
                                     )
                                  )]),
                         html.Tr([html.Td("TIC Drawing Left"), 
                                  html.Td(dcc.Loading(
                                         id="loading_tic_plot",
-                                        children="Ready",
+                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
                                         type="dot"
                                     )
                                  ),
@@ -444,7 +444,7 @@ DATASELECTION_CARD = [
                                  html.Td(
                                      dcc.Loading(
                                         id="loading_tic_plot2",
-                                        children="Ready",
+                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
                                         type="dot"
                                     )
                                  )])
@@ -2612,7 +2612,7 @@ def draw_tic(usi, usi_select, export_format, plot_theme, tic_option, polarity_fi
     all_usi = usi.split("\n")
 
     fig = dash.no_update
-    status = "No Data"
+    status = html.H6([dbc.Badge("No Data", color="secondary", className="ml-1")])
 
     RENDER_MODE = "auto"
     # Making sure the data in the browser is actually svg
@@ -2636,20 +2636,20 @@ def draw_tic(usi, usi_select, export_format, plot_theme, tic_option, polarity_fi
         merged_tic_df = pd.concat(all_usi_tic_df)
         try:
             fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
-            status = "Ready"
+            status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
         except:
             fig = dash.no_update
-            status = "Draw Error"
+            status = html.H6([dbc.Badge("Draw Error", color="warning", className="ml-1")])
     elif len(all_usi) > 0:
         plot_usi = utils.determine_usi_to_use(usi, usi_select)
 
         tic_df = _perform_tic(plot_usi, tic_option=tic_option, polarity_filter=polarity_filter)
         try:
             fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
-            status = "Ready"
+            status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
         except:
             fig = dash.no_update
-            status = "Draw Error"
+            status = html.H6([dbc.Badge("Draw Error", color="warning", className="ml-1")])
         
 
 
@@ -2685,7 +2685,7 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
     all_usi = [x for x in all_usi if len(x) > 2]
 
     fig = dash.no_update
-    status = "No Data"
+    status = html.H6([dbc.Badge("No Data", color="secondary", className="ml-1")])
 
     RENDER_MODE = "auto"
     # Making sure the data in the browser is actually svg
@@ -2708,11 +2708,11 @@ def draw_tic2(usi, export_format, plot_theme, tic_option, polarity_filter, show_
 
         merged_tic_df = pd.concat(all_usi_tic_df)
         fig = px.line(merged_tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, color="USI", render_mode=RENDER_MODE)
-        status = "Ready"
+        status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
     elif len(all_usi) > 0:
         tic_df = _perform_tic(usi.split("\n")[0], tic_option=tic_option, polarity_filter=polarity_filter)
         fig = px.line(tic_df, x="rt", y="tic", title='TIC Plot', template=plot_theme, render_mode=RENDER_MODE)
-        status = "Ready"
+        status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
 
     # For Drawing and Exporting
     graph_config = {
@@ -3299,7 +3299,7 @@ def render_initial_file_load(usi, usi_select, usi2):
     usi_list = usi1_list + usi2_list
     usi_list = usi_list[:MAX_LCMS_FILES]
 
-    status = "Ready"
+    status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
     if len(usi1_list) > 0:
         try:
             # Resolving USI
@@ -3309,14 +3309,14 @@ def render_initial_file_load(usi, usi_select, usi2):
             # Kicking off caching of data, asychronously
             tasks.massql_cache(local_filename)
         except:
-            status = "USI1 Loading Error"
+            status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
             return [status]
             
     if len(usi2_list) > 0:
         try:
             _resolve_usi(usi2_list[0])
         except:
-            status = "USI2 Loading Error"
+            status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
             return [status]
     
     
@@ -3480,7 +3480,10 @@ def draw_file(url_search, usi, usi_select,
         }
     }
 
-    return [map_fig, graph_config, remote_link, feature_finding_figures, "Ready"]
+    # Writing output status
+    status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
+
+    return [map_fig, graph_config, remote_link, feature_finding_figures, status]
 
 
 @app.callback([
@@ -3504,7 +3507,8 @@ def draw_file2( usi,
                 show_ms2_markers, show_lcms_2nd_map, polarity_filter, export_format, plot_theme):
 
     if show_lcms_2nd_map is False:
-        return [dash.no_update, dash.no_update, "Not Shown"]
+        status = html.H6([dbc.Badge("Not Shown", color="secondary", className="ml-1")])
+        return [dash.no_update, dash.no_update, status]
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -3538,7 +3542,9 @@ def draw_file2( usi,
         }
     }
 
-    return [map_fig, graph_config, "Ready"]
+    status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
+
+    return [map_fig, graph_config, status]
 
 
 @app.callback(Output('run-gnps-mzmine-link', 'href'),
