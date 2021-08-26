@@ -2337,6 +2337,10 @@ def _perform_feature_finding(filename, feature_finding=None):
         features_list = tasks.task_featurefinding(filename, json.dumps(feature_finding))
 
     features_df = pd.DataFrame(features_list)
+    
+    # Forcing Types
+    features_df["rt"] = features_df["rt"].astype(float)
+    features_df["mz"] = features_df["mz"].astype(float)
 
     return features_df
 
