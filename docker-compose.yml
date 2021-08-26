@@ -69,6 +69,28 @@ services:
         limits:
           memory: 32000M
 
+  gnpslcms-worker-featurefinding:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gnpslcms-worker-featurefinding
+    volumes:
+      - ./output:/app/output:rw
+      - ./logs:/app/logs:rw
+      - ./temp:/app/temp:rw
+      - ./feature_finding:/app/feature_finding:ro
+    command: /app/run_worker_featurefinding.sh
+    restart: unless-stopped
+    depends_on: 
+      - gnpslcms-redis
+    networks:
+      - default
+      - nginx-net
+    deploy:
+      resources:
+        limits:
+          memory: 32000M
+
   gnpslcms-worker-sync:
     build:
       context: .

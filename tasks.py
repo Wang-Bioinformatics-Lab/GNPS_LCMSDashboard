@@ -209,10 +209,11 @@ celery_instance.conf.task_routes = {
 
     'tasks.task_tic': {'queue': 'compute'},
     'tasks.task_xic': {'queue': 'compute'},
-    'tasks.task_featurefinding': {'queue': 'compute'},
-    'tasks._task_massql_cache': {'queue': 'compute'},
 
     'tasks.task_computeheartbeat': {'queue': 'compute'},
+
+    'tasks.task_featurefinding': {'queue': 'featurefinding'},
+    'tasks._task_massql_cache': {'queue': 'featurefinding'},
 
     'tasks.task_collabsync': {'queue': 'sync'},
 }
