@@ -2404,7 +2404,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
 
             lcms_fig.add_trace(_intermediate_fig)
         except:
-            raise #DEBUG
+            #raise #DEBUG
             pass
 
     return lcms_fig, features_df
