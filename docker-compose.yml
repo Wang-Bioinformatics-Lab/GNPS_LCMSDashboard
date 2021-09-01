@@ -92,12 +92,13 @@ services:
 
   gnpslcms-redis:
     image: redis
+    restart: unless-stopped
     networks:
       - default
     deploy:
       resources:
         limits:
-          memory: 1000M
+          memory: 8000M
 
 networks:
   nginx-net:
