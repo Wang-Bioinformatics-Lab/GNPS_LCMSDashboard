@@ -161,7 +161,7 @@ MAX_LCMS_FILES = 500
 NAVBAR = dbc.Navbar(
     children=[
         dbc.NavbarBrand(
-            html.Img(src="https://gnps-cytoscape.ucsd.edu/static/img/GNPS_logo.png", width="120px"),
+            html.Img(src="logo.png", width="120px"),
             href="https://gnps.ucsd.edu"
         ),
         dbc.Nav(
@@ -4569,6 +4569,11 @@ def shorturlresolve():
         return "UUID is not Found, it has likely expired", 404
     
     return redirect(full_url)
+
+# Logo
+@server.route("/logo.png")
+def logo():
+    return send_from_directory("assets", "dashboard_logo_final_transparent.png")
 
 if __name__ == "__main__":
     app.run_server(debug=True, port=5000, host="0.0.0.0")
