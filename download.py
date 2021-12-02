@@ -277,6 +277,14 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
 
         return "", converted_local_filename
 
+    # Downloading the data
+
+
+    # Converting the data
+
+    
+    # Renaming the data
+
     remote_link = _resolve_usi_remotelink(usi)
 
     # Getting Data Local, TODO: likely should serialize it
