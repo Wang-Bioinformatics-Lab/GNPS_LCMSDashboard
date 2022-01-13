@@ -36,7 +36,7 @@ tqdm==4.32.1
 urllib3==1.26.5
 Werkzeug==1.0.1
 pymzml==2.4.7
-Pillow==8.3.2
+Pillow==9.0.0
 matplotlib==3.4.1
 Flask-Caching==1.10.1
 scipy==1.7.1
