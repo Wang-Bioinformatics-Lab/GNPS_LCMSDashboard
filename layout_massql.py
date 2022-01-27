@@ -29,7 +29,7 @@ MASSSPEC_QUERY_PANEL = [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupAddon("MassQL", addon_type="prepend"),
-                            dbc.Textarea(id='massql_statement', placeholder="MassQL Query", value="", rows=8),
+                            dbc.Textarea(id='massql_statement', placeholder="MassQL Query", value="QUERY scaninfo(MS2DATA)", rows=8),
                         ],
                         className="mb-3",
                     )
