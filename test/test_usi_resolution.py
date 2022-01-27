@@ -47,3 +47,12 @@ def test_resolve_filename():
         converted_filename = download._usi_to_local_filename(record["usi"])
         print(record["usi"], converted_filename)
 
+
+def test_resolve_debug():
+    remote_link, local_filename = download._resolve_usi("mzspec:MSV000087434:ccms_peak/4-Liver-targeted-MS2-mzxml/4G-20200327-msms-std/0327-pos-ms2-std-211.mzML", cleanup=False)
+    print(remote_link)
+    print(local_filename)
+
+    assert(os.path.exists(local_filename))
+
+test_resolve_debug()
