@@ -163,12 +163,13 @@ MAX_LCMS_FILES = 500
 NAVBAR = dbc.Navbar(
     children=[
         dbc.NavbarBrand(
-            html.Img(src="https://gnps-cytoscape.ucsd.edu/static/img/GNPS_logo.png", width="120px"),
+            html.Img(src="logo.png", width="120px"),
             href="https://gnps.ucsd.edu"
         ),
         dbc.Nav(
             [
                 dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.53", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.54", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
                 dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
                 dbc.NavItem(id="dataset_files_nav"),
@@ -3143,6 +3144,8 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     box_graph = dash.no_update
     integration_scatter_graph = dash.no_update
 
+    box_area_objects = []
+
     try:
         # Doing actual integration
         integral_df = _integrate_files(merged_df_long, xic_integration_type)
@@ -3166,6 +3169,21 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         box_fig.update_traces(pointpos=0)
         box_graph = dcc.Graph(figure=box_fig, config=graph_config)
 
+        box_area_objects.append(box_graph)
+
+        # Adding box plot stats if there is only one variable
+        try:
+            if len(all_xic_values) == 1:
+                from scipy.stats import mannwhitneyu
+                top_values = integral_df[integral_df["GROUP"] == "TOP"]
+                bot_values = integral_df[integral_df["GROUP"] == "BOTTOM"]
+
+                U1, p = mannwhitneyu(top_values["value"], bot_values["value"])
+
+                box_area_objects.append("Mann-Whitney U p-value = {}".format(p))
+        except:
+            pass
+
         # Plotting the Scatter Plot
         # if len(all_xic_values) > 0 or len(chromatogram_list) > 0:
         #     scatter_fig = px.scatter(x=[0, 1, 2, 3, 4], y=[0, 1, 4, 9, 16])
@@ -3175,7 +3193,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
         pass
 
 
-    return [fig, graph_config, xic_heatmap_graph, table_graph, box_graph, integration_scatter_graph, dash.no_update]
+    return [fig, graph_config, xic_heatmap_graph, table_graph, box_area_objects, integration_scatter_graph, dash.no_update]
 
 
 @app.callback([
@@ -4658,6 +4676,11 @@ def shorturlresolve():
         return "UUID is not Found, it has likely expired", 404
     
     return redirect(full_url)
+
+# Logo
+@server.route("/logo.png")
+def logo():
+    return send_from_directory("assets", "dashboard_logo_final_transparent.png")
 
 if __name__ == "__main__":
     app.run_server(debug=True, port=5000, host="0.0.0.0")
