@@ -34,7 +34,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Installing MassQL
-RUN pip install massql==0.0.6
+RUN pip install massql==0.0.11
 
 COPY . /app
 WORKDIR /app
