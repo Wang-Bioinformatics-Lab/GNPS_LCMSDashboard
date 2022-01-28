@@ -33,6 +33,9 @@ RUN conda install -c conda-forge openjdk=11.0.9.1
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+# Installing MassQL
+RUN pip install massql==0.0.11
+
 COPY . /app
 WORKDIR /app
 

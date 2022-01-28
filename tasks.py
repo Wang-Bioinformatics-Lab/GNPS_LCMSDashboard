@@ -114,6 +114,23 @@ def task_featurefinding(filename, params):
 
     return feature_df.to_dict(orient="records")
 
+# Performs most basic query on data
+def massql_cache(filename):
+    try:
+        _task_massql_cache.delay(filename)
+    except redis.exceptions.ConnectionError:
+        _task_massql_cache(filename)
+
+@celery_instance.task(time_limit=600, base=QueueOnce)
+def _task_massql_cache(filename):
+    # TODO: Lets cache if cache files are already there
+
+    # Run most basic query to make sure cache files are present
+    params = {}
+    params["massql_statement"] = "QUERY scaninfo(MS2DATA)"
+    feature_finding._massql_feature_finding(filename, params, timeout=560)
+    
+
 @celery_instance.task(time_limit=1)
 def task_collabsync(session_id, triggered_fields, full_params, synchronization_token=None):
     existing_params = _sychronize_load_state(session_id, redis_client)
@@ -147,6 +164,7 @@ import sys
 @celery_instance.task(time_limit=480)
 def _task_cleanup():
     all_temp_files = glob.glob("/app/temp/*")
+    all_temp_files += glob.glob("/app/temp/feature-finding/massql/*")
 
     MAX_TIME_SECONDS = 2592000 # This is one month
     #MAX_TIME_SECONDS = 604800 # This is one week
@@ -189,8 +207,11 @@ celery_instance.conf.task_routes = {
 
     'tasks.task_tic': {'queue': 'compute'},
     'tasks.task_xic': {'queue': 'compute'},
-    'tasks.task_featurefinding': {'queue': 'compute'},
+
     'tasks.task_computeheartbeat': {'queue': 'compute'},
+
+    'tasks.task_featurefinding': {'queue': 'featurefinding'},
+    'tasks._task_massql_cache': {'queue': 'featurefinding'},
 
     'tasks.task_collabsync': {'queue': 'sync'},
 }

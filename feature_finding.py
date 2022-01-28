@@ -2,7 +2,10 @@ import pandas as pd
 from utils import _spectrum_generator
 from utils import _get_scan_polarity
 import uuid
+import os
+import pathlib
 import subprocess
+from massql import msql_engine
 
 
 def perform_feature_finding(filename, params, timeout=90):
@@ -24,6 +27,10 @@ def perform_feature_finding(filename, params, timeout=90):
     
     if params["type"] == "Dinosaur":
         return _dinosaur_feature_finding(filename, timeout=timeout)
+
+    if params["type"] == "MassQL":
+        return _massql_feature_finding(filename, params["params"])
+    
     
 
 def _test_feature_finding(filename):
@@ -102,7 +109,6 @@ def _tidyms_feature_finding(filename):
 # TODO: 
 def _mzmine_feature_finding(filename, parameters, timeout=90):
     import xmltodict
-    import os
 
     batch_base = "feature_finding/batch_files/Generic_Batchbase.xml"
 
@@ -166,8 +172,6 @@ def _openms_feature_finding(filename):
 
 
 def _dinosaur_feature_finding(filename, timeout=90):
-    import os
-
     output_folder = os.path.abspath(os.path.join("temp", "feature-finding"))
     output_filename = "{}_{}".format(os.path.basename(filename), str(uuid.uuid4()).replace("-", ""))
 
@@ -184,6 +188,45 @@ def _dinosaur_feature_finding(filename, timeout=90):
     features_df['rt'] = temp_features_df['rtApex']
     
     return features_df
+
+def _massql_feature_finding(filename, params, timeout=60):
+    massql_statement = params["massql_statement"]
+
+    result_df = pd.DataFrame()
+
+    if len(massql_statement) < 3:
+        return result_df
+
+    # Making sure output exists
+    output_folder = os.path.abspath(os.path.join("temp", "feature-finding", "massql"))
+    pathlib.Path(output_folder).mkdir(parents=True, exist_ok=True)
+
+    # Staging input file
+    temp_input_filename = os.path.join(output_folder, os.path.basename(filename))
+    if not os.path.exists(temp_input_filename):
+        os.symlink(os.path.abspath(filename), temp_input_filename)
+
+    # Lets do the query
+    temp_features_df = msql_engine.process_query(massql_statement, temp_input_filename)
+
+    # Let's not return too much stuff
+    if len(temp_features_df) > 50000:
+        return pd.DataFrame()
+    
+    if "precmz" in temp_features_df:
+        result_df["mz"] = temp_features_df["precmz"]
+        result_df["i"] = temp_features_df["i"]
+        result_df["rt"] = temp_features_df["rt"]
+    elif "comment" in temp_features_df:
+        result_df["mz"] = temp_features_df["comment"]
+        result_df["i"] = temp_features_df["i"]
+        result_df["rt"] = temp_features_df["rt"]
+    else:
+        result_df["rt"] = temp_features_df["rt"]
+        result_df["i"] = temp_features_df["i"]
+        result_df["mz"] = 100.0
+    
+    return result_df
 
 def _call_feature_finding_tool(cmd, timeout=90):
     """This calls the feature finding tool but also does proper cleanup by killing all child processes

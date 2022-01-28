@@ -341,6 +341,8 @@ def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column,
             from io import StringIO
             temp_data = StringIO(overlay_tabular_data)
             overlay_df = pd.read_csv(temp_data, sep=None)
+        else:
+            return pd.DataFrame()
 
     # Adding mz
     if len(overlay_mz) > 0 and overlay_mz in overlay_df:

@@ -72,7 +72,9 @@ from layout_misc import UPLOAD_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
 from layout_fastsearch import ADVANCED_LIBRARYSEARCH_MODAL, ADVANCED_LIBRARYSEARCHMASSIVEKB_MODAL
+from layout_massql import MASSSPEC_QUERY_PANEL
 from layout_sync import SYCHRONIZATION_MODAL
+
 
 
 server = Flask(__name__)
@@ -166,6 +168,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.53", href="/")),
                 dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.54", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
                 dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
@@ -361,6 +364,7 @@ DATASELECTION_CARD = [
                                             # {'label': 'TidyMS', 'value': 'TidyMS'},
                                             {'label': 'MZmine2 (Metabolomics)', 'value': 'MZmine2'},
                                             {'label': 'Dinosaur (Proteomics)', 'value': 'Dinosaur'},
+                                            {'label': 'MassQL Query', 'value': 'MassQL'},
                                         ],
                                         searchable=False,
                                         clearable=False,
@@ -1300,6 +1304,20 @@ BODY = dbc.Container(
             )
         ]),
 
+        # MassQL Query Panel
+        dbc.Row([
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(MASSSPEC_QUERY_PANEL),
+                    ]),
+                ],
+                id='massql-collapse',
+                is_open=False,
+                style={"width": "100%", "marginTop": 30}
+            )
+        ]),
+
 
 
         # Show Data
@@ -1704,6 +1722,9 @@ def draw_fastsearch_massivekb(usi, usi_select, ms2_identifier):
                 Output("feature_finding_min_peak_rt", "value"),
                 Output("feature_finding_max_peak_rt", "value"),
                 Output("feature_finding_rt_tolerance", "value"),
+
+                Output("massql_statement", "value"),
+
                 Output("sychronization_session_id", "value"),
 
                 Output("chromatogram_options", "value"),
@@ -1762,6 +1783,8 @@ def draw_fastsearch_massivekb(usi, usi_select, ms2_identifier):
                   State('feature_finding_min_peak_rt', 'value'),
                   State('feature_finding_max_peak_rt', 'value'),
                   State('feature_finding_rt_tolerance', 'value'),
+
+                  State("massql_statement", "value"),
                   
                   State('sychronization_session_id', 'value'),
 
@@ -1825,6 +1848,8 @@ def determine_url_only_parameters(  search,
                                     existing_feature_finding_max_peak_rt,
                                     existing_feature_finding_rt_tolerance,
 
+                                    existing_massql_statement,
+
                                     existing_sychronization_session_id,
 
                                     existing_chromatogram_options,
@@ -1839,7 +1864,7 @@ def determine_url_only_parameters(  search,
 
     # Here we clicked a button
     if "darkmode_button" in triggered_id:
-        output = [dash.no_update] * 36
+        output = [dash.no_update] * 37
         output[-1] = "plotly_dark"
         output[-3] = "Turbo"
         return output
@@ -1907,6 +1932,9 @@ def determine_url_only_parameters(  search,
     feature_finding_min_peak_rt = _get_param_from_url(search, "", "feature_finding_min_peak_rt", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_min_peak_rt, no_change_default=dash.no_update)
     feature_finding_max_peak_rt = _get_param_from_url(search, "", "feature_finding_max_peak_rt", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_max_peak_rt, no_change_default=dash.no_update)
     feature_finding_rt_tolerance = _get_param_from_url(search, "", "feature_finding_rt_tolerance", dash.no_update, session_dict=session_dict, old_value=existing_feature_finding_rt_tolerance, no_change_default=dash.no_update)
+
+    # MassQL
+    massql_statement = _get_param_from_url(search, "", "massql_statement", dash.no_update, session_dict=session_dict, old_value=existing_massql_statement, no_change_default=dash.no_update)
 
     # Sychronization
     default_session_id = str(uuid.uuid4()).replace("-", "")
@@ -1983,6 +2011,7 @@ def determine_url_only_parameters(  search,
             polarity_filtering2, 
             overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
             feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
+            massql_statement,
             sychronization_session_id,
             chromatogram_options, 
             comment,
@@ -2410,12 +2439,28 @@ def _perform_feature_finding(filename, feature_finding=None):
         while(1):
             if result.ready():
                 break
-            sleep(3)
+            sleep(1)
         features_list = result.get()
     else:
         features_list = tasks.task_featurefinding(filename, json.dumps(feature_finding))
 
     features_df = pd.DataFrame(features_list)
+    
+    # Forcing Types
+    if "rt" in features_df:
+        features_df["rt"] = features_df["rt"].astype(float)
+    else:
+        features_df["rt"] = 1.0
+    
+    if "mz" in features_df:
+        features_df["mz"] = features_df["mz"].astype(float)
+    else:
+        features_df["mz"] = 100.0
+
+    if "i" in features_df:
+        features_df["i"] = features_df["i"].astype(float)
+    else:
+        features_df["i"] = 0.0
 
     return features_df
 
@@ -2469,6 +2514,7 @@ def _integrate_feature_finding(filename, lcms_fig, map_selection=None, feature_f
 
             lcms_fig.add_trace(_intermediate_fig)
         except:
+            #raise #DEBUG
             pass
 
     return lcms_fig, features_df
@@ -3274,8 +3320,12 @@ def render_initial_file_load(usi, usi_select, usi2):
     status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
     if len(usi1_list) > 0:
         try:
+            # Resolving USI
             plot_usi = utils.determine_usi_to_use(usi, usi_select)
-            _resolve_usi(plot_usi)
+            remote_link, local_filename = _resolve_usi(plot_usi)
+
+            # Kicking off caching of data, asychronously
+            tasks.massql_cache(local_filename)
         except:
             status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
             return [status]
@@ -3286,6 +3336,9 @@ def render_initial_file_load(usi, usi_select, usi2):
         except:
             status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
             return [status]
+    
+    
+
 
     return [status]
 
@@ -3325,6 +3378,8 @@ def render_initial_file_load(usi, usi_select, usi2):
 
                 Input('feature_finding_type', 'value'),
                 Input('run_feature_finding_button', 'n_clicks'),
+                Input('run_massql_query_button', 'n_clicks'),
+
                 Input('image_export_format', 'value'),
                 Input("plot_theme", "value")
               ],
@@ -3334,20 +3389,23 @@ def render_initial_file_load(usi, usi_select, usi2):
                 State('feature_finding_min_peak_rt', 'value'),
                 State('feature_finding_max_peak_rt', 'value'),
                 State('feature_finding_rt_tolerance', 'value'),
+                State('massql_statement', 'value'),
               ])
 def draw_file(url_search, usi, usi_select,
                 map_plot_zoom, highlight_box_zoom, map_plot_quantization_level, map_plot_color_scale,
                 show_ms2_markers, ms2marker_color, ms2marker_size, polarity_filter, 
                 overlay_usi, overlay_mz, overlay_rt, overlay_size, overlay_color, overlay_hover, overlay_filter_column, overlay_filter_value, overlay_tabular_data,
                 feature_finding_type,
-                feature_finding_click,
+                run_feature_finding_button_click,
+                run_massql_query_button_click,
                 export_format,
                 plot_theme,
                 feature_finding_ppm,
                 feature_finding_noise,
                 feature_finding_min_peak_rt,
                 feature_finding_max_peak_rt, 
-                feature_finding_rt_tolerance):
+                feature_finding_rt_tolerance,
+                massql_statement):
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
@@ -3375,6 +3433,8 @@ def draw_file(url_search, usi, usi_select,
         feature_finding_params["params"]["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
         feature_finding_params["params"]["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
 
+        feature_finding_params["params"]["massql_statement"] = massql_statement
+
     current_map_selection = json.loads(map_plot_zoom)
     highlight_box = None
     try:
@@ -3400,6 +3460,7 @@ def draw_file(url_search, usi, usi_select,
     # Adding on Overlay Data
     map_fig = _integrate_overlay(overlay_usi, map_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=current_map_selection, overlay_tabular_data=overlay_tabular_data)
 
+    feature_finding_figures = []
     try:
         # Creating a table
         table_graph = dash_table.DataTable(
@@ -3412,6 +3473,21 @@ def draw_file(url_search, usi, usi_select,
             filter_action="native",
             export_format="csv"
         )
+
+        feature_finding_figures.append(table_graph)
+    except:
+        pass
+
+    # Creating a feature finding figure
+    try:
+        feature_finding_figures.append(html.Br())
+        feature_finding_figures.append(html.Br())
+        
+        scatter_plot_figure = px.scatter(features_df, x="rt", y="i", title="{} - RT vs Intensity".format(feature_finding_type))
+        feature_finding_figures.append(dcc.Graph(figure=scatter_plot_figure))
+
+        scatter_plot_figure = px.scatter(features_df, x="rt", y="mz", size="i", title="{} - RT vs m/z".format(feature_finding_type))
+        feature_finding_figures.append(dcc.Graph(figure=scatter_plot_figure))
     except:
         pass
 
@@ -3428,7 +3504,7 @@ def draw_file(url_search, usi, usi_select,
     # Writing output status
     status = html.H6([dbc.Badge("Ready", color="success", className="ml-1")])
 
-    return [map_fig, graph_config, remote_link, table_graph, status]
+    return [map_fig, graph_config, remote_link, feature_finding_figures, status]
 
 
 @app.callback([
@@ -3593,6 +3669,8 @@ def create_gnps_mzmine2_link(usi, usi2, feature_finding_type, feature_finding_pp
                 Input("feature_finding_max_peak_rt", "value"),
                 Input("feature_finding_rt_tolerance", "value"),
 
+                Input("massql_statement", "value"),
+
                 Input("sychronization_save_session_button", "n_clicks"),
                 Input("sychronization_set_type_button", "n_clicks"),
                 Input("sychronization_session_id", "value"),
@@ -3616,6 +3694,7 @@ def create_link(usi, usi_select, usi2, xic_mz, xic_formula, xic_peptide,
                 ms2_identifier, map_plot_zoom, polarity_filtering, polarity_filtering2, show_lcms_2nd_map, tic_option,
                 overlay_usi, overlay_mz, overlay_rt, overlay_color, overlay_size, overlay_hover, overlay_filter_column, overlay_filter_value,
                 feature_finding_type, feature_finding_ppm, feature_finding_noise, feature_finding_min_peak_rt, feature_finding_max_peak_rt, feature_finding_rt_tolerance,
+                massql_statement,
                 sychronization_save_session_button_clicks, sychronization_set_type_button_clicks, sychronization_session_id, synchronization_leader_token, 
                 chromatogram_options, 
                 comment,
@@ -3663,6 +3742,9 @@ def create_link(usi, usi_select, usi2, xic_mz, xic_formula, xic_peptide,
     url_params["feature_finding_min_peak_rt"] = feature_finding_min_peak_rt
     url_params["feature_finding_max_peak_rt"] = feature_finding_max_peak_rt
     url_params["feature_finding_rt_tolerance"] = feature_finding_rt_tolerance
+
+    # MassQL
+    url_params["massql_statement"] = massql_statement
 
     # Sychronization Options
     url_params["sychronization_session_id"] = sychronization_session_id
@@ -4397,6 +4479,14 @@ def toggle_collapse1(show_lcms_1st_map, is_open):
 def toggle_collapse_filters(show_filters):
     return [show_filters, show_filters]
 
+@app.callback(
+    [Output("massql-collapse", "is_open")],
+    [Input("feature_finding_type", "value")],
+)
+def toggle_collapse_massql(feature_finding_type):
+    if feature_finding_type == "MassQL":
+        return [True]
+    return [False]
 
 @app.callback(
     [Output("feature-finding-collapse", "is_open")],
