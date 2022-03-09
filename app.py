@@ -168,7 +168,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.55", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.56", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
                 dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
                 dbc.NavItem(id="dataset_files_nav"),
@@ -4249,7 +4249,7 @@ def get_file_summary(usi, usi2):
             # Skipping header
             if usi == "USI": 
                 continue
-            download_remote_link = download._resolve_usi_remotelink(usi)
+            download_remote_link, resource_name = download._resolve_usi_remotelink(usi)
 
             # Here we're going to convert massive downloads to a proxy
             if "ftp://massive.ucsd.edu" in download_remote_link:
