@@ -4249,7 +4249,7 @@ def get_file_summary(usi, usi2):
             # Skipping header
             if usi == "USI": 
                 continue
-            download_remote_link = download._resolve_usi_remotelink(usi)
+            download_remote_link, resource_name = download._resolve_usi_remotelink(usi)
 
             # Here we're going to convert massive downloads to a proxy
             if "ftp://massive.ucsd.edu" in download_remote_link:

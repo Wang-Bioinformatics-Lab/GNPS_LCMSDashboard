@@ -148,19 +148,27 @@ def _resolve_usi_remotelink(usi):
     """
 
     usi_splits = usi.split(":")
+
+    resource = ""
     
     if "MSV" in usi_splits[1]:
         remote_link = _resolve_msv_usi(usi, force_massive=True)
+        resource = "MASSIVEDATASET"
     elif "GNPS" in usi_splits[1]:
         remote_link = _resolve_gnps_usi(usi)
+        resource = "GNPSTASK"
     elif "MassIVE" in usi_splits[1]: # MassIVE Task data
         remote_link = _resolve_gnps_usi(usi)
+        resource = "MASSIVETASK"
     elif "MTBLS" in usi_splits[1]:
         remote_link = _resolve_mtbls_usi(usi)
+        resource = "METABOLIGHTS"
     elif "GPST" in usi_splits[1]:
         remote_link = _resolve_glycopost_usi(usi)
+        resource = "GLYCOPOST"
     elif "ST" in usi_splits[1]:
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
+        resource = "METABOLOMICSWORKBENCH"
     elif "PXD" in usi_splits[1]:
         # First lets try resolving it at MSV
         remote_link = ""
@@ -168,13 +176,15 @@ def _resolve_usi_remotelink(usi):
             remote_link = _resolve_msv_usi(usi)
         except:
             pass
+            
+        resource = "PROTEOMEXCHANGE"
         
         if len(remote_link) == 0:
             remote_link = _resolve_pxd_usi(usi)
     else:
         remote_link = ""
 
-    return remote_link
+    return remote_link, resource
 
 def _usi_to_ccms_path(usi):
     """
@@ -277,14 +287,19 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
 
         return "", converted_local_filename
 
-    remote_link = _resolve_usi_remotelink(usi)
+    remote_link, resource_name = _resolve_usi_remotelink(usi)
 
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
     filename, file_extension = os.path.splitext(local_filename)
 
     temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
-    wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
+    
+    if resource_name == "GLYCOPOST":
+        wget_cmd = "wget '{}' --referer '{}' -O {} --no-check-certificate 2> /dev/null".format(remote_link, remote_link, temp_filename)
+    else:
+        wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
+    print("ZZZZZZZZZZZZZ", wget_cmd, file=sys.stderr, flush=True)
     os.system(wget_cmd)
     os.rename(temp_filename, local_filename)
 

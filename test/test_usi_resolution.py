@@ -11,7 +11,7 @@ def test_resolve_remote_url():
     df = pd.read_csv("usi_list.tsv", sep='\t')
     for record in df.to_dict(orient="records"):
         print(record["usi"])
-        remote_link = download._resolve_usi_remotelink(record["usi"])
+        remote_link, resource_name = download._resolve_usi_remotelink(record["usi"])
         assert(len(remote_link) > 0)
 
 # Testing conversion
