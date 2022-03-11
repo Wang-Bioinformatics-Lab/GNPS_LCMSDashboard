@@ -475,13 +475,13 @@ def _convert_cdf_to_mzML(input_cdf, output_mzML):
 
     # getting scan boundaries
     scan_end_values = np.append(scan_values[1:]-1, mass_values.shape[0]-1)
-    scan_indcs = zip(scan_values, scan_end_values)
+    scan_indcs = list(zip(scan_values, scan_end_values))
 
     # Writing everything out
     with MzMLWriter(open(temp_filename, 'wb')) as out:
         out.controlled_vocabularies()
         with out.run(id="my_analysis"):
-            with out.spectrum_list(count=1000):
+            with out.spectrum_list(count=len(scan_indcs)):
                 # Iterating through all scans in the reader
                 try:
                     # reading through scans
