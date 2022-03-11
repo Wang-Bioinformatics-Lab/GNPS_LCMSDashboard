@@ -106,8 +106,12 @@ def _resolve_mtbls_usi(usi):
 
 def _resolve_glycopost_usi(usi):
     usi_splits = usi.split(':')
+    dataset_accession = usi_splits[1]
 
-    dataset_accession = usi_splits[1] + ".0"
+    # Making adding the revision if its not in the accession
+    if not "." in dataset_accession:
+        dataset_accession = dataset_accession + ".0"
+
     filename = usi_splits[2]
     remote_link = "https://glycopost.glycosmos.org/data/{}/{}".format(dataset_accession, urllib.parse.quote(filename))
 
