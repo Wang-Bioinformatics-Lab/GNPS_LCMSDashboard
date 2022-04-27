@@ -1693,7 +1693,6 @@ def draw_fastsearch_massivekb(usi, usi_select, ms2_identifier):
                 Output("xic_tolerance", "value"), 
                 Output("xic_ppm_tolerance", "value"), 
                 Output("xic_tolerance_unit", "value"), 
-                Output("xic_rt_window", "value"), 
                 Output("xic_norm", "value"), 
                 Output("xic_file_grouping", "value"),
                 Output("xic_integration_type", "value"),
@@ -1756,7 +1755,6 @@ def draw_fastsearch_massivekb(usi, usi_select, ms2_identifier):
                   State('xic_norm', 'value'),
                   State('xic_integration_type', 'value'),
                   State('xic_file_grouping', 'value'),
-                  State('xic_rt_window', 'value'),
 
                   State('show_ms2_markers', 'value'),
                   State("ms2marker_color", "value"),
@@ -1818,7 +1816,6 @@ def determine_url_only_parameters(  search,
                                     existing_xic_norm,
                                     existing_xic_integration_type,
                                     existing_xic_file_grouping,
-                                    existing_xic_rt_window,
 
                                     existing_show_ms2_markers,
                                     existing_ms2marker_color,
@@ -1902,7 +1899,6 @@ def determine_url_only_parameters(  search,
     xic_norm = _get_param_from_url(search, "", "xic_norm", dash.no_update, session_dict=session_dict, old_value=existing_xic_norm, no_change_default=dash.no_update)
     xic_integration_type = _get_param_from_url(search, "", "xic_integration_type", dash.no_update, session_dict=session_dict, old_value=existing_xic_integration_type, no_change_default=dash.no_update)
     xic_file_grouping = _get_param_from_url(search, "", "xic_file_grouping", dash.no_update, session_dict=session_dict, old_value=existing_xic_file_grouping, no_change_default=dash.no_update)
-    xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict, old_value=existing_xic_rt_window, no_change_default=dash.no_update)
 
     show_ms2_markers = _get_param_from_url(search, "", "show_ms2_markers", dash.no_update, session_dict=session_dict, old_value=existing_show_ms2_markers, no_change_default=dash.no_update)
     ms2marker_color = _get_param_from_url(search, "", "ms2marker_color", dash.no_update, session_dict=session_dict, old_value=existing_ms2marker_color, no_change_default=dash.no_update)
@@ -1997,7 +1993,6 @@ def determine_url_only_parameters(  search,
             xic_tolerance, 
             xic_ppm_tolerance, 
             xic_tolerance_unit, 
-            xic_rt_window, 
             xic_norm, 
             xic_file_grouping, 
             xic_integration_type, 
@@ -2265,7 +2260,10 @@ def update_usi_options(search, url_hash, usi, sychronization_load_session_button
 
 
 # Calculating which xic value to use
-@app.callback(Output('xic_mz', 'value'),
+@app.callback([
+                Output('xic_mz', 'value'),
+                Output('xic_rt_window', 'value'),
+              ],
               [
                 Input('url', 'search'),
                 Input('map-plot', 'clickData'),
@@ -2278,22 +2276,25 @@ def update_usi_options(search, url_hash, usi, sychronization_load_session_button
               ], 
               [
                   State('xic_mz', 'value'),
+                  State('xic_rt_window', 'value'),
                   State('sychronization_session_id', 'value'),
 
                   State('setting_json_area', 'value'),
               ])
-def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, xicmz_clear_button, xic_presets,
-                        existing_xic, sychronization_session_id, setting_json_area):
+def determine_xic_target(search, clickData, sychronization_load_session_button_clicks, sychronization_interval, 
+                        advanced_import_update_button, auto_import_parameters, xicmz_clear_button, xic_presets,
+                        existing_xic, existing_xic_rt_window, 
+                        sychronization_session_id, setting_json_area):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
     print("TRIGGERED XIC MZ", triggered_id, file=sys.stderr)
 
     # Clearing Button
     if "xicmz_clear_button" in triggered_id:
-        return ""
+        return ["", dash.no_update]
     
     if "xic_presets" in triggered_id:
-        return xic_presets
+        return [xic_presets, ""]
 
     try:
         if existing_xic is None:
@@ -2311,29 +2312,33 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
             # This is MS1
             if clicked_target["curveNumber"] == 0:
                 mz_target = clicked_target["y"]
+                rt_target = clicked_target["x"]
 
-                if len(existing_xic) > 0:
-                    return existing_xic + ";" + "{:.4f}".format(mz_target)
+                #if len(existing_xic) > 0:
+                    #return existing_xic + ";" + "{:.4f}".format(mz_target)
+                    
 
-                return "{:.4f}".format(mz_target)
+                return ["{:.4f}".format(mz_target), rt_target]
 
             # This is MS2
             elif clicked_target["curveNumber"] == 1:
                 mz_target = clicked_target["y"]
+                rt_target = clicked_target["x"]
 
-                if len(existing_xic) > 0:
-                    return existing_xic + ";" + "{:.4f}".format(mz_target)
+                #if len(existing_xic) > 0:
+                #    return existing_xic + ";" + "{:.4f}".format(mz_target)
 
-                return "{:.4f}".format(mz_target)
+                return ["{:.4f}".format(mz_target), rt_target]
             
             # This is Overlay/Feature Finding
             elif clicked_target["curveNumber"] == 2:
                 mz_target = clicked_target["y"]
+                rt_target = clicked_target["x"]
 
-                if len(existing_xic) > 0:
-                    return existing_xic + ";" + "{:.4f}".format(mz_target)
+                #if len(existing_xic) > 0:
+                    #return existing_xic + ";" + "{:.4f}".format(mz_target)
 
-                return "{:.4f}".format(mz_target)
+                return ["{:.4f}".format(mz_target), rt_target]
     except:
         pass
 
@@ -2360,7 +2365,9 @@ def determine_xic_target(search, clickData, sychronization_load_session_button_c
     xic_mz = _get_param_from_url(search, "", "xic_mz", dash.no_update, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
     xic_mz = _get_param_from_url(search, "", "xicmz", xic_mz, session_dict=session_dict, old_value=existing_xic, no_change_default=dash.no_update)
 
-    return xic_mz
+    xic_rt_window = _get_param_from_url(search, "", "xic_rt_window", dash.no_update, session_dict=session_dict, old_value=existing_xic_rt_window, no_change_default=dash.no_update)
+
+    return [xic_mz, xic_rt_window]
 
 
 @cache.memoize()
