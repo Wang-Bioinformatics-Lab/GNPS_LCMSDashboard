@@ -1,4 +1,4 @@
-name: loadtest
+name: Docker Build Test
 
 on:
   - push
