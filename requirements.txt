@@ -20,12 +20,11 @@ itsdangerous==1.1.0
 libarchive-c==2.8
 python-dateutil==2.8.1
 pytz==2019.3
-pymzml==2.4.7
-Pillow==8.3.2
-matplotlib==3.4.1
+Pillow>=9.0.1
 Flask-Caching==1.10.1
 scipy
 pyteomics
+pymzml==2.4.7
 psims
 molmass
 netcdf4
