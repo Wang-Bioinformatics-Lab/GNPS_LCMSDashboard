@@ -1,6 +1,4 @@
-from utils import _get_scan_polarity, _spectrum_generator
 import pymzml
-from utils import MS_precisions
 import pandas as pd
 from collections import defaultdict
 import numpy as np
@@ -9,6 +7,9 @@ import os
 import shutil
 import glob
 import logging
+
+from utils import _get_scan_polarity, _spectrum_generator
+from utils import MS_precisions
 
 def _calculate_upper_lower_tolerance(target_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit):
     if xic_tolerance_unit == "Da":

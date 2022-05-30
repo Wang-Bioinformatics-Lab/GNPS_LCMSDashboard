@@ -1,9 +1,10 @@
 import sys
-sys.path.insert(0, "..")
-import xic
-import pandas as pd
-import download
 import os
+sys.path.insert(0, "..")
+import pandas as pd
+
+import xic
+import download
 import lcms_map
 
 # Testing remote link calculation

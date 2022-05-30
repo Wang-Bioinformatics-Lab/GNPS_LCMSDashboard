@@ -28,7 +28,6 @@ jobs:
         conda install -c conda-forge datashader=0.12.1
         conda install -c conda-forge openjdk=11.0.9.1
         pip install -r requirements.txt
-        pip install pytest pytest-xdist
         sudo apt-get install -y wget
         sudo apt-get install -y build-essential
     - name: Test with pytest
@@ -36,5 +35,6 @@ jobs:
         export PATH="$HOME/miniconda/bin:$PATH"
         source ~/.bashrc
         pip install pytest
+        pip install pytest pytest-xdist
         cd test && make resolve
         #cd test	&& pytest -v -n 4
