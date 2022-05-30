@@ -1,4 +1,4 @@
-Flask
+Flask>2.0.0
 flask_limiter
 gunicorn
 plotly
