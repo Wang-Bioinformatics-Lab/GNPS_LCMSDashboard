@@ -34,6 +34,6 @@ joblib
 beautifulsoup4
 qrcode
 pyarrow
-celery==5.0.5
+celery==5.2.2
 celery_once==3.0.1
 massql==0.0.12
