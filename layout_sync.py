@@ -1,5 +1,5 @@
 import dash
-import dash_core_components as dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_table
@@ -20,7 +20,7 @@ SYCHRONIZATION_MODAL = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("Session ID", addon_type="prepend"),
+                                    dbc.InputGroupText("Session ID"),
                                     dbc.Input(id='sychronization_session_id', placeholder="Enter Session ID", value=""),
                                 ],
                                 className="mb-3",
@@ -30,10 +30,10 @@ SYCHRONIZATION_MODAL = [
                 ),
                 dbc.Row([
                         dbc.Col(
-                            dbc.Button("Save Session", block=True, id="sychronization_save_session_button"),
+                            dbc.Button("Save Session", id="sychronization_save_session_button"),
                         ),
                         dbc.Col(
-                            dbc.Button("Load Session", block=True, id="sychronization_load_session_button"),
+                            dbc.Button("Load Session", id="sychronization_load_session_button"),
                         ),
                     ]
                 ),
@@ -58,23 +58,23 @@ SYCHRONIZATION_MODAL = [
                         ),
                     ),
                     dbc.Col(
-                        dbc.Button("Set Synchronization", block=True, id="sychronization_set_type_button"),
+                        dbc.Button("Set Synchronization", id="sychronization_set_type_button"),
                     )
                 ]),
                 html.Hr(),
                 dbc.InputGroup(
                     [
-                        dbc.InputGroupAddon("Leader Session Token", addon_type="prepend"),
+                        dbc.InputGroupText("Leader Session Token"),
                         dbc.Input(id='synchronization_leader_token', placeholder="Enter Token", value=""),
                     ],
                     className="mb-3",
                 ),
                 dbc.Row([
                         dbc.Col(
-                            dbc.Button("Get New Token", block=True, id="synchronization_leader_newtoken_button"),
+                            dbc.Button("Get New Token", id="synchronization_leader_newtoken_button"),
                         ),
                         dbc.Col(
-                            dbc.Button("Check Token", block=True, id="synchronization_leader_checktoken_button"),
+                            dbc.Button("Check Token", id="synchronization_leader_checktoken_button"),
                         ),
                     ]
                 ),
@@ -84,13 +84,13 @@ SYCHRONIZATION_MODAL = [
                 html.Br(),
                 dbc.Row([
                     dbc.Col(
-                        dbc.Button("Copy Follower URL", block=True, color="primary", className="mr-1", id="copy_follower_link_button")
+                        dbc.Button("Copy Follower URL", color="primary", className="mr-1", id="copy_follower_link_button")
                     ),
                     dbc.Col(
-                        dbc.Button("Copy Leader URL", block=True, color="primary", className="mr-1", id="copy_leader_link_button")
+                        dbc.Button("Copy Leader URL", color="primary", className="mr-1", id="copy_leader_link_button")
                     ),
                     dbc.Col(
-                        dbc.Button("Copy Collab URL", block=True, color="primary", className="mr-1", id="copy_collab_link_button")
+                        dbc.Button("Copy Collab URL", color="primary", className="mr-1", id="copy_collab_link_button")
                     ),
                 ]),
                 # Links to be generated

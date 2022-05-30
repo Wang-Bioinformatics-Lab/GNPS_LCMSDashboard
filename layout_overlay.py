@@ -1,7 +1,7 @@
 # Dash imports
 
 import dash
-import dash_core_components as dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_table
@@ -20,7 +20,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay UDI", addon_type="prepend"),
+                            dbc.InputGroupText("Overlay UDI"),
                             dbc.Input(id='overlay_usi', placeholder="Enter Overlay File UDI for GNPS"),
                         ],
                         className="mb-3",
@@ -31,7 +31,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay m/z", addon_type="prepend", style={"margin-right":"20px"}),
+                            dbc.InputGroupText("Overlay m/z", style={"margin-right":"20px"}),
                             #dbc.Input(id='overlay_mz', placeholder="Enter Overlay mz column", value="row m/z"),
                             dcc.Dropdown(
                                 id='overlay_mz',
@@ -52,7 +52,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay RT", addon_type="prepend", style={"margin-right":"20px"}),
+                            dbc.InputGroupText("Overlay RT", style={"margin-right":"20px"}),
                             #dbc.Input(id='overlay_rt', placeholder="Enter Overlay rt column", value="row retention time"),
                             dcc.Dropdown(
                                 id='overlay_rt',
@@ -75,7 +75,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay color", addon_type="prepend", style={"margin-right":"20px"}),
+                            dbc.InputGroupText("Overlay color", style={"margin-right":"20px"}),
                             #dbc.Input(id='overlay_color', placeholder="Enter Overlay color column", value=""),
                             dcc.Dropdown(
                                 id='overlay_color',
@@ -96,7 +96,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay size", addon_type="prepend", style={"margin-right":"20px"}),
+                            dbc.InputGroupText("Overlay size", style={"margin-right":"20px"}),
                             #dbc.Input(id='overlay_size', placeholder="Enter Overlay size column", value=""),
                             dcc.Dropdown(
                                 id='overlay_size',
@@ -119,7 +119,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay Label Column", addon_type="prepend", style={"margin-right":"20px"}),
+                            dbc.InputGroupText("Overlay Label Column", style={"margin-right":"20px"}),
                             dcc.Dropdown(
                                 id='overlay_hover',
                                 options=[
@@ -141,7 +141,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay Filter Column", addon_type="prepend"),
+                            dbc.InputGroupText("Overlay Filter Column"),
                             dbc.Input(id='overlay_filter_column', placeholder="Enter Overlay filter column", value=""),
                         ],
                         className="mb-3",
@@ -150,7 +150,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay Filter Value", addon_type="prepend"),
+                            dbc.InputGroupText("Overlay Filter Value"),
                             dbc.Input(id='overlay_filter_value', placeholder="Enter Overlay size column", value=""),
                         ],
                         className="mb-3",
@@ -161,7 +161,7 @@ OVERLAY_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Overlay Raw Tabular Data (if no UDI)", addon_type="prepend"),
+                            dbc.InputGroupText("Overlay Raw Tabular Data (if no UDI)"),
                             dbc.Textarea(id='overlay_tabular_data', placeholder="Enter Overlay tabular data", rows="20", value=""),
                         ],
                         className="mb-3",

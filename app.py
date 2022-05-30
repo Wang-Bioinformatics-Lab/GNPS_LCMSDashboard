@@ -3,10 +3,10 @@
 # Dash imports
 
 import dash
-import dash_core_components as dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
-import dash_table
+from dash import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
 import dash_uploader as du
@@ -218,14 +218,14 @@ DATASELECTION_CARD = [
                     html.Hr(),
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
+                            dbc.InputGroupText("GNPS USI"),
                             dbc.Textarea(id='usi', placeholder="Enter GNPS File USI"),
                         ],
                         className="mb-3",
                     ),
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("USI View Selection", addon_type="prepend"),
+                            dbc.InputGroupText("USI View Selection"),
                             dbc.Select(
                                 id="usi_select",
                                 options=[],
@@ -236,7 +236,7 @@ DATASELECTION_CARD = [
                     ),
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
+                            dbc.InputGroupText("GNPS USI2"),
                             dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
                         ],
                         className="mb-3",
@@ -244,10 +244,10 @@ DATASELECTION_CARD = [
                     # Linkouts
                     dbc.Row([
                         dbc.Col(
-                            dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0, size="sm"),
+                            dbc.Button("Copy URL Link to this Visualization", color="info", id="copy_link_button", n_clicks=0, size="sm"),
                         ),
                         dbc.Col(
-                            dbc.Button("Copy Short Temporary URL", block=True, color="info", id="copy_shortlink_button", n_clicks=0, size="sm"),
+                            dbc.Button("Copy Short Temporary URL", color="info", id="copy_shortlink_button", n_clicks=0, size="sm"),
                         ),
                     ]),
                     html.Br(),
@@ -262,7 +262,7 @@ DATASELECTION_CARD = [
                     ]),
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Comment", addon_type="prepend"),
+                            dbc.InputGroupText("Comment"),
                             dbc.Textarea(id='comment', value=""),
                         ],
                         className="mb-3",
@@ -271,7 +271,7 @@ DATASELECTION_CARD = [
                     html.Hr(),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                                     dbc.Col(
@@ -286,13 +286,12 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                     ]),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"160px", "margin-left": "25px"}),
                                     dbc.Col(
@@ -307,11 +306,10 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"160px"}),
                                     dbc.Col(
@@ -326,13 +324,12 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                     ]),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show Filters", html_for="show_filters", width=5.8, style={"width":"160px", "margin-left": "25px"}),
                                     dbc.Col(
@@ -347,11 +344,10 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Feature Finding", width=4.8, style={"width":"140px"}),
                                     dcc.Dropdown(
@@ -373,14 +369,13 @@ DATASELECTION_CARD = [
                                         }
                                     )
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                         )),
                     ]),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show Overlay", html_for="show_overlay", width=5.8, style={"width":"160px", "margin-left": "25px"}),
                                     dbc.Col(
@@ -395,7 +390,6 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                         dbc.Col(),
@@ -470,7 +464,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC m/z"),
                                     dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC", value=""),
                                 ],
                                 className="mb-3",
@@ -479,7 +473,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Formula"),
                                     dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC", value=""),
                                 ],
                                 className="mb-3",
@@ -490,7 +484,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Tolerance (Da)", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Tolerance (Da)"),
                                     dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
                                 ],
                                 className="mb-3",
@@ -499,14 +493,14 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Tolerance (ppm)", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Tolerance (ppm)"),
                                     dbc.Input(id='xic_ppm_tolerance', placeholder="Enter Da Tolerance", value="10"),
                                 ],
                                 className="mb-3",
                             ),
                         ),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("XIC Tolerance Unit", width=4.8, style={"width":"150px"}),
                                     dcc.Dropdown(
@@ -523,7 +517,6 @@ DATASELECTION_CARD = [
                                         }
                                     )  
                                 ],
-                                row=True,
                                 className="mb-3",
                         )),
                     ]),
@@ -531,7 +524,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Retention Time View/Integration Limits", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Retention Time View/Integration Limits"),
                                     dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2 or 1.5)", value=""),
                                 ],
                                 className="mb-3",
@@ -540,7 +533,7 @@ DATASELECTION_CARD = [
                     ]),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("XIC Integration", width=4.8, style={"width":"120px"}),
                                     dcc.Dropdown(
@@ -558,12 +551,11 @@ DATASELECTION_CARD = [
                                         }
                                     )  
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                         )),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
                                     dbc.Col(
@@ -578,12 +570,11 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                             )),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("XIC Grouping", width=4.8, style={"width":"120px"}),
                                     dcc.Dropdown(
@@ -601,7 +592,6 @@ DATASELECTION_CARD = [
                                         }
                                     )  
                                 ],
-                                row=True,
                                 className="mb-3",
                         )),
                     ]),
@@ -610,7 +600,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
+                                    dbc.InputGroupText("MS2 Identifier"),
                                     dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
                                 ],
                                 className="mb-3",
@@ -620,7 +610,7 @@ DATASELECTION_CARD = [
                     html.H5(children='TIC Options'),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
                                     dcc.Dropdown(
@@ -637,13 +627,12 @@ DATASELECTION_CARD = [
                                         }
                                     )
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                             )
                         ),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show Multiple TICs", width=4.8, style={"width":"150px"}),
                                     dbc.Col(
@@ -658,7 +647,6 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                             ),
@@ -697,7 +685,7 @@ DATASELECTION_CARD = [
                             )  
                         ),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Style", width=2, style={"width":"150px"}),
                                     dcc.Dropdown(
@@ -719,42 +707,41 @@ DATASELECTION_CARD = [
                                         }
                                     )  
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                     ]),
                     html.H5(children='Advanced Panels'),
                     dbc.Row([
                         dbc.Col(
-                            dbc.Button("Visualization Options", block=True, id="advanced_visualization_modal_button"),
+                            dbc.Button("Visualization Options", id="advanced_visualization_modal_button"),
                         ),
                         dbc.Col(
-                            dbc.Button("Import Options", block=True, id="advanced_import_modal_button"),
+                            dbc.Button("Import Options", id="advanced_import_modal_button"),
                         ),
                         dbc.Col(
-                            dbc.Button("Replay Options", block=True, id="advanced_replay_modal_button"),
+                            dbc.Button("Replay Options", id="advanced_replay_modal_button"),
                         )
                     ]),
                     html.Br(),
                     dbc.Row([
                         dbc.Col(
-                            dbc.Button("Sync Options", block=True, color="info", id="sychronization_options_modal_button"),
+                            dbc.Button("Sync Options", color="info", id="sychronization_options_modal_button"),
                         ),
                         dbc.Col([
-                            dbc.Button("Sync Initiate (Follower)", block=True, color="success", id="synchronization_begin_button"),
+                            dbc.Button("Sync Initiate (Follower)", color="success", id="synchronization_begin_button"),
                             html.Div(id="synchronization_status")
                         ]),
                         dbc.Col(
-                            dbc.Button("Sync Terminate (Follower)", block=True, color="danger", id="synchronization_stop_button"),
+                            dbc.Button("Sync Terminate (Follower)", color="danger", id="synchronization_stop_button"),
                         ),
                     ]),
                     html.Br(),
                     dbc.Row([
                         dbc.Col(
-                            dbc.Button("Replay Advance", block=True, id="replay_forward_button"),
+                            dbc.Button("Replay Advance", id="replay_forward_button"),
                         ),
                         dbc.Col(
-                            dbc.Button("Replay Rewind", block=True, id="replay_backward_button"),
+                            dbc.Button("Replay Rewind", id="replay_backward_button"),
                         ),
                         dbc.Col(),
                     ])
@@ -815,10 +802,10 @@ DATASLICE_CARD = [
             ),
 
             dbc.ButtonGroup([
-                dbc.Button("MS Details", block=False, id="spectrum_details_modal_button"),
-                dbc.Button("View Metabolomics USI", block=False, id="advanced_usi_modal_button"),
-                dbc.Button("GNPS Library", block=False, id="advanced_librarysearch_modal_button"),
-                dbc.Button("MassIVE-KB Library", block=False, id="advanced_librarysearchmassivekb_modal_button"),
+                dbc.Button("MS Details", id="spectrum_details_modal_button"),
+                dbc.Button("View Metabolomics USI", id="advanced_usi_modal_button"),
+                dbc.Button("GNPS Library", id="advanced_librarysearch_modal_button"),
+                dbc.Button("MassIVE-KB Library", id="advanced_librarysearchmassivekb_modal_button"),
             ]),
 
             html.Br(),
@@ -847,7 +834,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Precursor PPM Tolerance", addon_type="prepend"),
+                            dbc.InputGroupText("Precursor PPM Tolerance"),
                             dbc.Input(id='feature_finding_ppm', placeholder="PPM tolerance for feature finding", value=10),
                         ],
                         className="mb-3",
@@ -856,7 +843,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("MS1 Noise Level", addon_type="prepend"),
+                            dbc.InputGroupText("MS1 Noise Level"),
                             dbc.Input(id='feature_finding_noise', placeholder="Noise for feature finding", value=10000),
                         ],
                         className="mb-3",
@@ -868,7 +855,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Min Peak Width (Minutes)", addon_type="prepend"),
+                            dbc.InputGroupText("Min Peak Width (Minutes)"),
                             dbc.Input(id='feature_finding_min_peak_rt', placeholder="RT Min for feature finding", value=0.05),
                         ],
                         className="mb-3",
@@ -877,7 +864,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Max Peak Width (Minutes)", addon_type="prepend"),
+                            dbc.InputGroupText("Max Peak Width (Minutes)"),
                             dbc.Input(id='feature_finding_max_peak_rt', placeholder="RT Max for feature finding", value=1.5),
                         ],
                         className="mb-3",
@@ -889,7 +876,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("RT Tolerance (Minutes)", addon_type="prepend"),
+                            dbc.InputGroupText("RT Tolerance (Minutes)"),
                             dbc.Input(id='feature_finding_rt_tolerance', placeholder="RT Tolerance for Isotopic peaks", value=0.3),
                         ],
                         className="mb-3",
@@ -901,7 +888,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.Button("Update Feature Finding Interactively", color="primary", className="mr-1", id="run_feature_finding_button", block=True),
+                            dbc.Button("Update Feature Finding Interactively", color="primary", className="mr-1", id="run_feature_finding_button"),
                         ],
                         className="mb-3",
                     )
@@ -927,7 +914,7 @@ USI1_FILTERING_PANEL = [
         [   
             dbc.Row([
                 dbc.Col(
-                    dbc.FormGroup(
+                    dbc.Row(
                         [
                             dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                             dcc.Dropdown(
@@ -945,7 +932,6 @@ USI1_FILTERING_PANEL = [
                                 }
                             )
                         ],
-                        row=True,
                         className="mb-3",
                     )),
                 dbc.Col(
@@ -961,7 +947,7 @@ USI2_FILTERING_PANEL = [
         [   
             dbc.Row([
                 dbc.Col(
-                    dbc.FormGroup(
+                    dbc.Row(
                         [
                             dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                             dcc.Dropdown(
@@ -979,7 +965,6 @@ USI2_FILTERING_PANEL = [
                                 }
                             )
                         ],
-                        row=True,
                         className="mb-3",
                     )),
                 dbc.Col(
@@ -1591,16 +1576,16 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
         masst_dict["spectrum_string"] = "\n".join(["{}\t{}".format(peak[0], peak[1]) for peak in peaks])
 
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
-        masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
+        masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1"), href=masst_url, target="_blank")
 
-        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1"), href=usi_url, target="_blank")
 
         button_elements = [masst_button]
 
     if "MS1" in ms2_identifier:
         spectrum_type = "MS1"
 
-        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1"), href=usi_url, target="_blank")
 
         button_elements = []
 
@@ -4219,7 +4204,7 @@ def create_networking_link(usi, usi2):
         gnps_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
         gnps_url = gnps_url + urllib.parse.quote(json.dumps(parameters))
 
-        url_provenance = dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), block=True, color="secondary", className="mr-1", size="sm")
+        url_provenance = dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), color="secondary", className="mr-1", size="sm")
         provenance_link_object = dcc.Link(url_provenance, href=gnps_url, target="_blank")
 
         return [provenance_link_object, html.Br()]

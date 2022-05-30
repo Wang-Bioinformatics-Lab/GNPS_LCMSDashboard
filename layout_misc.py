@@ -1,7 +1,7 @@
 # Dash imports
 
 import dash
-import dash_core_components as dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_table
@@ -20,7 +20,7 @@ EXAMPLE_DASHBOARD = [
             html.H5("Basic Examples - LC/MS Metabolomics"),
             html.Hr(),
 
-            html.A("LCMS Multiple m/z XIC for QC Files", href='/?xic_mz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=No&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=None&overlay_mz=row+m%2Fz&overlay_rt=row+retention+time&overlay_color=&overlay_size=&overlay_hover=&overlay_filter_column=&overlay_filter_value=&feature_finding_type=Off&feature_finding_ppm=10&feature_finding_noise=10000&feature_finding_min_peak_rt=0.05&feature_finding_max_peak_rt=1.5&feature_finding_rt_tolerance=0.3&sychronization_session_id=fc02496b0307452d928ba8231c6886d6&chromatogram_options=%5B%5D&comment=&map_plot_color_scale=Hot_r&map_plot_quantization_level=Medium#%7B"usi"%3A%20"mzspec%3AMSV000085852%3AQC_0"%2C%20"usi2"%3A%20""%7D'),
+            html.A("LCMS Multiple m/z XIC for QC Files", style={"text-decoration": "none"}, href='/?xic_mz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_formula=&xic_peptide=&xic_tolerance=0.5&xic_ppm_tolerance=10&xic_tolerance_unit=Da&xic_rt_window=&xic_norm=No&xic_file_grouping=FILE&xic_integration_type=AUC&show_ms2_markers=True&ms2_identifier=None&show_lcms_2nd_map=False&map_plot_zoom=%7B%7D&polarity_filtering=None&polarity_filtering2=None&tic_option=TIC&overlay_usi=None&overlay_mz=row+m%2Fz&overlay_rt=row+retention+time&overlay_color=&overlay_size=&overlay_hover=&overlay_filter_column=&overlay_filter_value=&feature_finding_type=Off&feature_finding_ppm=10&feature_finding_noise=10000&feature_finding_min_peak_rt=0.05&feature_finding_max_peak_rt=1.5&feature_finding_rt_tolerance=0.3&sychronization_session_id=fc02496b0307452d928ba8231c6886d6&chromatogram_options=%5B%5D&comment=&map_plot_color_scale=Hot_r&map_plot_quantization_level=Medium#%7B"usi"%3A%20"mzspec%3AMSV000085852%3AQC_0"%2C%20"usi2"%3A%20""%7D'),
             html.Br(),
             html.A("LCMS Side By Side Visualization", href='/?usi=mzspec%3AMSV000085852%3AQC_0&usi2=mzspec%3AMSV000085852%3AQC_1&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381%3B833.062397505189&xic_tolerance=0.5&xic_rt_window=&xic_norm=False&xic_file_grouping=FILE&show_ms2_markers=True&ms2_identifier=MS2%3A2277&show_lcms_2nd_map=True&map_plot_zoom=%7B"xaxis.range%5B0%5D"%3A+3.2846848333333334%2C+"xaxis.range%5B1%5D"%3A+3.5981121270270275%2C+"yaxis.range%5B0%5D"%3A+815.4334319736646%2C+"yaxis.range%5B1%5D"%3A+853.5983309206755%7D'),
             html.Br(),
@@ -168,7 +168,7 @@ ADVANCED_VISUALIZATION_MODAL = [
                 dbc.Row(
                     [
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Heatmap Color", width=4.8, style={"width":"150px"}),
                                     dcc.Dropdown(
@@ -201,7 +201,6 @@ ADVANCED_VISUALIZATION_MODAL = [
                                         }
                                     )
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                         )),
@@ -212,7 +211,7 @@ ADVANCED_VISUALIZATION_MODAL = [
 
                 dbc.Row([
                     dbc.Col(
-                        dbc.FormGroup(
+                        dbc.Row(
                             [
                                 dbc.Label("LCMS Quantization Map Level", width=4.8, style={"width":"250px"}),
                                 dcc.Dropdown(
@@ -230,7 +229,6 @@ ADVANCED_VISUALIZATION_MODAL = [
                                     }
                                 )  
                             ],
-                            row=True,
                             className="mb-3",
                             style={"margin-left": "4px"}
                     )),
@@ -240,7 +238,7 @@ ADVANCED_VISUALIZATION_MODAL = [
                     dbc.Col(
                         dbc.InputGroup(
                             [
-                                dbc.InputGroupAddon("RT Range", addon_type="prepend"),
+                                dbc.InputGroupText("RT Range"),
                                 dbc.Input(id='map_plot_rt_min', placeholder="Enter Min RT", value=""),
                                 dbc.Input(id='map_plot_rt_max', placeholder="Enter Max RT", value=""),
                             ],
@@ -252,7 +250,7 @@ ADVANCED_VISUALIZATION_MODAL = [
                     dbc.Col(
                         dbc.InputGroup(
                             [
-                                dbc.InputGroupAddon("m/z Range", addon_type="prepend"),
+                                dbc.InputGroupText("m/z Range"),
                                 dbc.Input(id='map_plot_mz_min', placeholder="Enter Min m/z", value=""),
                                 dbc.Input(id='map_plot_mz_max', placeholder="Enter Max m/z", value=""),
                             ],
@@ -260,13 +258,13 @@ ADVANCED_VISUALIZATION_MODAL = [
                             style={"margin-left": "4px"}
                     )),
                 ]),
-                dbc.Button("Update Map Plot Ranges", block=True, id="map_plot_update_range_button"),
+                dbc.Button("Update Map Plot Ranges", id="map_plot_update_range_button"),
                 html.Br(),
                 html.Hr(),
                 html.H5("MS2 Markers"),
                 dbc.Row([
                     dbc.Col(
-                        dbc.FormGroup(
+                        dbc.Row(
                             [
                                 dbc.Label("MS2 Marker Color", width=4.8, style={"width":"250px"}),
                                 dcc.Dropdown(
@@ -284,14 +282,13 @@ ADVANCED_VISUALIZATION_MODAL = [
                                     }
                                 )  
                             ],
-                            row=True,
                             className="mb-3",
                             style={"margin-left": "4px"}
                     )),
                 ]),
                 dbc.Row([
                     dbc.Col(
-                        dbc.FormGroup(
+                        dbc.Row(
                             [
                                 dbc.Label("MS2 Marker Size", width=4.8, style={"width":"250px"}),
                                 dcc.Dropdown(
@@ -309,7 +306,6 @@ ADVANCED_VISUALIZATION_MODAL = [
                                     }
                                 )  
                             ],
-                            row=True,
                             className="mb-3",
                             style={"margin-left": "4px"}
                     )),
@@ -353,10 +349,10 @@ ADVANCED_IMPORT_MODAL = [
                             multiple=False
                         ),
                         html.Br(),
-                        dbc.Button("Import These JSON Settings", block=True, id="advanced_import_update_button"),
+                        dbc.Button("Import These JSON Settings", id="advanced_import_update_button"),
                         html.Br(),
                         html.A(
-                            dbc.Button("Download Settings as File", block=True),
+                            dbc.Button("Download Settings as File"),
                             id="advanced_import_download_button",
                             target="_blank",
                             href="/settingsdownload"
@@ -367,7 +363,7 @@ ADVANCED_IMPORT_MODAL = [
                         dbc.Textarea(id="setting_json_area_history", className="mb-3", placeholder="JSON History Settings", rows="20"),
                         html.Br(),
                         html.A(
-                            dbc.Button("Link to Analysis History Replay", block=True),
+                            dbc.Button("Link to Analysis History Replay"),
                             id="advanced_import_history_link",
                             target="_blank",
                             href="/"
@@ -399,7 +395,7 @@ ADVANCED_REPLAY_MODAL = [
                         html.H5("Next Replay JSON"),
                         dbc.Textarea(id="replay_json_area", className="mb-3", placeholder="Replay JSON Settings", rows="20"),
                         html.A(
-                            dbc.Button("Link to this Replay", block=True),
+                            dbc.Button("Link to this Replay"),
                             id="advanced_import_replay_link",
                             target="_blank",
                             href="/"
