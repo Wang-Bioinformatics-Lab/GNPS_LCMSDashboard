@@ -3132,7 +3132,7 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
                 agg.values = np.clip(agg.values, min_value, 10000000000000000)
                 #agg.values = np.log10(agg.values)
 
-                xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Log10(abundance)'}, height=200 + 25 * len(all_usi_list), template=plot_theme, title='XIC Heatmap - {} m/z'.format(xic_target),
+                xic_heatmap_fig = px.imshow(agg, origin='lower', y=all_usi_list, labels={'color':'Abundance'}, height=200 + 25 * len(all_usi_list), template=plot_theme, title='XIC Heatmap - {} m/z'.format(xic_target),
                                             color_continuous_scale=map_plot_color_scale)
                 xic_heatmap_graph_list.append(dcc.Graph(figure=xic_heatmap_fig, config=graph_config))
             except:
