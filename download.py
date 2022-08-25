@@ -64,7 +64,8 @@ def _usi_to_local_filename(usi):
 
     # Cleaning it up
     if len(converted_local_filename) > 250:
-        converted_local_filename = "convertedfile_" + str(uuid.uuid4()) + "_" + converted_local_filename[-150:]
+        m = hashlib.sha256()
+        converted_local_filename = "convertedfile_" + str(hash(converted_local_filename)) + "_" + converted_local_filename[-150:]
 
     return converted_local_filename
 
