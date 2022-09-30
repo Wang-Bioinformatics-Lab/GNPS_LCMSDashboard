@@ -46,7 +46,7 @@ molmass==2020.6.10
 netcdf4==1.5.4
 xmltodict==0.12.0
 redis==3.5.3
-joblib==1.0.1
+joblib==1.2.0
 beautifulsoup4==4.9.1
 qrcode==6.1
 flask_limiter==1.4
