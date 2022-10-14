@@ -11,7 +11,6 @@ from dash.dependencies import Input, Output, State
 import dash_daq as daq
 import dash_uploader as du
 
-
 # Plotly Imports
 import plotly.express as px
 import plotly.graph_objects as go 
@@ -397,51 +396,53 @@ DATASELECTION_CARD = [
                     html.H5(children='Loading Status'),
                     html.Hr(),
                     dbc.Table([
-                        html.Tr([html.Td("File Download/Conversion"), 
-                                 html.Td(dcc.Loading(
-                                        id="loading_file_download",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 ),
-                                 html.Td("XIC Drawing"), 
-                                 html.Td(
-                                     dcc.Loading(
-                                        id="loading_xic_plot",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 )]),
-                        html.Tr([html.Td("Heatmap Drawing Left"), 
-                                 html.Td(dcc.Loading(
-                                        id="loading_map_plot",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 ),
-                                 html.Td("Heatmap Drawing Right"), 
-                                 html.Td(
-                                     dcc.Loading(
-                                        id="loading_map_plot2",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 )]),
-                        html.Tr([html.Td("TIC Drawing Left"), 
-                                 html.Td(dcc.Loading(
-                                        id="loading_tic_plot",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 ),
-                                 html.Td("TIC Drawing Right"), 
-                                 html.Td(
-                                     dcc.Loading(
-                                        id="loading_tic_plot2",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 )])
+                        html.Tbody([
+                            html.Tr([html.Td("File Download/Conversion"), 
+                                    html.Td(dcc.Loading(
+                                            id="loading_file_download",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    ),
+                                    html.Td("XIC Drawing"), 
+                                    html.Td(
+                                        dcc.Loading(
+                                            id="loading_xic_plot",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    )]),
+                            html.Tr([html.Td("Heatmap Drawing Left"), 
+                                    html.Td(dcc.Loading(
+                                            id="loading_map_plot",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    ),
+                                    html.Td("Heatmap Drawing Right"), 
+                                    html.Td(
+                                        dcc.Loading(
+                                            id="loading_map_plot2",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    )]),
+                            html.Tr([html.Td("TIC Drawing Left"), 
+                                    html.Td(dcc.Loading(
+                                            id="loading_tic_plot",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    ),
+                                    html.Td("TIC Drawing Right"), 
+                                    html.Td(
+                                        dcc.Loading(
+                                            id="loading_tic_plot2",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    )])
+                        ])
                     ], bordered=True, size="sm")
                 ], className="col-sm"),
                 ## Right Panel
@@ -1845,7 +1846,7 @@ def determine_url_only_parameters(  search,
 
     # Here we clicked a button
     if "darkmode_button" in triggered_id:
-        output = [dash.no_update] * 37
+        output = [dash.no_update] * 36
         output[-1] = "plotly_dark"
         output[-3] = "Turbo"
         return output
