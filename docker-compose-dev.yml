@@ -8,7 +8,8 @@ services:
       LETSENCRYPT_HOST: mingwangbeta.ucsd.edu
       LETSENCRYPT_EMAIL: miw023@ucsd.edu
 
+
+
 networks:
   nginx-net:
-    external:
-      name: nginx-net
+    external: true

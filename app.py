@@ -243,10 +243,10 @@ DATASELECTION_CARD = [
                     # Linkouts
                     dbc.Row([
                         dbc.Col(
-                            dbc.Button("Copy URL Link to this Visualization", color="info", id="copy_link_button", n_clicks=0, size="sm"),
+                            html.Div([dbc.Button("Copy URL Link to this Visualization", color="info", id="copy_link_button", n_clicks=0, size="sm")], className="d-grid gap-2"),
                         ),
                         dbc.Col(
-                            dbc.Button("Copy Short Temporary URL", color="info", id="copy_shortlink_button", n_clicks=0, size="sm"),
+                            html.Div([dbc.Button("Copy Short Temporary URL", color="info", id="copy_shortlink_button", n_clicks=0, size="sm")], className="d-grid gap-2"),
                         ),
                     ]),
                     html.Br(),
@@ -713,38 +713,27 @@ DATASELECTION_CARD = [
                     ]),
                     html.H5(children='Advanced Panels'),
                     dbc.Row([
-                        dbc.Col(
+                        dbc.ButtonGroup([
                             dbc.Button("Visualization Options", id="advanced_visualization_modal_button"),
-                        ),
-                        dbc.Col(
                             dbc.Button("Import Options", id="advanced_import_modal_button"),
-                        ),
-                        dbc.Col(
-                            dbc.Button("Replay Options", id="advanced_replay_modal_button"),
-                        )
+                        ])
                     ]),
                     html.Br(),
                     dbc.Row([
-                        dbc.Col(
-                            dbc.Button("Sync Options", color="info", id="sychronization_options_modal_button"),
-                        ),
-                        dbc.Col([
+                        dbc.ButtonGroup([
+                            dbc.Button("Sync Options", id="sychronization_options_modal_button"),
                             dbc.Button("Sync Initiate (Follower)", color="success", id="synchronization_begin_button"),
-                            html.Div(id="synchronization_status")
-                        ]),
-                        dbc.Col(
                             dbc.Button("Sync Terminate (Follower)", color="danger", id="synchronization_stop_button"),
-                        ),
+                        ]),
+                        html.Div(id="synchronization_status")
                     ]),
                     html.Br(),
                     dbc.Row([
-                        dbc.Col(
-                            dbc.Button("Replay Advance", id="replay_forward_button"),
-                        ),
-                        dbc.Col(
-                            dbc.Button("Replay Rewind", id="replay_backward_button"),
-                        ),
-                        dbc.Col(),
+                        dbc.ButtonGroup([
+                            dbc.Button("Replay Options", id="advanced_replay_modal_button"),
+                            dbc.Button("Replay Advance", color="success", id="replay_forward_button"),
+                            dbc.Button("Replay Rewind", color="danger", id="replay_backward_button"),
+                        ]),
                     ])
                 ], className="col-sm")
             ])
@@ -803,10 +792,10 @@ DATASLICE_CARD = [
             ),
 
             dbc.ButtonGroup([
-                dbc.Button("MS Details", id="spectrum_details_modal_button"),
-                dbc.Button("View Metabolomics USI", id="advanced_usi_modal_button"),
-                dbc.Button("GNPS Library", id="advanced_librarysearch_modal_button"),
-                dbc.Button("MassIVE-KB Library", id="advanced_librarysearchmassivekb_modal_button"),
+                dbc.Button("MS Details", color="secondary", id="spectrum_details_modal_button"),
+                dbc.Button("View Metabolomics USI", color="secondary", id="advanced_usi_modal_button"),
+                dbc.Button("GNPS Library", color="secondary", id="advanced_librarysearch_modal_button"),
+                dbc.Button("MassIVE-KB Library", color="secondary", id="advanced_librarysearchmassivekb_modal_button"),
             ]),
 
             html.Br(),
@@ -1577,7 +1566,7 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
         masst_dict["spectrum_string"] = "\n".join(["{}\t{}".format(peak[0], peak[1]) for peak in peaks])
 
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
-        masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1"), href=masst_url, target="_blank")
+        masst_button = html.A(html.Div([dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1")], className="d-grid gap-2"), href=masst_url, target="_blank")
 
         #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1"), href=usi_url, target="_blank")
 
@@ -4205,7 +4194,7 @@ def create_networking_link(usi, usi2):
         gnps_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
         gnps_url = gnps_url + urllib.parse.quote(json.dumps(parameters))
 
-        url_provenance = dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), color="secondary", className="mr-1", size="sm")
+        url_provenance = html.Div([dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), color="secondary", className="mr-1", size="sm")], className="d-grid gap-2")
         provenance_link_object = dcc.Link(url_provenance, href=gnps_url, target="_blank")
 
         return [provenance_link_object, html.Br()]

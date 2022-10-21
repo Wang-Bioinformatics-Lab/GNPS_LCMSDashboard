@@ -25,7 +25,7 @@ services:
       resources:
         limits:
           memory: 32000M
-
+      
   gnpslcms-worker-conversion:
     build:
       context: .
@@ -124,5 +124,4 @@ services:
 
 networks:
   nginx-net:
-    external:
-      name: nginx-net
+    external: true
