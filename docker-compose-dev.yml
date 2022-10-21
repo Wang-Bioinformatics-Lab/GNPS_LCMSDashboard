@@ -3,9 +3,9 @@ services:
   gnpslcms-dash:
     command: /app/run_dev_server.sh
     environment:
-      VIRTUAL_HOST: mingwangbeta.ucsd.edu
+      VIRTUAL_HOST: mingwangbeta.ucsd.edu,gnps-lcms.wanglab.science,gnps-lcms.gnps2.org
       VIRTUAL_PORT: 6548
-      LETSENCRYPT_HOST: mingwangbeta.ucsd.edu
+      LETSENCRYPT_HOST: mingwangbeta.ucsd.edu,gnps-lcms.wanglab.science,gnps-lcms.gnps2.org
       LETSENCRYPT_EMAIL: miw023@ucsd.edu
 
 
