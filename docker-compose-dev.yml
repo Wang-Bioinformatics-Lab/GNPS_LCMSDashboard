@@ -4,7 +4,7 @@ services:
     command: /app/run_dev_server.sh
     environment:
       VIRTUAL_HOST: mingwangbeta.ucsd.edu,gnps-lcms.wanglab.science,gnps-lcms.gnps2.org
-      VIRTUAL_PORT: 6548
+      VIRTUAL_PORT: 5000
       LETSENCRYPT_HOST: mingwangbeta.ucsd.edu,gnps-lcms.wanglab.science,gnps-lcms.gnps2.org
       LETSENCRYPT_EMAIL: miw023@ucsd.edu
 
