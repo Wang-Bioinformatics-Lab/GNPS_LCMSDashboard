@@ -367,6 +367,9 @@ def _convert_mzML(input_mzXML, output_mzML):
 
     conversion_ret_code = os.system(conversion_cmd)
 
+    print("HEREXXXXXXXXXXXX", conversion_cmd)
+    exit(1)
+
     # Checking the conversion only if the source is mzXML
     filename, file_extension = os.path.splitext(input_mzXML)
     if file_extension != ".mzXML":
