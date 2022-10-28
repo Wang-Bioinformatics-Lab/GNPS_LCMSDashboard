@@ -1,7 +1,7 @@
 import dash
-import dash_core_components as dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
-import dash_html_components as html
+from dash import html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
@@ -20,7 +20,7 @@ SYCHRONIZATION_MODAL = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("Session ID", addon_type="prepend"),
+                                    dbc.InputGroupText("Session ID"),
                                     dbc.Input(id='sychronization_session_id', placeholder="Enter Session ID", value=""),
                                 ],
                                 className="mb-3",
@@ -30,10 +30,10 @@ SYCHRONIZATION_MODAL = [
                 ),
                 dbc.Row([
                         dbc.Col(
-                            dbc.Button("Save Session", block=True, id="sychronization_save_session_button"),
+                            html.Div([dbc.Button("Save Session", color="secondary", id="sychronization_save_session_button")], className="d-grid gap-2"),
                         ),
                         dbc.Col(
-                            dbc.Button("Load Session", block=True, id="sychronization_load_session_button"),
+                            html.Div([dbc.Button("Load Session", color="secondary", id="sychronization_load_session_button")], className="d-grid gap-2"),
                         ),
                     ]
                 ),
@@ -58,23 +58,23 @@ SYCHRONIZATION_MODAL = [
                         ),
                     ),
                     dbc.Col(
-                        dbc.Button("Set Synchronization", block=True, id="sychronization_set_type_button"),
+                        html.Div([dbc.Button("Set Synchronization", id="sychronization_set_type_button")], className="d-grid gap-2"),
                     )
                 ]),
                 html.Hr(),
                 dbc.InputGroup(
                     [
-                        dbc.InputGroupAddon("Leader Session Token", addon_type="prepend"),
+                        dbc.InputGroupText("Leader Session Token"),
                         dbc.Input(id='synchronization_leader_token', placeholder="Enter Token", value=""),
                     ],
                     className="mb-3",
                 ),
                 dbc.Row([
                         dbc.Col(
-                            dbc.Button("Get New Token", block=True, id="synchronization_leader_newtoken_button"),
+                            html.Div([dbc.Button("Get New Token", color="secondary", id="synchronization_leader_newtoken_button")], className="d-grid gap-2"),
                         ),
                         dbc.Col(
-                            dbc.Button("Check Token", block=True, id="synchronization_leader_checktoken_button"),
+                            html.Div([dbc.Button("Check Token", color="secondary", id="synchronization_leader_checktoken_button")], className="d-grid gap-2"),
                         ),
                     ]
                 ),
@@ -84,13 +84,13 @@ SYCHRONIZATION_MODAL = [
                 html.Br(),
                 dbc.Row([
                     dbc.Col(
-                        dbc.Button("Copy Follower URL", block=True, color="primary", className="mr-1", id="copy_follower_link_button")
+                        html.Div([dbc.Button("Copy Follower URL", color="primary", id="copy_follower_link_button")], className="d-grid gap-2"),
                     ),
                     dbc.Col(
-                        dbc.Button("Copy Leader URL", block=True, color="primary", className="mr-1", id="copy_leader_link_button")
+                        html.Div([dbc.Button("Copy Leader URL", color="primary", id="copy_leader_link_button")], className="d-grid gap-2"),
                     ),
                     dbc.Col(
-                        dbc.Button("Copy Collab URL", block=True, color="primary", className="mr-1", id="copy_collab_link_button")
+                        html.Div([dbc.Button("Copy Collab URL", color="primary", id="copy_collab_link_button")], className="d-grid gap-2"),
                     ),
                 ]),
                 # Links to be generated

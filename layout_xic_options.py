@@ -1,7 +1,7 @@
 # Dash imports
 
 import dash
-import dash_core_components as dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_table
@@ -21,7 +21,7 @@ ADVANCED_XIC_MODAL = [
                     dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Peptide", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Peptide"),
                                     dbc.Input(id='xic_peptide', placeholder="Enter Peptide to XIC", value=""),
                                 ],
                                 className="mb-3",

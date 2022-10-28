@@ -18,14 +18,14 @@ services:
     command: /app/run_server.sh
     environment:
       VIRTUAL_HOST: gnps-lcms.ucsd.edu
-      VIRTUAL_PORT: 6548
+      VIRTUAL_PORT: 5000
       LETSENCRYPT_HOST: gnps-lcms.ucsd.edu
       LETSENCRYPT_EMAIL: miw023@ucsd.edu
     deploy:
       resources:
         limits:
           memory: 32000M
-
+      
   gnpslcms-worker-conversion:
     build:
       context: .
@@ -124,5 +124,4 @@ services:
 
 networks:
   nginx-net:
-    external:
-      name: nginx-net
+    external: true

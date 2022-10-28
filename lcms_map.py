@@ -6,13 +6,15 @@ import datashader as ds
 from tqdm import tqdm
 import json
 import pandas as pd
-from utils import _spectrum_generator
-from utils import _get_scan_polarity
-import plotly.express as px
-import plotly.graph_objects as go 
 import xarray
 import time
 import utils
+
+import plotly.express as px
+import plotly.graph_objects as go 
+
+from utils import _spectrum_generator
+from utils import _get_scan_polarity
 
 # Enum for polarity
 POLARITY_POS = 1

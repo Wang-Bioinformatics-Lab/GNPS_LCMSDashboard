@@ -1,0 +1,40 @@
+name: Unit Testing
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  unit-test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.9]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        bash miniconda.sh -b -p $HOME/miniconda || true
+        export PATH="$HOME/miniconda/bin:$PATH"
+        conda config --set always_yes yes --set changeps1 no
+        conda update -q conda
+        conda install -c conda-forge datashader=0.12.1
+        conda install -c conda-forge openjdk=11.0.9.1
+        pip install -r requirements.txt
+        sudo apt-get install -y wget
+        sudo apt-get install -y build-essential
+    - name: Test with pytest
+      run: |
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source ~/.bashrc
+        pip install pytest
+        pip install pytest pytest-xdist
+        cd test && make resolve
+        #cd test	&& pytest -v -n 4

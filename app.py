@@ -3,14 +3,13 @@
 # Dash imports
 
 import dash
-import dash_core_components as dcc
+from dash import dcc
 import dash_bootstrap_components as dbc
-import dash_html_components as html
-import dash_table
+from dash import html
+from dash import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
 import dash_uploader as du
-
 
 # Plotly Imports
 import plotly.express as px
@@ -168,7 +167,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.57", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 0.58", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
                 dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
                 dbc.NavItem(id="dataset_files_nav"),
@@ -218,14 +217,14 @@ DATASELECTION_CARD = [
                     html.Hr(),
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("GNPS USI", addon_type="prepend"),
+                            dbc.InputGroupText("GNPS USI"),
                             dbc.Textarea(id='usi', placeholder="Enter GNPS File USI"),
                         ],
                         className="mb-3",
                     ),
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("USI View Selection", addon_type="prepend"),
+                            dbc.InputGroupText("USI View Selection"),
                             dbc.Select(
                                 id="usi_select",
                                 options=[],
@@ -236,7 +235,7 @@ DATASELECTION_CARD = [
                     ),
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("GNPS USI2", addon_type="prepend"),
+                            dbc.InputGroupText("GNPS USI2"),
                             dbc.Textarea(id='usi2', placeholder="Enter GNPS File USI", value=""),
                         ],
                         className="mb-3",
@@ -244,10 +243,10 @@ DATASELECTION_CARD = [
                     # Linkouts
                     dbc.Row([
                         dbc.Col(
-                            dbc.Button("Copy URL Link to this Visualization", block=True, color="info", id="copy_link_button", n_clicks=0, size="sm"),
+                            html.Div([dbc.Button("Copy URL Link to this Visualization", color="info", id="copy_link_button", n_clicks=0, size="sm")], className="d-grid gap-2"),
                         ),
                         dbc.Col(
-                            dbc.Button("Copy Short Temporary URL", block=True, color="info", id="copy_shortlink_button", n_clicks=0, size="sm"),
+                            html.Div([dbc.Button("Copy Short Temporary URL", color="info", id="copy_shortlink_button", n_clicks=0, size="sm")], className="d-grid gap-2"),
                         ),
                     ]),
                     html.Br(),
@@ -262,7 +261,7 @@ DATASELECTION_CARD = [
                     ]),
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Comment", addon_type="prepend"),
+                            dbc.InputGroupText("Comment"),
                             dbc.Textarea(id='comment', value=""),
                         ],
                         className="mb-3",
@@ -271,7 +270,7 @@ DATASELECTION_CARD = [
                     html.Hr(),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show MS2 Markers", html_for="show_ms2_markers", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                                     dbc.Col(
@@ -286,13 +285,12 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                     ]),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show USI LCMS Map", html_for="show_lcms_1st_map", width=5.8, style={"width":"160px", "margin-left": "25px"}),
                                     dbc.Col(
@@ -307,11 +305,10 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show USI2 LCMS Map", html_for="show_lcms_2nd_map", width=5.8, style={"width":"160px"}),
                                     dbc.Col(
@@ -326,13 +323,12 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                     ]),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show Filters", html_for="show_filters", width=5.8, style={"width":"160px", "margin-left": "25px"}),
                                     dbc.Col(
@@ -347,11 +343,10 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Feature Finding", width=4.8, style={"width":"140px"}),
                                     dcc.Dropdown(
@@ -373,14 +368,13 @@ DATASELECTION_CARD = [
                                         }
                                     )
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                         )),
                     ]),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show Overlay", html_for="show_overlay", width=5.8, style={"width":"160px", "margin-left": "25px"}),
                                     dbc.Col(
@@ -395,7 +389,6 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                         dbc.Col(),
@@ -403,51 +396,53 @@ DATASELECTION_CARD = [
                     html.H5(children='Loading Status'),
                     html.Hr(),
                     dbc.Table([
-                        html.Tr([html.Td("File Download/Conversion"), 
-                                 html.Td(dcc.Loading(
-                                        id="loading_file_download",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 ),
-                                 html.Td("XIC Drawing"), 
-                                 html.Td(
-                                     dcc.Loading(
-                                        id="loading_xic_plot",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 )]),
-                        html.Tr([html.Td("Heatmap Drawing Left"), 
-                                 html.Td(dcc.Loading(
-                                        id="loading_map_plot",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 ),
-                                 html.Td("Heatmap Drawing Right"), 
-                                 html.Td(
-                                     dcc.Loading(
-                                        id="loading_map_plot2",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 )]),
-                        html.Tr([html.Td("TIC Drawing Left"), 
-                                 html.Td(dcc.Loading(
-                                        id="loading_tic_plot",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 ),
-                                 html.Td("TIC Drawing Right"), 
-                                 html.Td(
-                                     dcc.Loading(
-                                        id="loading_tic_plot2",
-                                        children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
-                                        type="dot"
-                                    )
-                                 )])
+                        html.Tbody([
+                            html.Tr([html.Td("File Download/Conversion"), 
+                                    html.Td(dcc.Loading(
+                                            id="loading_file_download",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    ),
+                                    html.Td("XIC Drawing"), 
+                                    html.Td(
+                                        dcc.Loading(
+                                            id="loading_xic_plot",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    )]),
+                            html.Tr([html.Td("Heatmap Drawing Left"), 
+                                    html.Td(dcc.Loading(
+                                            id="loading_map_plot",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    ),
+                                    html.Td("Heatmap Drawing Right"), 
+                                    html.Td(
+                                        dcc.Loading(
+                                            id="loading_map_plot2",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    )]),
+                            html.Tr([html.Td("TIC Drawing Left"), 
+                                    html.Td(dcc.Loading(
+                                            id="loading_tic_plot",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    ),
+                                    html.Td("TIC Drawing Right"), 
+                                    html.Td(
+                                        dcc.Loading(
+                                            id="loading_tic_plot2",
+                                            children=html.H6([dbc.Badge("Ready", color="success", className="ml-1")]),
+                                            type="dot"
+                                        )
+                                    )])
+                        ])
                     ], bordered=True, size="sm")
                 ], className="col-sm"),
                 ## Right Panel
@@ -470,7 +465,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC m/z", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC m/z"),
                                     dbc.Input(id='xic_mz', placeholder="Enter m/z to XIC", value=""),
                                 ],
                                 className="mb-3",
@@ -479,7 +474,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Formula", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Formula"),
                                     dbc.Input(id='xic_formula', placeholder="Enter Molecular Formula to XIC", value=""),
                                 ],
                                 className="mb-3",
@@ -490,7 +485,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Tolerance (Da)", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Tolerance (Da)"),
                                     dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
                                 ],
                                 className="mb-3",
@@ -499,14 +494,14 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Tolerance (ppm)", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Tolerance (ppm)"),
                                     dbc.Input(id='xic_ppm_tolerance', placeholder="Enter Da Tolerance", value="10"),
                                 ],
                                 className="mb-3",
                             ),
                         ),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("XIC Tolerance Unit", width=4.8, style={"width":"150px"}),
                                     dcc.Dropdown(
@@ -523,7 +518,6 @@ DATASELECTION_CARD = [
                                         }
                                     )  
                                 ],
-                                row=True,
                                 className="mb-3",
                         )),
                     ]),
@@ -531,7 +525,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("XIC Retention Time View/Integration Limits", addon_type="prepend"),
+                                    dbc.InputGroupText("XIC Retention Time View/Integration Limits"),
                                     dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2 or 1.5)", value=""),
                                 ],
                                 className="mb-3",
@@ -540,7 +534,7 @@ DATASELECTION_CARD = [
                     ]),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("XIC Integration", width=4.8, style={"width":"120px"}),
                                     dcc.Dropdown(
@@ -558,12 +552,11 @@ DATASELECTION_CARD = [
                                         }
                                     )  
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                         )),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
                                     dbc.Col(
@@ -578,12 +571,11 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                             )),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("XIC Grouping", width=4.8, style={"width":"120px"}),
                                     dcc.Dropdown(
@@ -601,7 +593,6 @@ DATASELECTION_CARD = [
                                         }
                                     )  
                                 ],
-                                row=True,
                                 className="mb-3",
                         )),
                     ]),
@@ -610,7 +601,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupAddon("MS2 Identifier", addon_type="prepend"),
+                                    dbc.InputGroupText("MS2 Identifier"),
                                     dbc.Input(id='ms2_identifier', placeholder="Enter Spectrum Identifier"),
                                 ],
                                 className="mb-3",
@@ -620,7 +611,7 @@ DATASELECTION_CARD = [
                     html.H5(children='TIC Options'),
                     dbc.Row([
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
                                     dcc.Dropdown(
@@ -637,13 +628,12 @@ DATASELECTION_CARD = [
                                         }
                                     )
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                             )
                         ),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Show Multiple TICs", width=4.8, style={"width":"150px"}),
                                     dbc.Col(
@@ -658,7 +648,6 @@ DATASELECTION_CARD = [
                                         )
                                     ),
                                 ],
-                                row=True,
                                 className="mb-3",
                                 style={"margin-left": "4px"}
                             ),
@@ -697,7 +686,7 @@ DATASELECTION_CARD = [
                             )  
                         ),
                         dbc.Col(
-                            dbc.FormGroup(
+                            dbc.Row(
                                 [
                                     dbc.Label("Style", width=2, style={"width":"150px"}),
                                     dcc.Dropdown(
@@ -719,44 +708,32 @@ DATASELECTION_CARD = [
                                         }
                                     )  
                                 ],
-                                row=True,
                                 className="mb-3",
                             )),
                     ]),
                     html.H5(children='Advanced Panels'),
                     dbc.Row([
-                        dbc.Col(
-                            dbc.Button("Visualization Options", block=True, id="advanced_visualization_modal_button"),
-                        ),
-                        dbc.Col(
-                            dbc.Button("Import Options", block=True, id="advanced_import_modal_button"),
-                        ),
-                        dbc.Col(
-                            dbc.Button("Replay Options", block=True, id="advanced_replay_modal_button"),
-                        )
+                        dbc.ButtonGroup([
+                            dbc.Button("Visualization Options", id="advanced_visualization_modal_button"),
+                            dbc.Button("Import Options", id="advanced_import_modal_button"),
+                        ])
                     ]),
                     html.Br(),
                     dbc.Row([
-                        dbc.Col(
-                            dbc.Button("Sync Options", block=True, color="info", id="sychronization_options_modal_button"),
-                        ),
-                        dbc.Col([
-                            dbc.Button("Sync Initiate (Follower)", block=True, color="success", id="synchronization_begin_button"),
-                            html.Div(id="synchronization_status")
+                        dbc.ButtonGroup([
+                            dbc.Button("Sync Options", id="sychronization_options_modal_button"),
+                            dbc.Button("Sync Initiate (Follower)", color="success", id="synchronization_begin_button"),
+                            dbc.Button("Sync Terminate (Follower)", color="danger", id="synchronization_stop_button"),
                         ]),
-                        dbc.Col(
-                            dbc.Button("Sync Terminate (Follower)", block=True, color="danger", id="synchronization_stop_button"),
-                        ),
+                        html.Div(id="synchronization_status")
                     ]),
                     html.Br(),
                     dbc.Row([
-                        dbc.Col(
-                            dbc.Button("Replay Advance", block=True, id="replay_forward_button"),
-                        ),
-                        dbc.Col(
-                            dbc.Button("Replay Rewind", block=True, id="replay_backward_button"),
-                        ),
-                        dbc.Col(),
+                        dbc.ButtonGroup([
+                            dbc.Button("Replay Options", id="advanced_replay_modal_button"),
+                            dbc.Button("Replay Advance", color="success", id="replay_forward_button"),
+                            dbc.Button("Replay Rewind", color="danger", id="replay_backward_button"),
+                        ]),
                     ])
                 ], className="col-sm")
             ])
@@ -815,10 +792,10 @@ DATASLICE_CARD = [
             ),
 
             dbc.ButtonGroup([
-                dbc.Button("MS Details", block=False, id="spectrum_details_modal_button"),
-                dbc.Button("View Metabolomics USI", block=False, id="advanced_usi_modal_button"),
-                dbc.Button("GNPS Library", block=False, id="advanced_librarysearch_modal_button"),
-                dbc.Button("MassIVE-KB Library", block=False, id="advanced_librarysearchmassivekb_modal_button"),
+                dbc.Button("MS Details", color="secondary", id="spectrum_details_modal_button"),
+                dbc.Button("View Metabolomics USI", color="secondary", id="advanced_usi_modal_button"),
+                dbc.Button("GNPS Library", color="secondary", id="advanced_librarysearch_modal_button"),
+                dbc.Button("MassIVE-KB Library", color="secondary", id="advanced_librarysearchmassivekb_modal_button"),
             ]),
 
             html.Br(),
@@ -847,7 +824,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Precursor PPM Tolerance", addon_type="prepend"),
+                            dbc.InputGroupText("Precursor PPM Tolerance"),
                             dbc.Input(id='feature_finding_ppm', placeholder="PPM tolerance for feature finding", value=10),
                         ],
                         className="mb-3",
@@ -856,7 +833,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("MS1 Noise Level", addon_type="prepend"),
+                            dbc.InputGroupText("MS1 Noise Level"),
                             dbc.Input(id='feature_finding_noise', placeholder="Noise for feature finding", value=10000),
                         ],
                         className="mb-3",
@@ -868,7 +845,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Min Peak Width (Minutes)", addon_type="prepend"),
+                            dbc.InputGroupText("Min Peak Width (Minutes)"),
                             dbc.Input(id='feature_finding_min_peak_rt', placeholder="RT Min for feature finding", value=0.05),
                         ],
                         className="mb-3",
@@ -877,7 +854,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("Max Peak Width (Minutes)", addon_type="prepend"),
+                            dbc.InputGroupText("Max Peak Width (Minutes)"),
                             dbc.Input(id='feature_finding_max_peak_rt', placeholder="RT Max for feature finding", value=1.5),
                         ],
                         className="mb-3",
@@ -889,7 +866,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.InputGroupAddon("RT Tolerance (Minutes)", addon_type="prepend"),
+                            dbc.InputGroupText("RT Tolerance (Minutes)"),
                             dbc.Input(id='feature_finding_rt_tolerance', placeholder="RT Tolerance for Isotopic peaks", value=0.3),
                         ],
                         className="mb-3",
@@ -901,7 +878,7 @@ FEATURE_FINDING_PANEL = [
                 dbc.Col(
                     dbc.InputGroup(
                         [
-                            dbc.Button("Update Feature Finding Interactively", color="primary", className="mr-1", id="run_feature_finding_button", block=True),
+                            dbc.Button("Update Feature Finding Interactively", color="primary", className="mr-1", id="run_feature_finding_button"),
                         ],
                         className="mb-3",
                     )
@@ -927,7 +904,7 @@ USI1_FILTERING_PANEL = [
         [   
             dbc.Row([
                 dbc.Col(
-                    dbc.FormGroup(
+                    dbc.Row(
                         [
                             dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                             dcc.Dropdown(
@@ -945,7 +922,6 @@ USI1_FILTERING_PANEL = [
                                 }
                             )
                         ],
-                        row=True,
                         className="mb-3",
                     )),
                 dbc.Col(
@@ -961,7 +937,7 @@ USI2_FILTERING_PANEL = [
         [   
             dbc.Row([
                 dbc.Col(
-                    dbc.FormGroup(
+                    dbc.Row(
                         [
                             dbc.Label("Polarity Filtering", width=4.8, style={"width":"160px", "margin-left": "25px"}),
                             dcc.Dropdown(
@@ -979,7 +955,6 @@ USI2_FILTERING_PANEL = [
                                 }
                             )
                         ],
-                        row=True,
                         className="mb-3",
                     )),
                 dbc.Col(
@@ -1591,16 +1566,16 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
         masst_dict["spectrum_string"] = "\n".join(["{}\t{}".format(peak[0], peak[1]) for peak in peaks])
 
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
-        masst_button = html.A(dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1", block=True), href=masst_url, target="_blank")
+        masst_button = html.A(html.Div([dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1")], className="d-grid gap-2"), href=masst_url, target="_blank")
 
-        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1"), href=usi_url, target="_blank")
 
         button_elements = [masst_button]
 
     if "MS1" in ms2_identifier:
         spectrum_type = "MS1"
 
-        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1", block=True), href=usi_url, target="_blank")
+        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1"), href=usi_url, target="_blank")
 
         button_elements = []
 
@@ -1860,7 +1835,7 @@ def determine_url_only_parameters(  search,
 
     # Here we clicked a button
     if "darkmode_button" in triggered_id:
-        output = [dash.no_update] * 37
+        output = [dash.no_update] * 36
         output[-1] = "plotly_dark"
         output[-3] = "Turbo"
         return output
@@ -4219,7 +4194,7 @@ def create_networking_link(usi, usi2):
         gnps_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp?params="
         gnps_url = gnps_url + urllib.parse.quote(json.dumps(parameters))
 
-        url_provenance = dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), block=True, color="secondary", className="mr-1", size="sm")
+        url_provenance = html.Div([dbc.Button("Molecular Network {} Files at GNPS".format(len(g1_list) + len(g2_list)), color="secondary", className="mr-1", size="sm")], className="d-grid gap-2")
         provenance_link_object = dcc.Link(url_provenance, href=gnps_url, target="_blank")
 
         return [provenance_link_object, html.Br()]
@@ -4682,6 +4657,8 @@ def shorturlresolve():
         return "UUID is not Found, it has likely expired", 404
     
     return redirect(full_url)
+
+# TODO: Make APIs for XIC etc. 
 
 # Logo
 @server.route("/logo.png")
