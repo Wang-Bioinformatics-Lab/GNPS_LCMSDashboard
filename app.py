@@ -1073,9 +1073,9 @@ CONTRIBUTORS_CARD = [
     dbc.CardBody(
         [
             html.Div([
-                "Mingxun Wang PhD - UC San Diego",
+                "Mingxun Wang PhD - UC Riverside",
                 html.Br(),
-                "Daniel Petras PhD - UC San Diego",
+                "Daniel Petras PhD - Tuebingen",
                 html.Br(),
                 "Vanessa Phelan PhD - CU Anschutz",
                 html.Hr(),
@@ -1083,7 +1083,7 @@ CONTRIBUTORS_CARD = [
                 html.Hr(),
                 "Alan Jarmusch PhD - NIH",
                 html.Br(),
-                "Allegra Aron PhD - UC San Diego",
+                "Allegra Aron PhD - University of Denver",
                 html.Br(),
                 "Katherine Maloney PhD - Point Loma",
                 html.Br(),
