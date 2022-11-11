@@ -1098,7 +1098,11 @@ CONTRIBUTORS_CARD = [
                 "Benjamin Pullman - UC San Diego",
                 html.Hr(),
                 html.H5("Citation"),
-                html.A("Petras D, Phelan VV, Acharya D, Allen AE, Aron AT, Bandeira N, Bowen BP, Belle-Oudry D, Boecker S, Cummings DA Jr, Deutsch JM, Fahy E, Garg N, Gregor R, Handelsman J, Navarro-Hoyos M, Jarmusch AK, Jarmusch SA, Louie K, Maloney KN, Marty MT, Meijler MM, Mizrahi I, Neve RL, Northen TR, Molina-Santiago C, Panitchpakdi M, Pullman B, Puri AW, Schmid R, Subramaniam S, Thukral M, Vasquez-Castro F, Dorrestein PC, Wang M. GNPS Dashboard: collaborative exploration of mass spectrometry data in the web browser. Nat Methods. 2022 Feb;19(2):134-136. doi: 10.1038/s41592-021-01339-5. PMID: 34862502; PMCID: PMC8831450.", href="https://www.nature.com/articles/s41592-021-01339-5")
+                html.A("Petras D, Phelan VV, Acharya D, Allen AE, Aron AT, Bandeira N, Bowen BP, Belle-Oudry D, Boecker S, Cummings DA Jr, Deutsch JM, Fahy E, Garg N, Gregor R, Handelsman J, Navarro-Hoyos M, Jarmusch AK, Jarmusch SA, Louie K, Maloney KN, Marty MT, Meijler MM, Mizrahi I, Neve RL, Northen TR, Molina-Santiago C, Panitchpakdi M, Pullman B, Puri AW, Schmid R, Subramaniam S, Thukral M, Vasquez-Castro F, Dorrestein PC, Wang M. GNPS Dashboard: collaborative exploration of mass spectrometry data in the web browser. Nat Methods. 2022 Feb;19(2):134-136. doi: 10.1038/s41592-021-01339-5. PMID: 34862502; PMCID: PMC8831450.", href="https://www.nature.com/articles/s41592-021-01339-5"),
+                html.Br(),
+                html.Br(),
+                html.A('Checkout our other work!', 
+                    href="https://www.cs.ucr.edu/~mingxunw/")
                 ]
             )
         ]
