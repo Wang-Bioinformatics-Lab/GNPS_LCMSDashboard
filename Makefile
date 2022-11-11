@@ -1,23 +1,23 @@
 server-compose-build-nocache:
-	docker-compose build --no-cache
+	docker-compose --compatibility build --no-cache
 
 server-compose-build:
-	docker-compose build
+	docker-compose --compatibility build
 
 server-compose-dev:
-	docker-compose build
+	docker-compose --compatibility build
 	docker-compose -f docker-compose.yml -f docker-compose-dev.yml --compatibility up
 
 server-compose-interactive:
-	docker-compose build
+	docker-compose --compatibility build
 	docker-compose --compatibility up
 
 server-compose:
-	docker-compose build
+	docker-compose --compatibility build
 	docker-compose --compatibility up -d
 
 server-compose-production:
-	docker-compose build
+	docker-compose --compatibility build
 	docker-compose --compatibility up -d
 
 clear-cache:
