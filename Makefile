@@ -16,6 +16,10 @@ server-compose:
 	docker-compose build
 	docker-compose --compatibility up -d
 
+server-compose-production:
+	docker-compose build
+	docker-compose --compatibility up -d
+
 clear-cache:
 	sudo rm temp/* || true
 	sudo rm temp/flask-cache/* || true
