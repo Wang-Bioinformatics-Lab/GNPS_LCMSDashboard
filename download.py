@@ -91,6 +91,8 @@ def _resolve_gnps_usi(usi):
         spectrum_dict = r.json()
         task = spectrum_dict["spectruminfo"]["task"]
         source_file = os.path.basename(spectrum_dict["spectruminfo"]["source_file"])
+
+        # TODO: update this to the API
         remote_link = "ftp://ccms-ftp.ucsd.edu/GNPS_Library_Provenance/{}/{}".format(task, source_file)
 
     return remote_link
@@ -100,7 +102,15 @@ def _resolve_mtbls_usi(usi):
 
     dataset_accession = usi_splits[1]
     filename = usi_splits[2]
-    remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
+    
+    # FTP Deprecated
+    #remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
+    
+    # HTTPS Download
+    # Getting obfuscation code
+    r = requests.get("https://www.ebi.ac.uk/metabolights/ws/studies/{}/files?include_raw_data=false".format(dataset_accession))
+    obfuscation_code = r.json()["obfuscationCode"]
+    remote_link = "https://www.ebi.ac.uk/metabolights/ws/studies/{}/download/{}?file={}".format(dataset_accession, obfuscation_code, filename)
 
     return remote_link
 
@@ -206,6 +216,7 @@ def _usi_to_ccms_path(usi):
         return None
     
     if "MSV" in usi_splits[1]:
+        # TODO: Update this so it works
         msv_ftp = _resolve_msv_usi(usi)
         msv_ftp = msv_ftp.replace("ftp://massive.ucsd.edu/", "")
 
