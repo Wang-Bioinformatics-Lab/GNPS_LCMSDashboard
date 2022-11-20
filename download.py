@@ -221,7 +221,7 @@ def _usi_to_ccms_path(usi):
         msv_url = msv_url.replace("ftp://massive.ucsd.edu/", "")
         msv_url = msv_url.replace("https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file=", "")
 
-        return "f.{}".format(st_url)
+        return "f.{}".format(msv_url)
 
     if "GNPS" in usi_splits[1]:
         if "TASK-" in usi_splits[2]:
