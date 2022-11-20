@@ -41,12 +41,18 @@ def _resolve_msv_usi(usi, force_massive=False):
         elif len(raw_resolutions) > 0:
             remote_path = raw_resolutions[0]["file_descriptor"]
 
-        # Format into FTP link
-        remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
+        # Format into FTP link, we are deprecating FTP
+        # remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
+
+        # Format into HTTPS
+        remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={remote_path}"
     except:
         # We did not successfully look it up, this is the fallback try
         if force_massive:
-            return f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
-        raise
+            #return f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
+            remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file=f.{usi_splits[1]}/{usi_splits[2]}"
+        else:
+            raise
 
+    print(remote_link)
     return remote_link

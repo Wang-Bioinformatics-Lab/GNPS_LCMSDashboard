@@ -485,7 +485,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupText("XIC Tolerance (Da)"),
+                                    dbc.InputGroupText("Tolerance (Da)"),
                                     dbc.Input(id='xic_tolerance', placeholder="Enter Da Tolerance", value="0.5"),
                                 ],
                                 className="mb-3",
@@ -494,7 +494,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupText("XIC Tolerance (ppm)"),
+                                    dbc.InputGroupText("Tolerance (ppm)"),
                                     dbc.Input(id='xic_ppm_tolerance', placeholder="Enter Da Tolerance", value="10"),
                                 ],
                                 className="mb-3",
@@ -503,7 +503,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.Row(
                                 [
-                                    dbc.Label("XIC Tolerance Unit", width=4.8, style={"width":"150px"}),
+                                    dbc.Label("Tolerance Unit", width=4.8, style={"width":"150px"}),
                                     dcc.Dropdown(
                                         id='xic_tolerance_unit',
                                         options=[
@@ -525,7 +525,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.InputGroup(
                                 [
-                                    dbc.InputGroupText("XIC Retention Time View/Integration Limits"),
+                                    dbc.InputGroupText("Retention Time View/Integration Limits"),
                                     dbc.Input(id='xic_rt_window', placeholder="Enter RT Window (e.g. 1-2 or 1.5)", value=""),
                                 ],
                                 className="mb-3",
@@ -536,7 +536,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.Row(
                                 [
-                                    dbc.Label("XIC Integration", width=4.8, style={"width":"120px"}),
+                                    dbc.Label("Integration", width=4.8, style={"width":"120px"}),
                                     dcc.Dropdown(
                                         id='xic_integration_type',
                                         options=[
@@ -558,7 +558,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.Row(
                                 [
-                                    dbc.Label("XIC Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
+                                    dbc.Label("Normalization", html_for="xic_norm", width=4.8, style={"width":"140px"}),
                                     dbc.Col(
                                         daq.ToggleSwitch(
                                             id='xic_norm',
@@ -577,7 +577,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.Row(
                                 [
-                                    dbc.Label("XIC Grouping", width=4.8, style={"width":"120px"}),
+                                    dbc.Label("Grouping", width=4.8, style={"width":"120px"}),
                                     dcc.Dropdown(
                                         id='xic_file_grouping',
                                         options=[
@@ -613,7 +613,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.Row(
                                 [
-                                    dbc.Label("TIC option", width=4.8, style={"width":"100px"}),
+                                    dbc.Label("Option", width=4.8, style={"width":"100px"}),
                                     dcc.Dropdown(
                                         id='tic_option',
                                         options=[
@@ -635,7 +635,7 @@ DATASELECTION_CARD = [
                         dbc.Col(
                             dbc.Row(
                                 [
-                                    dbc.Label("Show Multiple TICs", width=4.8, style={"width":"150px"}),
+                                    dbc.Label("Show Multiple", width=4.8, style={"width":"150px"}),
                                     dbc.Col(
                                         daq.ToggleSwitch(
                                             id='show_multiple_tic',

@@ -91,6 +91,8 @@ def _resolve_gnps_usi(usi):
         spectrum_dict = r.json()
         task = spectrum_dict["spectruminfo"]["task"]
         source_file = os.path.basename(spectrum_dict["spectruminfo"]["source_file"])
+
+        # TODO: update this to the API
         remote_link = "ftp://ccms-ftp.ucsd.edu/GNPS_Library_Provenance/{}/{}".format(task, source_file)
 
     return remote_link
@@ -100,7 +102,15 @@ def _resolve_mtbls_usi(usi):
 
     dataset_accession = usi_splits[1]
     filename = usi_splits[2]
-    remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
+    
+    # FTP Deprecated
+    #remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
+    
+    # HTTPS Download
+    # Getting obfuscation code
+    r = requests.get("https://www.ebi.ac.uk/metabolights/ws/studies/{}/files?include_raw_data=false".format(dataset_accession))
+    obfuscation_code = r.json()["obfuscationCode"]
+    remote_link = "https://www.ebi.ac.uk/metabolights/ws/studies/{}/download/{}?file={}".format(dataset_accession, obfuscation_code, filename)
 
     return remote_link
 
@@ -206,10 +216,12 @@ def _usi_to_ccms_path(usi):
         return None
     
     if "MSV" in usi_splits[1]:
-        msv_ftp = _resolve_msv_usi(usi)
-        msv_ftp = msv_ftp.replace("ftp://massive.ucsd.edu/", "")
+        # TODO: Update this so it works
+        msv_url = _resolve_msv_usi(usi)
+        msv_url = msv_url.replace("ftp://massive.ucsd.edu/", "")
+        msv_url = msv_url.replace("https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file=", "")
 
-        return "f.{}".format(msv_ftp)
+        return "f.{}".format(msv_url)
 
     if "GNPS" in usi_splits[1]:
         if "TASK-" in usi_splits[2]:
@@ -223,10 +235,11 @@ def _usi_to_ccms_path(usi):
         return None
 
     if "ST" in usi_splits[1]:
-        msv_ftp = _resolve_metabolomicsworkbench_usi(usi)
-        msv_ftp = msv_ftp.replace("ftp://massive.ucsd.edu/", "")
+        st_url = _resolve_metabolomicsworkbench_usi(usi)
+        st_url = st_url.replace("ftp://massive.ucsd.edu/", "")
+        st_url = st_url.replace("https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file=", "")
 
-        return "f.{}".format(msv_ftp)
+        return "f.{}".format(st_url)
 
     if "PXD" in usi_splits[1]:
         return None
@@ -303,7 +316,10 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         wget_cmd = "wget '{}' --referer '{}' -O {} --no-check-certificate 2> /dev/null".format(remote_link, remote_link, temp_filename)
     else:
         wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
-    print("ZZZZZZZZZZZZZ", wget_cmd, file=sys.stderr, flush=True)
+    
+    # DEBUG COMMAND
+    print("DOWNLOAD WGET CMD", wget_cmd, file=sys.stderr, flush=True)
+    
     os.system(wget_cmd)
     os.rename(temp_filename, local_filename)
 

@@ -3,7 +3,9 @@ all:
 	pytest --durations=0 test_2d.py test_usi_resolution.py test_xic.py -n 8
 
 resolve:
+	pytest test_usi_resolution.py::test_resolve_remote_url -v --capture=tee-sys
 	pytest test_usi_resolution.py -v
+	
 
 benchmark:
 	pytest --durations=0 -n 4 speed_test.py -v --profile-svg
