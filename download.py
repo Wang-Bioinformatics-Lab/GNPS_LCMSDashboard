@@ -217,10 +217,11 @@ def _usi_to_ccms_path(usi):
     
     if "MSV" in usi_splits[1]:
         # TODO: Update this so it works
-        msv_ftp = _resolve_msv_usi(usi)
-        msv_ftp = msv_ftp.replace("ftp://massive.ucsd.edu/", "")
+        msv_url = _resolve_msv_usi(usi)
+        msv_url = msv_url.replace("ftp://massive.ucsd.edu/", "")
+        msv_url = msv_url.replace("https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file=", "")
 
-        return "f.{}".format(msv_ftp)
+        return "f.{}".format(st_url)
 
     if "GNPS" in usi_splits[1]:
         if "TASK-" in usi_splits[2]:
@@ -234,10 +235,11 @@ def _usi_to_ccms_path(usi):
         return None
 
     if "ST" in usi_splits[1]:
-        msv_ftp = _resolve_metabolomicsworkbench_usi(usi)
-        msv_ftp = msv_ftp.replace("ftp://massive.ucsd.edu/", "")
+        st_url = _resolve_metabolomicsworkbench_usi(usi)
+        st_url = st_url.replace("ftp://massive.ucsd.edu/", "")
+        st_url = st_url.replace("https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file=", "")
 
-        return "f.{}".format(msv_ftp)
+        return "f.{}".format(st_url)
 
     if "PXD" in usi_splits[1]:
         return None
@@ -314,7 +316,10 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         wget_cmd = "wget '{}' --referer '{}' -O {} --no-check-certificate 2> /dev/null".format(remote_link, remote_link, temp_filename)
     else:
         wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
-    print("ZZZZZZZZZZZZZ", wget_cmd, file=sys.stderr, flush=True)
+    
+    # DEBUG COMMAND
+    print("DOWNLOAD WGET CMD", wget_cmd, file=sys.stderr, flush=True)
+    
     os.system(wget_cmd)
     os.rename(temp_filename, local_filename)
 
