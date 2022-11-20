@@ -13,6 +13,7 @@ def test_resolve_remote_url():
     for record in df.to_dict(orient="records"):
         print(record["usi"])
         remote_link, resource_name = download._resolve_usi_remotelink(record["usi"])
+        print("RESOLVED URL", remote_link, resource_name)
         assert(len(remote_link) > 0)
 
 # Testing conversion

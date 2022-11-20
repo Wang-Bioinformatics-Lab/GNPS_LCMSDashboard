@@ -33,6 +33,12 @@ RUN conda install -c conda-forge openjdk=11.0.9.1
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+# Install Aspera
+# RUN wget -qO- https://ak-delivery04-mul.dhe.ibm.com/sar/CMA/OSA/0a07f/0/ibm-aspera-connect_4.1.0.46-linux_x86_64.tar.gz | tar xvz
+# RUN chmod +x ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
+# RUN ./ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
+
+
 COPY . /app
 WORKDIR /app
 
