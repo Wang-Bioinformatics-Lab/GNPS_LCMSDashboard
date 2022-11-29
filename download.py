@@ -147,6 +147,7 @@ def _resolve_pxd_usi(usi):
         for filename_object in resolution_json["datasetFiles"]:
             if filename in filename_object["value"]:
                 remote_link = filename_object["value"]
+                remote_link = filename_object["value"].replace("ftp://", "https://")
 
     return remote_link
 
@@ -314,6 +315,9 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     
     if resource_name == "GLYCOPOST":
         wget_cmd = "wget '{}' --referer '{}' -O {} --no-check-certificate 2> /dev/null".format(remote_link, remote_link, temp_filename)
+    elif "https://ftp.pride.ebi.ac.uk/" in remote_link:
+        # We are getting it from PRIDE, so lets try to do it in parallel
+        wget_cmd = "lftp -e 'pget -n 15 -c \"{}\" -o {};; exit'".format(remote_link, temp_filename)
     else:
         wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
     

@@ -38,6 +38,9 @@ RUN pip install -r requirements.txt
 # RUN chmod +x ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
 # RUN ./ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
 
+# Install lftp
+RUN apt-get update && apt-get install -y lftp
+
 
 COPY . /app
 WORKDIR /app
