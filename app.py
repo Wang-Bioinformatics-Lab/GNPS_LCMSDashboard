@@ -120,15 +120,7 @@ server = app.server
 app.index_string = """<!DOCTYPE html>
 <html>
     <head>
-        <!-- Global site tag (gtag.js) - Google Analytics -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-JGX1MKR163"></script>
-        <script>
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('config', 'G-JGX1MKR163');
-        </script>
+        <script async defer data-website-id="89a8ef56-024b-44d6-9adb-bfad67f55a3d" src="https://analytics.gnps2.org/umami.js"></script>
         {%metas%}
         <title>{%title%}</title>
         {%favicon%}
