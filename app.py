@@ -1528,6 +1528,7 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
 
     # Figuring out which labels to show
     mzs_text = ms2._get_ms_peak_labels(mzs, ints)
+    hover_text = ms2._get_ms_hover(mzs, ints)
 
     interactive_fig = go.Figure(
         data=go.Scatter(x=mzs, y=ints, 
@@ -1539,7 +1540,7 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
                 array=neg_ints,
                 width=0
             ),
-            hoverinfo="x",
+            hoverinfo="x+y",
             textposition="top right",
             text=mzs_text
         )

@@ -38,6 +38,13 @@ def _get_ms_peak_labels(mzs, ints, partitions=8):
     
     return mzs_text
 
+def _get_ms_hover(mzs, ints):
+    hover_text = []
+    for i, mz in enumerate(mzs):
+        hover_text.append("m/z: {:.2f}<br>Intensity: {:.2f}".format(mz, ints[i]))
+    
+    return hover_text
+
 def _get_ms2_peaks(usi, local_filename, scan_number):
     # Let's first try to get the spectrum from disk
     precursor_mz = 0
