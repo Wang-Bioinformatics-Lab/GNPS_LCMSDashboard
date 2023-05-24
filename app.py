@@ -4128,9 +4128,13 @@ def create_replay_link(replay_json_area, replay_json_area_previous):
               ],
               [
                 Input("sychronization_session_id", "value"),
-                Input("synchronization_leader_token", "value")
+                Input("synchronization_leader_token", "value"),
+                Input('usi', 'value'), 
+                Input('usi_select', 'value'),
+                Input('usi2', 'value'), 
               ])
-def create_sychronization_link(sychronization_session_id, synchronization_leader_token):
+def create_sychronization_link(sychronization_session_id, synchronization_leader_token,
+                            usi, usi_select, usi2):
     url_params = {}
 
     url_params["sychronization_session_id"] = sychronization_session_id
@@ -4141,7 +4145,12 @@ def create_sychronization_link(sychronization_session_id, synchronization_leader
     url_params["synchronization_leader_token"] = synchronization_leader_token
     url_params["synchronization_type"] = "LEADER"
 
-    leader_url = request.host_url + "/?{}".format(urllib.parse.urlencode(url_params))
+    hash_params = {}
+    hash_params["usi"] = usi
+    hash_params["usi_select"] = usi_select
+    hash_params["usi2"] = usi2
+
+    leader_url = request.host_url + "/?{}#{}".format(urllib.parse.urlencode(url_params), urllib.parse.quote(json.dumps(hash_params)))
 
     url_params["synchronization_leader_token"] = synchronization_leader_token
     url_params["synchronization_type"] = "COLLAB"
