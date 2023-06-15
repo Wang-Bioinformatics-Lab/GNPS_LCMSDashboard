@@ -4650,9 +4650,9 @@ def settingsdownload():
 @server.route("/downloadlink")
 def downloadlink():
     usi = request.args.get("usi")
-    download_remote_link = download._resolve_usi_remotelink(usi)
+    remote_link, resource = download._resolve_usi_remotelink(usi)
     
-    return download_remote_link
+    return remote_link
 
 @server.route("/shorturl")
 def shorturlresolve():
