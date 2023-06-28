@@ -70,6 +70,7 @@ from layout_misc import EXAMPLE_DASHBOARD, SPECTRUM_DETAILS_MODAL, ADVANCED_VISU
 from layout_misc import UPLOAD_MODAL
 from layout_xic_options import ADVANCED_XIC_MODAL
 from layout_overlay import OVERLAY_PANEL
+from layout_extras import EXTRAS_PANEL
 from layout_fastsearch import ADVANCED_LIBRARYSEARCH_MODAL, ADVANCED_LIBRARYSEARCHMASSIVEKB_MODAL
 from layout_massql import MASSSPEC_QUERY_PANEL
 from layout_sync import SYCHRONIZATION_MODAL
@@ -383,7 +384,24 @@ DATASELECTION_CARD = [
                                 ],
                                 className="mb-3",
                             )),
-                        dbc.Col(),
+                        dbc.Col(
+                            dbc.Row(
+                                [
+                                    dbc.Label("Extras Options", html_for="show_overlay", width=5.8, style={"width":"160px"}),
+                                    dbc.Col(
+                                        daq.ToggleSwitch(
+                                            id='show_extras',
+                                            value=False,
+                                            size=50,
+                                            style={
+                                                "marginTop": "4px",
+                                                "width": "100px"
+                                            }
+                                        )
+                                    ),
+                                ],
+                                className="mb-3",
+                            )),
                     ]),
                     html.H5(children='Loading Status'),
                     html.Hr(),
@@ -1269,6 +1287,21 @@ BODY = dbc.Container(
                     ),
                 ],
                 id='overlay-collapse',
+                is_open=True,
+                style={"width": "50%", "marginTop": 30}
+            )
+        ]),
+
+        dbc.Row([
+            dbc.Collapse(
+                [
+                    dbc.Col([
+                        dbc.Card(EXTRAS_PANEL),
+                    ],
+                        #className="w-50"
+                    ),
+                ],
+                id='extras-collapse',
                 is_open=True,
                 style={"width": "50%", "marginTop": 30}
             )
@@ -2732,7 +2765,9 @@ def _perform_xic(usi, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tole
     return xic.xic_file(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
 
 @cache.memoize()
-def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):
+def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, 
+                       rt_min, rt_max, polarity_filter,
+                       extras_metadata_text, extras_metadata_column):
     GET_MS2 = False
     ms2_data = {}
 
@@ -2819,6 +2854,26 @@ def _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values,
             pass
 
     merged_df_long = pd.concat(df_long_list)
+
+    # Parsing the metadata if possible
+    try:
+        from io import StringIO
+        metadata_df = pd.read_csv(StringIO(extras_metadata_text), sep=None)
+
+        # Trying to translate the USI into a filename
+        merged_df_long["filename"] = merged_df_long["USI"].apply(lambda x: os.path.splitext(os.path.basename(x.split(":")[2]))[0])
+
+        # Doing the same to metadata
+        metadata_df["filename"] = metadata_df["filename"].apply(lambda x: os.path.splitext(x)[0])
+
+        metadata_df = metadata_df[["filename", extras_metadata_column]]
+
+        # merging
+        merged_df_long = merged_df_long.merge(metadata_df, on="filename", how="left")
+        merged_df_long["GROUP"] = merged_df_long[extras_metadata_column]
+    except:
+        pass
+    
 
     return merged_df_long, ms2_data
 
@@ -2931,8 +2986,16 @@ def create_chromatogram_options(usi, usi_select, usi2):
                   Input('image_export_format', 'value'), 
                   Input("plot_theme", "value"),
                   Input('map_plot_color_scale', 'value'),
+                  Input('extras_metadata_text', 'value'),
+                  Input('extras_metadata_column', 'value'),
               ])
-def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, chromatogram_list, polarity_filter, export_format, plot_theme, map_plot_color_scale):
+def draw_xic(   usi, 
+                usi2, 
+                xic_mz, 
+                xic_formula, xic_peptide, xic_tolerance, xic_ppm_tolerance, 
+                xic_tolerance_unit, xic_rt_window, xic_integration_type, xic_norm, xic_file_grouping, 
+                chromatogram_list, polarity_filter, export_format, plot_theme, map_plot_color_scale, 
+                extras_metadata_text, extras_metadata_column):
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     print("TRIGGERED XIC PLOT", dash.callback_context.triggered, file=sys.stderr, flush=True)
 
@@ -3022,7 +3085,10 @@ def draw_xic(usi, usi2, xic_mz, xic_formula, xic_peptide, xic_tolerance, xic_ppm
     merged_df_long = pd.DataFrame()
     if len(all_xic_values) > 0:
         # Performing XIC for all USI in the list
-        merged_df_long, ms2_data = _perform_batch_xic(usi_list, usi1_list, usi2_list, xic_norm, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter)
+        merged_df_long, ms2_data = _perform_batch_xic(usi_list, usi1_list, usi2_list, 
+                                                      xic_norm, all_xic_values, parsed_xic_da_tolerance, parsed_xic_ppm_tolerance, xic_tolerance_unit, 
+                                                      rt_min, rt_max, polarity_filter,
+                                                      extras_metadata_text, extras_metadata_column)
 
     # Looking at chromatograms only if a single file exists
     if len(chromatogram_list) > 0:
@@ -4316,9 +4382,38 @@ def get_overlay_options(overlay_usi, overlay_tabular_data):
     return [options, options, options, options, options]
 
 
+@app.callback([
+                  Output('extras_metadata_column', 'options')
+              ],
+              [
+                  Input('extras_metadata_text', 'value'),
+              ])
+@cache.memoize()
+def get_metadata_options(extras_metadata_text):
+    
+    if extras_metadata_text is None:
+        return [dash.no_update]
 
+    try:
+        # Parsing the string into pandas
+        from io import StringIO
 
+        metadata_df = pd.read_csv(StringIO(extras_metadata_text), sep=None)
+        columns = list(metadata_df.columns)
+
+        options = []
+
+        for column in columns:
+            options.append({"label": column, "value": column})
+
+        return [options]
+    except:
+        return [dash.no_update]
+        
+
+####################################
 # Sychronization Section for callbacks
+####################################
 @app.callback([
                 Output('synchronization_leader_token', 'value'),
                 Output('sychronization_output1', 'children')
@@ -4506,6 +4601,19 @@ def toggle_modal(n1, n2, is_open):
         return not is_open
     return is_open
 
+
+@app.callback(
+    [Output("extras-collapse", "is_open")],
+    [Input("show_extras", "value")],
+)
+def toggle_collapse_extras_options(show):
+    return [show]
+
+# Helping to toggle the modals
+def toggle_modal(n1, n2, is_open):
+    if n1 or n2:
+        return not is_open
+    return is_open
 
 
 app.callback(
