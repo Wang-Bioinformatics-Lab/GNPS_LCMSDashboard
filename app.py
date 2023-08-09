@@ -1549,7 +1549,7 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
     # Getting Spectrum Peaks
     remote_link, local_filename = _resolve_usi(usi_first)
     peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
-    usi_url = "https://metabolomics-usi.ucsd.edu/dashinterface/?usi={}".format(updated_usi)
+    usi_url = "https://metabolomics-usi.gnps2.org/dashinterface/?usi={}".format(updated_usi)
 
     spectrum_type = "MS"
     button_elements = []
