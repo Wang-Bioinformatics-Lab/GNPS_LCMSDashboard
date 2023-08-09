@@ -1634,12 +1634,12 @@ def draw_fastsearch_gnps(usi, usi_select, ms2_identifier):
     scan_number = str(ms2_identifier.split(":")[-1])
     updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
 
-    massivekb_librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=massivekb_index&usi1={}".format(updated_usi)
+    massivekb_librarysearch_url = "https://fasst.gnps2.org/fastsearch/?library_select=massivekb_index&usi1={}".format(updated_usi)
 
     # Perform API call to get number of matches for MassIVE-KB
     massivekb_search_text = "MassIVE-KB Library"
     try:
-        search_api_url = "https://fastlibrarysearch.ucsd.edu/search?usi={}&library=massivekb_index&analog=No".format(updated_usi)
+        search_api_url = "https://fasst.gnps2.org/search?usi={}&library=massivekb_index&analog=No".format(updated_usi)
         search_api_response = requests.get(search_api_url, timeout=10)
         search_api_response_json = search_api_response.json()
         num_matches = len(search_api_response_json["results"])
@@ -1674,12 +1674,12 @@ def draw_fastsearch_massivekb(usi, usi_select, ms2_identifier):
     scan_number = str(ms2_identifier.split(":")[-1])
     updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
 
-    gnps_librarysearch_url = "https://fastlibrarysearch.ucsd.edu/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
+    gnps_librarysearch_url = "https://fasst.gnps2.org/fastsearch/?library_select=gnpslibrary&usi1={}".format(updated_usi)
 
     # Perform API call to get number of matches for GNPS
     gnps_search_text = "GNPS Library"
     try:
-        search_api_url = "https://fastlibrarysearch.ucsd.edu/search?usi={}&library=gnpslibrary&analog=No".format(updated_usi)
+        search_api_url = "https://fasst.gnps2.org/search?usi={}&library=gnpslibrary&analog=No".format(updated_usi)
         search_api_response = requests.get(search_api_url, timeout=10)
         search_api_response_json = search_api_response.json()
         num_matches = len(search_api_response_json["results"])
@@ -4342,7 +4342,7 @@ def get_dataset_link(usi, usi2):
             all_accessions.append(accession)
 
     if len(all_accessions) > 0:
-        return [dbc.NavLink("Select Other Dataset Files", href="https://gnps-explorer.ucsd.edu/{}".format(all_accessions[0]))]
+        return [dbc.NavLink("Select Other Dataset Files", href="https://explorer.gnps2.org/{}".format(all_accessions[0]))]
     return [dash.no_update]
 
 @app.callback([
