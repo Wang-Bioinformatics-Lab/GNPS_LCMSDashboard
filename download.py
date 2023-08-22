@@ -97,6 +97,19 @@ def _resolve_gnps_usi(usi):
 
     return remote_link
 
+def _resolve_gnps2_usi(usi):
+    usi_splits = usi.split(':')
+
+    if "TASK-" in usi_splits[2]:
+        # Test: mzspec:GNPS:TASK-de188599f53c43c3aaad95491743c784-spec/spec-00000.mzML:scan:31
+        filename = "-".join(usi_splits[2].split("-")[2:])
+        task = usi_splits[2].split("-")[1]
+
+        remote_link = "https://gnps2.org/resultfile?task={}&file={}".format(task, urllib.parse.quote(filename))
+
+    return remote_link
+
+
 def _resolve_mtbls_usi(usi):
     usi_splits = usi.split(':')
 
@@ -169,9 +182,12 @@ def _resolve_usi_remotelink(usi):
     if "MSV" in usi_splits[1]:
         remote_link = _resolve_msv_usi(usi, force_massive=True)
         resource = "MASSIVEDATASET"
-    elif "GNPS" in usi_splits[1]:
+    elif "GNPS" == usi_splits[1]:
         remote_link = _resolve_gnps_usi(usi)
         resource = "GNPSTASK"
+    elif "GNPS2" in usi_splits[1]:
+        remote_link = _resolve_gnps2_usi(usi)
+        resource = "GNPS2TASK"
     elif "MassIVE" in usi_splits[1]: # MassIVE Task data
         remote_link = _resolve_gnps_usi(usi)
         resource = "MASSIVETASK"
@@ -224,7 +240,7 @@ def _usi_to_ccms_path(usi):
 
         return "f.{}".format(msv_url)
 
-    if "GNPS" in usi_splits[1]:
+    if "GNPS" == usi_splits[1]:
         if "TASK-" in usi_splits[2]:
             return "-".join(usi_splits[2].split("-")[2:])
         elif "QUICKSTART-" in usi_splits[2]:
