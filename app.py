@@ -156,7 +156,7 @@ NAVBAR = dbc.Navbar(
     children=[
         dbc.NavbarBrand(
             html.Img(src="logo.png", width="120px"),
-            href="https://gnps.ucsd.edu"
+            href="https://gnps2.org"
         ),
         dbc.Nav(
             [
