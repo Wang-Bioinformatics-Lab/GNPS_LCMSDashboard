@@ -14,7 +14,7 @@ LABEL about.license="SPDX:Unknown"
 LABEL about.tags="Proteomics"
 
 ################## INSTALLATION ######################
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git lftp libarchive-dev
 
 ################## INSTALLATION OF MONO ######################
 RUN apt-get update && apt -y install apt-transport-https dirmngr gnupg ca-certificates
@@ -26,9 +26,12 @@ WORKDIR /src
 RUN git clone -b master --single-branch https://github.com/compomics/ThermoRawFileParser --branch v1.3.2 /src
 RUN xbuild
 
+# Installing Mamba
+RUN conda install -c conda-forge mamba
+
 # Python Package Installations
-RUN conda install -c conda-forge datashader=0.12.1
-RUN conda install -c conda-forge openjdk=11.0.9.1
+RUN mamba install -c conda-forge datashader=0.12.1
+RUN mamba install -c conda-forge openjdk=11.0.9.1
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
@@ -37,9 +40,6 @@ RUN pip install -r requirements.txt
 # RUN wget -qO- https://ak-delivery04-mul.dhe.ibm.com/sar/CMA/OSA/0a07f/0/ibm-aspera-connect_4.1.0.46-linux_x86_64.tar.gz | tar xvz
 # RUN chmod +x ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
 # RUN ./ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
-
-# Install lftp
-RUN apt-get update && apt-get install -y lftp
 
 
 COPY . /app

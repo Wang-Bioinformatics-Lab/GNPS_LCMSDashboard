@@ -86,11 +86,11 @@ du.configure_upload(app, TEMP_UPLOADFOLDER)
 
 server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
 
-limiter = Limiter(
-    server,
-    key_func=get_remote_address,
-    default_limits=["10000 per hour"]
-)
+# limiter = Limiter(
+#     server,
+#     key_func=get_remote_address,
+#     default_limits=["10000 per hour"]
+# )
 
 # Optionally turn on caching
 if __name__ == "__main__":

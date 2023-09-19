@@ -36,3 +36,4 @@ pyarrow
 celery==5.2.2
 celery_once==3.0.1
 massql==0.0.12
+numpy==1.23.1
