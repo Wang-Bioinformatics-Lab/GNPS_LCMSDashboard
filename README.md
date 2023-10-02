@@ -1,14 +1,5 @@
 ## GNPS LCMS Visualization Dashboard
 
-### URL Parameters
-
-1. usi
-1. xicmz
-
-### Heroku Deployment
-
-We are also trying to support a heroku deployment. This is why we have a Procfile. 
-
 ### Example Sources of Data
 
 1. GNPS Analysis Tasks - [mzspec:GNPS:TASK-d93bdbb5cdda40e48975e6e18a45c3ce-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AGNPS%3ATASK-d93bdbb5cdda40e48975e6e18a45c3ce-f.mwang87%2Fdata%2FYao_Streptomyces%2Froseosporus%2F0518_s_BuOH.mzXML%3Ascan%3A171&xicmz=841.3170166%3B842.3170166&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier=MS2%3A1176)
@@ -139,3 +130,13 @@ make all
 - Callbacks: https://dash.plotly.com/basic-callbacks 
 - Plotly express: https://plotly.com/python/plotly-express/ 
 - Plotly: https://plotly.com/python/ 
+
+
+## Production Deployment
+
+One major thing about production deployemnts is the DNS routing. You want to do the following steps to have everything route properly:
+
+1. Create a DNS entry in your DNS server for the domain you want to use (e.g. dashboard.gnps2.org) and point it to the server you're running this on
+1. Copy .env_template to .env and update the domain name to the one you want to use
+1. Run a reverse proxy (https://github.com/mwang87/GNPS_ExtensionsReverseProxy)
+1. Run in production mode ```make server-compose-production```
