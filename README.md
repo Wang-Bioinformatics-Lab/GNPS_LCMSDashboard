@@ -130,3 +130,13 @@ make all
 - Callbacks: https://dash.plotly.com/basic-callbacks 
 - Plotly express: https://plotly.com/python/plotly-express/ 
 - Plotly: https://plotly.com/python/ 
+
+
+## Production Deployment
+
+One major thing about production deployemnts is the DNS routing. You want to do the following steps to have everything route properly:
+
+1. Create a DNS entry in your DNS server for the domain you want to use (e.g. dashboard.gnps2.org) and point it to the server you're running this on
+1. Copy .env_template to .env and update the domain name to the one you want to use
+1. Run a reverse proxy (https://github.com/mwang87/GNPS_ExtensionsReverseProxy)
+1. Run in production mode ```make server-compose-production```
