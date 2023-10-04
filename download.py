@@ -403,8 +403,16 @@ def _convert_mzML(input_mzXML, output_mzML):
 
     conversion_ret_code = os.system(conversion_cmd)
 
-    # Checking the conversion only if the source is mzXML
     filename, file_extension = os.path.splitext(input_mzXML)
+
+    if not os.path.exists(output_mzML) and file_extension == ".mzML":
+        # Then we got an issue with the conversion, lets do a brute for conversion here
+        import utils_conversion
+        utils_conversion._convert_mzml_to_mzml_bruteforce(input_mzXML, output_mzML)
+
+        return
+
+    # Checking the conversion only if the source is mzXML
     if file_extension != ".mzXML":
         return
 
