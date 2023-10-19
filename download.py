@@ -13,6 +13,9 @@ from time import sleep
 
 from download_msv import _resolve_msv_usi
 from download_workbench import _resolve_metabolomicsworkbench_usi
+import download_zenodo
+import download_glycopost
+
 
 def _get_usi_display_filename(usi):
     usi_splits = usi.split(":")
@@ -358,11 +361,9 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
     
     if resource_name == "GLYCOPOST":
-        import download_glycopost
         download_glycopost.download_glycopost(usi, remote_link, temp_filename)
 
     elif resource_name == "ZENODO":
-        import download_zenodo
         download_zenodo.download_zenodo(usi, remote_link, temp_filename)
         
     elif "https://ftp.pride.ebi.ac.uk/" in remote_link:
