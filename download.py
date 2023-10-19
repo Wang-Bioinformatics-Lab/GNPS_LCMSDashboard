@@ -147,26 +147,6 @@ def _resolve_glycopost_usi(usi):
 
     return remote_link
 
-def _resolve_zenodo_usi(usi):
-    usi_splits = usi.split(':')
-    # Example: mzspec:ZENODO-4989929:T2.zip-T2/T2_lysate_ETHCD_1D_2.raw
-
-    dataset_accession = usi_splits[1]
-    dataset_accession = dataset_accession.replace("ZENODO-", "")
-    filename = usi_splits[2]
-
-    if ".zip-" in filename:
-        # we'll just get url to the zip filename
-        filename = filename.split(".zip-")[0] + ".zip"
-
-        remote_link = "https://zenodo.org/api/records/{}/files/{}/content".format(dataset_accession, filename)
-
-    else:
-        # we'll just get url to the zip filename
-        remote_link = "https://zenodo.org/api/records/{}/files/{}/content".format(dataset_accession, filename)
-    
-    return remote_link
-
 
 def _resolve_pxd_usi(usi):
     usi_splits = usi.split(':')
@@ -229,7 +209,7 @@ def _resolve_usi_remotelink(usi):
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
         resource = "METABOLOMICSWORKBENCH"
     elif "ZENODO" in usi_splits[1]:
-        remote_link = _resolve_zenodo_usi(usi)
+        remote_link = download_zenodo._resolve_zenodo_usi(usi)
         resource = "ZENODO"
     elif "PXD" in usi_splits[1]:
         # First lets try resolving it at MSV
