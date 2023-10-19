@@ -49,3 +49,16 @@ def test_resolve_filename():
         converted_filename = download._usi_to_local_filename(record["usi"])
         print(record["usi"], converted_filename)
 
+def test_resolve_specific():
+    usi = "mzspec:ZENODO-8338511:CCE_P1706_78_MSMS.mzXML"
+
+    converted_filename = download._usi_to_local_filename(usi)
+    print(converted_filename)
+    remote_link, local_filename = download._resolve_usi(usi)
+    print(remote_link, local_filename)
+
+def main():
+    test_resolve_specific()
+
+if __name__ == "__main__":
+    main()
