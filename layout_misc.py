@@ -91,6 +91,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("LCMS from Glycopost", style={"text-decoration": "none"}, href="/?usi=mzspec:GPST000082:VV_PGM_200204.raw"),
             html.Br(),
+            html.A("LCMS from Zenodo", style={"text-decoration": "none"}, href="/?usi=mzspec:ZENODO-8338511:CCE_P1706_78_MSMS.mzXML"),
+            html.Br(),
             html.Br(),
 
             html.H5("Basic Examples - GC/MS Metabolomics"),

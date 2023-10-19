@@ -62,6 +62,10 @@ def _usi_to_local_filename(usi):
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
         converted_local_filename = converted_local_filename.replace(".mzML.mzML", ".mzML")
 
+    elif "ZENODO" in usi_splits[1]:
+        converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
+        converted_local_filename = converted_local_filename.replace(".mzML.mzML", ".mzML")
+
     # Cleaning it up
     if len(converted_local_filename) > 250:
         converted_local_filename = "convertedfile_" + str(hash(converted_local_filename)) + "_" + converted_local_filename[-150:]
@@ -140,6 +144,27 @@ def _resolve_glycopost_usi(usi):
 
     return remote_link
 
+def _resolve_zenodo_usi(usi):
+    usi_splits = usi.split(':')
+    # Example: mzspec:ZENODO-4989929:T2.zip-T2/T2_lysate_ETHCD_1D_2.raw
+
+    dataset_accession = usi_splits[1]
+    dataset_accession = dataset_accession.replace("ZENODO-", "")
+    filename = usi_splits[2]
+
+    if ".zip-" in filename:
+        # we'll just get url to the zip filename
+        filename = filename.split(".zip-")[0] + ".zip"
+
+        remote_link = "https://zenodo.org/api/records/{}/files/{}/content".format(dataset_accession, filename)
+
+    else:
+        # we'll just get url to the zip filename
+        remote_link = "https://zenodo.org/api/records/{}/files/{}/content".format(dataset_accession, filename)
+    
+    return remote_link
+
+
 def _resolve_pxd_usi(usi):
     usi_splits = usi.split(':')
 
@@ -200,6 +225,9 @@ def _resolve_usi_remotelink(usi):
     elif "ST" in usi_splits[1]:
         remote_link = _resolve_metabolomicsworkbench_usi(usi)
         resource = "METABOLOMICSWORKBENCH"
+    elif "ZENODO" in usi_splits[1]:
+        remote_link = _resolve_zenodo_usi(usi)
+        resource = "ZENODO"
     elif "PXD" in usi_splits[1]:
         # First lets try resolving it at MSV
         remote_link = ""
@@ -286,7 +314,7 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     Returns:
         string: remote_link to refer where the file came from
         string: local path of the converted filename
-    """    
+    """
 
     usi_splits = usi.split(":")
 
@@ -330,17 +358,26 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
     
     if resource_name == "GLYCOPOST":
-        wget_cmd = "wget '{}' --referer '{}' -O {} --no-check-certificate 2> /dev/null".format(remote_link, remote_link, temp_filename)
+        import download_glycopost
+        download_glycopost.download_glycopost(usi, remote_link, temp_filename)
+
+    elif resource_name == "ZENODO":
+        import download_zenodo
+        download_zenodo.download_zenodo(usi, remote_link, temp_filename)
+        
     elif "https://ftp.pride.ebi.ac.uk/" in remote_link:
         # We are getting it from PRIDE, so lets try to do it in parallel
         wget_cmd = "lftp -e 'pget -n 15 -c \"{}\" -o {};; exit'".format(remote_link, temp_filename)
+
+        os.system(wget_cmd)
     else:
         wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
     
-    # DEBUG COMMAND
-    print("DOWNLOAD WGET CMD", wget_cmd, file=sys.stderr, flush=True)
-    
-    os.system(wget_cmd)
+        # DEBUG COMMAND
+        print("DOWNLOAD WGET CMD", wget_cmd, file=sys.stderr, flush=True)
+        
+        os.system(wget_cmd)
+
     os.rename(temp_filename, local_filename)
 
     temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
