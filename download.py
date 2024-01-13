@@ -125,12 +125,15 @@ def _resolve_mtbls_usi(usi):
     
     # FTP Deprecated
     #remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
+    #r = requests.get("https://www.ebi.ac.uk/metabolights/ws/studies/{}/files?include_raw_data=false".format(dataset_accession))
     
     # HTTPS Download
     # Getting obfuscation code
-    r = requests.get("https://www.ebi.ac.uk/metabolights/ws/studies/{}/files?include_raw_data=false".format(dataset_accession))
-    obfuscation_code = r.json()["obfuscationCode"]
-    remote_link = "https://www.ebi.ac.uk/metabolights/ws/studies/{}/download/{}?file={}".format(dataset_accession, obfuscation_code, filename)
+    
+    remote_link = "https://www.ebi.ac.uk:443/metabolights/ws/studies/{}/download?file={}".format(dataset_accession, urllib.parse.quote(filename))
+    
+    # obfuscation_code = r.json()["obfuscationCode"]
+    # remote_link = "https://www.ebi.ac.uk/metabolights/ws/studies/{}/download/{}?file={}".format(dataset_accession, obfuscation_code, filename)
 
     return remote_link
 
