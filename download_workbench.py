@@ -16,6 +16,18 @@ def _resolve_metabolomicsworkbench_usi(usi):
             if filename in file_obj["FILENAME"]:
                 return file_obj["URL"]
     except:
+        # If we parse it wrong, it might include the zip file in the filename
+        # if ".zip" in filename:
+        #     zip_name = filename.split(".zip-")[0] + ".zip"
+        #     filename = filename.split(".zip-")[1]
+
+        #     dataset_list_url = "https://www.metabolomicsworkbench.org/data/show_archive_contents_json.php?STUDY_ID={}".format(dataset_accession)
+
+        #     mw_file_list = requests.get(dataset_list_url).json()
+        #     for file_obj in mw_file_list:
+        #         if filename in file_obj["FILENAME"]:
+        #             return file_obj["URL"]
+
         pass
 
     # Checking if Data is in MSV
