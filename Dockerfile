@@ -33,6 +33,11 @@ RUN conda install -c conda-forge mamba
 RUN mamba install -c conda-forge datashader=0.12.1
 RUN mamba install -c conda-forge openjdk=11.0.9.1
 
+# Installing HDF5 headers
+RUN apt-get update && apt-get install libhdf5-serial-dev netcdf-bin libnetcdf-dev -y
+
+
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
