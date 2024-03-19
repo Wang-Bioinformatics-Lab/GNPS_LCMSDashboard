@@ -29,7 +29,7 @@ services:
   gnpslcms-worker-conversion:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.conversion
     container_name: gnpslcms-worker-conversion
     volumes:
       - ./output:/app/output:rw
