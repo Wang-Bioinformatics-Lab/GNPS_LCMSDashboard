@@ -35,13 +35,15 @@ RUN mamba install -c conda-forge openjdk=11.0.9.1
 
 # Installing HDF5 headers
 RUN apt-get update && apt-get install libhdf5-serial-dev netcdf-bin libnetcdf-dev -y
+RUN apt-get install build-essential -y
+RUN apt-get install python3-dev -y
+RUN pip install --upgrade pip setuptools
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Installing MassQL
 RUN pip install git+https://github.com/mwang87/MassQueryLanguage.git
-
 
 # Install Aspera
 # RUN wget -qO- https://ak-delivery04-mul.dhe.ibm.com/sar/CMA/OSA/0a07f/0/ibm-aspera-connect_4.1.0.46-linux_x86_64.tar.gz | tar xvz
