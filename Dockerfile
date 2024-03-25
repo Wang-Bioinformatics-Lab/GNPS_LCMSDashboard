@@ -35,7 +35,9 @@ RUN mamba install -c conda-forge openjdk=11.0.9.1
 
 # Installing HDF5 headers
 RUN apt-get update && apt-get install libhdf5-serial-dev netcdf-bin libnetcdf-dev -y
-RUN apt-get update && apt-get install -y build-essential
+RUN apt-get install build-essential -y
+RUN apt-get install python3-dev -y
+RUN pip install --upgrade pip setuptools
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
