@@ -6,5 +6,3 @@ remotezip
 joblib
 scipy
 requests
-pymzml
-plotly

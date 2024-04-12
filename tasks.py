@@ -5,7 +5,6 @@ import os
 import uuid
 import feature_finding
 import xic
-import lcms_map
 import tic
 import glob
 import redis
@@ -39,6 +38,8 @@ redis_client = redis.Redis(host='gnpslcms-redis', port=6379, db=0)
 #################################
 @celery_instance.task(time_limit=120)
 def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", map_plot_quantization_level="Medium", cache=True):
+    import lcms_map
+
     if cache:
         print("Caching Disabled, because with memory, it takes almost as long to cache the result as it takes to run")
 

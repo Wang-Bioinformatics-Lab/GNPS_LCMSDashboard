@@ -2,14 +2,7 @@ from celery import Celery
 from celery_once import QueueOnce
 import download
 import os
-import uuid
-import feature_finding
-import xic
 import lcms_map
-import tic
-import glob
-import redis
-import json
 from joblib import Memory
 
 # Setting up celery

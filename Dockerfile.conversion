@@ -41,6 +41,10 @@ RUN pip install -r requirements-conversion.txt
 # RUN chmod +x ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
 # RUN ./ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
 
+# Datashader
+RUN mamba install -c conda-forge -y datashader
+RUN pip install dask[complete]
+
 COPY . /app
 WORKDIR /app
 
