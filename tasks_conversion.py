@@ -3,7 +3,6 @@ from celery_once import QueueOnce
 import download
 import os
 import lcms_map
-from joblib import Memory
 
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://gnpslcms-redis', broker='redis://gnpslcms-redis')
@@ -22,24 +21,23 @@ celery_instance.conf.ONCE = {
 ##############################
 # Conversion
 ##############################
-#@celery_instance.task(time_limit=480, base=QueueOnce)
 @celery_instance.task(time_limit=480)
+def conversion_heartbeat():
+    return "Up"
+
+
+@celery_instance.task(time_limit=480, base=QueueOnce)
 def _download_convert_file(usi, temp_folder="temp"):
     """
         This function does the serialization of downloading files
     """
-
-    # DEBUG OUTPUT
-    import sys
-    print("DEBUG: Downloading File", usi, file=sys.stderr, flush=True)
 
     return_val = download._resolve_usi(usi, temp_folder=temp_folder)
     _convert_file_feather.delay(usi, temp_folder=temp_folder)
 
     return return_val
 
-#@celery_instance.task(time_limit=480, base=QueueOnce)
-@celery_instance.task(time_limit=480)
+@celery_instance.task(time_limit=480, base=QueueOnce)
 def _convert_file_feather(usi, temp_folder="temp"):
     """
         This function does the serialization of conversion to feather format
@@ -58,6 +56,7 @@ def _convert_file_feather(usi, temp_folder="temp"):
 
 
 celery_instance.conf.task_routes = {
-    'tasks._download_convert_file': {'queue': 'conversion'},
-    'tasks._convert_file_feather': {'queue': 'conversion'},
+    'tasks_conversion.conversion_heartbeat': {'queue': 'conversion'},
+    'tasks_conversion._download_convert_file': {'queue': 'conversion'},
+    'tasks_conversion._convert_file_feather': {'queue': 'conversion'},
 }

@@ -8,3 +8,5 @@ scipy
 requests
 pymzml
 plotly
+psims
+netcdf4

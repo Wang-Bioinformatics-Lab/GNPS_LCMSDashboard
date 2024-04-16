@@ -356,9 +356,6 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         os.system(wget_cmd)
     else:
         wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
-    
-        # DEBUG COMMAND
-        print("DOWNLOAD WGET CMD", wget_cmd, file=sys.stderr, flush=True)
         
         os.system(wget_cmd)
 

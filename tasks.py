@@ -1,4 +1,5 @@
 from celery import Celery
+from celery_once import QueueOnce
 import download
 import os
 import uuid
@@ -18,6 +19,17 @@ memory = Memory("temp/memory-cache", verbose=0)
 # Setting up celery
 celery_instance = Celery('lcms_tasks', backend='redis://gnpslcms-redis', broker='redis://gnpslcms-redis')
 
+# Limiting the once queue for celery tasks, will give an error for idempotent tasks within an hour interval
+celery_instance.conf.ONCE = {
+  'backend': 'celery_once.backends.Redis',
+  'settings': {
+    'url': 'redis://gnpslcms-redis:6379/0',
+    'default_timeout': 60 * 10,
+    'blocking': True,
+    'blocking_timeout': 120
+  }
+}
+
 redis_client = redis.Redis(host='gnpslcms-redis', port=6379, db=0)
     
 
@@ -33,7 +45,7 @@ def task_lcms_aggregate(filename, min_rt, max_rt, min_mz, max_mz, polarity_filte
     aggregation, msn_df = _aggregate_lcms_map(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=polarity_filter, map_plot_quantization_level=map_plot_quantization_level)
     return aggregation, msn_df.to_dict(orient="records")
 
-@celery_instance.task(time_limit=90)
+@celery_instance.task(time_limit=90, base=QueueOnce)
 def task_tic(input_filename, tic_option="TIC", polarity_filter="None"):
     # Caching
     tic_file = memory.cache(tic.tic_file)
@@ -41,7 +53,7 @@ def task_tic(input_filename, tic_option="TIC", polarity_filter="None"):
     tic_df = tic_file(input_filename, tic_option=tic_option, polarity_filter=polarity_filter)
     return tic_df.to_dict(orient="records")
 
-@celery_instance.task(time_limit=60)
+@celery_instance.task(time_limit=60, base=QueueOnce)
 def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=False):
     # Caching
     xic_file = memory.cache(xic.xic_file)
@@ -60,7 +72,7 @@ def task_chromatogram_options(local_filename):
     options = chromatograms_list(local_filename)
     return options
 
-@celery_instance.task(time_limit=90)
+@celery_instance.task(time_limit=90, base=QueueOnce)
 def task_featurefinding(filename, params):
     # Caching
     perform_feature_finding = memory.cache(feature_finding.perform_feature_finding)
@@ -77,7 +89,7 @@ def massql_cache(filename):
     except redis.exceptions.ConnectionError:
         _task_massql_cache(filename)
 
-@celery_instance.task(time_limit=600)
+@celery_instance.task(time_limit=600, base=QueueOnce)
 def _task_massql_cache(filename):
     # TODO: Lets cache if cache files are already there
 
