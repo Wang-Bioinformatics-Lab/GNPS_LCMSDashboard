@@ -333,6 +333,10 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
 
     remote_link, resource_name = _resolve_usi_remotelink(usi)
 
+    # Printing the remote link
+    import sys
+    print("DEBUG: Remote Link", remote_link, file=sys.stderr, flush=True)
+
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
     filename, file_extension = os.path.splitext(local_filename)

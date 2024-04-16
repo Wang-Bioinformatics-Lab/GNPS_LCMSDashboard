@@ -29,6 +29,10 @@ def _download_convert_file(usi, temp_folder="temp"):
         This function does the serialization of downloading files
     """
 
+    # DEBUG OUTPUT
+    import sys
+    print("DEBUG: Downloading File", usi, file=sys.stderr, flush=True)
+
     return_val = download._resolve_usi(usi, temp_folder=temp_folder)
     _convert_file_feather.delay(usi, temp_folder=temp_folder)
 
