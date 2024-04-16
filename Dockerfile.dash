@@ -12,17 +12,11 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 # Adding to bashrc
 RUN echo "export PATH=$CONDA_DIR:$PATH" >> ~/.bashrc
 
-# Python Package Installations
-RUN mamba install -c conda-forge -y openjdk=11.0.9.1
-
-COPY requirements-featurefinding.txt .
-RUN pip install -r requirements-featurefinding.txt
+COPY requirements-dash.txt .
+RUN pip install -r requirements-dash.txt
 
 # Installing MassQL
 RUN pip install git+https://github.com/mwang87/MassQueryLanguage.git
-
-# Installing Java
-RUN mamba install -c conda-forge -y openjdk=11.0.9.1
 
 # Datashader
 RUN mamba install -c conda-forge -y datashader

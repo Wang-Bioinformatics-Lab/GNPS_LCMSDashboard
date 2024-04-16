@@ -2929,7 +2929,7 @@ def _integrate_files(long_data_df, xic_integration_type):
     elif xic_integration_type == "AUC":
         intermediate_grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"])
         grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).sum().reset_index()
-        grouped_df["value"] = [integrate.trapz(group_df["value"], x=group_df["rt"]) for name, group_df in intermediate_grouped_df]
+        grouped_df["value"] = [integrate.trapezoid(group_df["value"], x=group_df["rt"]) for name, group_df in intermediate_grouped_df]
         grouped_df = grouped_df.drop("rt", axis=1)
     elif xic_integration_type == "MAXPEAKHEIGHT":
         grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).max().reset_index()
