@@ -56,6 +56,7 @@ import download
 import ms2
 import lcms_map
 import tasks
+import tasks_conversion
 from formula_utils import get_adduct_mass
 import xic
 from sync import _sychronize_save_state, _sychronize_load_state
@@ -1406,7 +1407,7 @@ def _resolve_usi(usi, temp_folder="temp"):
     else:
         if _is_worker_up():
             # If we have the celery instance up, we'll push it
-            result = tasks._download_convert_file.delay(usi, temp_folder=temp_folder)
+            result = tasks_conversion._download_convert_file.delay(usi, temp_folder=temp_folder)
 
             # Waiting
             while(1):
@@ -1418,7 +1419,7 @@ def _resolve_usi(usi, temp_folder="temp"):
         else:
             # If we have the celery instance is not up, we'll do it local
             print("Downloading Local")
-            return tasks._download_convert_file(usi, temp_folder=temp_folder)
+            return tasks_conversion._download_convert_file(usi, temp_folder=temp_folder)
 
 
 def _save_redis(key, value, expiration_in_seconds):
@@ -2928,7 +2929,7 @@ def _integrate_files(long_data_df, xic_integration_type):
     elif xic_integration_type == "AUC":
         intermediate_grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"])
         grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).sum().reset_index()
-        grouped_df["value"] = [integrate.trapz(group_df["value"], x=group_df["rt"]) for name, group_df in intermediate_grouped_df]
+        grouped_df["value"] = [integrate.trapezoid(group_df["value"], x=group_df["rt"]) for name, group_df in intermediate_grouped_df]
         grouped_df = grouped_df.drop("rt", axis=1)
     elif xic_integration_type == "MAXPEAKHEIGHT":
         grouped_df = long_data_df.groupby(["variable", "USI", "GROUP"]).max().reset_index()

@@ -2,13 +2,9 @@ import pandas as pd
 import requests
 import uuid
 import werkzeug
-from scipy import integrate
 import os
 import sys
-import pymzml
-import json
 import urllib.parse
-from tqdm import tqdm
 from time import sleep
 
 from download_msv import _resolve_msv_usi
@@ -337,6 +333,10 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
 
     remote_link, resource_name = _resolve_usi_remotelink(usi)
 
+    # Printing the remote link
+    import sys
+    print("DEBUG: Remote Link", remote_link, file=sys.stderr, flush=True)
+
     # Getting Data Local, TODO: likely should serialize it
     local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
     filename, file_extension = os.path.splitext(local_filename)
@@ -356,9 +356,6 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         os.system(wget_cmd)
     else:
         wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
-    
-        # DEBUG COMMAND
-        print("DOWNLOAD WGET CMD", wget_cmd, file=sys.stderr, flush=True)
         
         os.system(wget_cmd)
 

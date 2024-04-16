@@ -3,7 +3,7 @@ services:
   gnpslcms-dash:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dash
     container_name: gnpslcms-dash
     volumes:
       - ./output:/app/output:rw
@@ -29,7 +29,7 @@ services:
   gnpslcms-worker-conversion:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.conversion
     container_name: gnpslcms-worker-conversion
     volumes:
       - ./output:/app/output:rw
@@ -50,7 +50,7 @@ services:
   gnpslcms-worker-compute:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.compute
     container_name: gnpslcms-worker-compute
     volumes:
       - ./output:/app/output:rw
@@ -72,7 +72,7 @@ services:
   gnpslcms-worker-featurefinding:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.featurefinding
     container_name: gnpslcms-worker-featurefinding
     volumes:
       - ./output:/app/output:rw
@@ -94,7 +94,7 @@ services:
   gnpslcms-worker-sync:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dash
     container_name: gnpslcms-worker-sync
     volumes:
       - ./output:/app/output:rw

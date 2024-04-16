@@ -1,0 +1,12 @@
+celery==5.2.2
+celery_once==3.0.1
+pandas
+werkzeug
+remotezip
+joblib
+scipy
+requests
+pymzml
+plotly
+psims
+netcdf4

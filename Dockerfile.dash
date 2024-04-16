@@ -1,0 +1,28 @@
+FROM ubuntu:22.04
+MAINTAINER Mingxun Wang "mwang87@gmail.com"
+
+################## INSTALLATION ######################
+RUN apt-get update && apt-get install -y git lftp libarchive-dev libhdf5-serial-dev netcdf-bin libnetcdf-dev wget
+
+# Install Mamba
+ENV CONDA_DIR /opt/conda
+RUN wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O ~/miniforge.sh && /bin/bash ~/miniforge.sh -b -p /opt/conda
+ENV PATH=$CONDA_DIR/bin:$PATH
+
+# Adding to bashrc
+RUN echo "export PATH=$CONDA_DIR:$PATH" >> ~/.bashrc
+
+COPY requirements-dash.txt .
+RUN pip install -r requirements-dash.txt
+
+# Installing MassQL
+RUN pip install git+https://github.com/mwang87/MassQueryLanguage.git
+
+# Datashader
+RUN mamba install -c conda-forge -y datashader
+RUN pip install dask[complete]
+
+
+COPY . /app
+WORKDIR /app
+
