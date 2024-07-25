@@ -49,6 +49,7 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
     # Let's first try to get the spectrum from disk
     precursor_mz = 0
     peaks = []
+    spectrum_metadata = {}
     spectrum_details_string = ""
 
     try:
@@ -63,6 +64,23 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
         xml_string = ET.tostring(spectrum.element, encoding='utf8', method='xml')
         spectrum_details_string = BeautifulSoup(xml_string.decode("ascii", "ignore"), "xml").prettify()
 
+        try:
+            # Parse with xml reader
+            bs_spectrum_obj = BeautifulSoup(xml_string.decode("ascii", "ignore"), "xml")
+            
+            # find tag with the name "collision energy"
+            collision_energy_value = bs_spectrum_obj.find("cvParam", {"name": "collision energy"}).get("value")
+
+            precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "isolation window target m/z"}).get("value")
+
+            # trying to get the spectrum energy
+            spectrum_metadata["collision_energy"] = collision_energy_value
+
+            # precursor m/z
+            spectrum_metadata["precursor_mz"] = precursor_mz
+        except:
+            pass
+
         if len(spectrum.selected_precursors) > 0:
             precursor_mz = spectrum.selected_precursors[0]["mz"]
     except:
@@ -75,7 +93,7 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
         precursor_mz = spectrum_json["precursor_mz"]
         spectrum_details_string = json.dumps(spectrum_json)
 
-    return peaks, precursor_mz, spectrum_details_string
+    return peaks, precursor_mz, spectrum_details_string, spectrum_metadata
 
 def determine_scan_by_rt(usi, local_filename, rt, ms_level=1):
     # Understand parameters
