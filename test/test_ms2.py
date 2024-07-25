@@ -9,18 +9,18 @@ import download
 def test_ms2_spectrum():
     usi = "mzspec:MSV000085852:QC_0:scan:1"
     remote_link, local_filename = download._resolve_usi(usi)
-    peaks, mz, spectrum_details_string = ms2._get_ms2_peaks(usi, local_filename, 1)
+    peaks, mz, spectrum_details_string, spectrum_metadata = ms2._get_ms2_peaks(usi, local_filename, 1)
     assert(len(peaks) > 10)
 
     usi = "mzspec:MSV000086709:peak/27_Walterinnesia_egyptia_Liverpool_unkown_red_2.mzXML"
     remote_link, local_filename = download._resolve_usi(usi)
-    peaks, mz, spectrum_details_string = ms2._get_ms2_peaks(usi, local_filename, 1729)
+    peaks, mz, spectrum_details_string, spectrum_metadata = ms2._get_ms2_peaks(usi, local_filename, 1729)
     assert(len(peaks) > 10)
 
     # Currently Doesnt work, but will need to. TODO: Fix
     usi = "mzspec:MSV000086995:updates/2021-04-01_mwang87_a4ef53e6/peak/wash_initial.mzML"
     remote_link, local_filename = download._resolve_usi(usi)
-    peaks, mz, spectrum_details_string = ms2._get_ms2_peaks(usi, local_filename, 527060)
+    peaks, mz, spectrum_details_string, spectrum_metadata = ms2._get_ms2_peaks(usi, local_filename, 527060)
     assert(len(peaks) == 0) # This is known to have no peaks
 
 def test_ms1_selection_spectrum():
@@ -37,6 +37,16 @@ def test_ms1_selection_spectrum():
     assert(len(peaks) > 10)
 
     
+def main():
+    
+    # Small Debug Test
+    peaks, mz, spectrum_details_string, spectrum_metadata = ms2._get_ms2_peaks("mzspec:MSV000085852:QC_0:scan:2625", "./temp/mzspecMSV000085852QC_0.mzML", 2625)
+    print(spectrum_metadata)
+
+
+if __name__ == "__main__":
+    main()
+
 
 
 

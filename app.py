@@ -1549,7 +1549,7 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
 
     # Getting Spectrum Peaks
     remote_link, local_filename = _resolve_usi(usi_first)
-    peaks, precursor_mz, spectrum_details_string = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
+    peaks, precursor_mz, spectrum_details_string, spectrum_metadata = ms2._get_ms2_peaks(updated_usi, local_filename, scan_number)
     usi_url = "https://metabolomics-usi.gnps2.org/dashinterface/?usi={}".format(updated_usi)
 
     spectrum_type = "MS"
@@ -1580,7 +1580,15 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
         )
     )
 
-    interactive_fig.update_layout(title='{}'.format(ms2_identifier))
+    # creating the plot title
+    plot_title = "{}".format(ms2_identifier)
+    try:
+        # Adding energy and polarity
+        plot_title += " - {}eV - {} m/z".format(spectrum_metadata["collision_energy"], spectrum_metadata["precursor_mz"])
+    except:
+        pass
+
+    interactive_fig.update_layout(title=plot_title)
     interactive_fig.update_layout(template=plot_theme)
     interactive_fig.update_xaxes(title_text='m/z')
     interactive_fig.update_yaxes(title_text='intensity')
