@@ -62,22 +62,33 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
         peaks = spectrum.peaks("raw")
 
         xml_string = ET.tostring(spectrum.element, encoding='utf8', method='xml')
-        spectrum_details_string = BeautifulSoup(xml_string.decode("ascii", "ignore"), "xml").prettify()
+        bs_spectrum_obj = BeautifulSoup(xml_string.decode("ascii", "ignore"), "xml")
+        spectrum_details_string = bs_spectrum_obj.prettify()
 
         try:
-            # Parse with xml reader
-            bs_spectrum_obj = BeautifulSoup(xml_string.decode("ascii", "ignore"), "xml")
-            
             # find tag with the name "collision energy"
             collision_energy_value = bs_spectrum_obj.find("cvParam", {"name": "collision energy"}).get("value")
 
-            precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "isolation window target m/z"}).get("value")
+            try:
+                precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "isolation window target m/z"}).get("value")
+            except:
+                precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "selected ion m/z"}).get("value")
 
             # trying to get the spectrum energy
             spectrum_metadata["collision_energy"] = collision_energy_value
 
             # precursor m/z
             spectrum_metadata["precursor_mz"] = precursor_mz
+        except:
+            pass
+            
+        # adding in polarity
+        try:
+            positive_tag = bs_spectrum_obj.find("cvParam", {"name": "positive scan"})
+            if len(positive_tag) > 0:
+                spectrum_metadata["polarity"] = "Positive"
+            else:
+                spectrum_metadata["polarity"] = "Negative"
         except:
             pass
 
