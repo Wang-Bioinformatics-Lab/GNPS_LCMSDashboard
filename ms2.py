@@ -85,7 +85,7 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
         # adding in polarity
         try:
             positive_tag = bs_spectrum_obj.find("cvParam", {"name": "positive scan"})
-            if len(positive_tag) > 0:
+            if positive_tag:
                 spectrum_metadata["polarity"] = "Positive"
             else:
                 spectrum_metadata["polarity"] = "Negative"
