@@ -1585,7 +1585,7 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
 
     # adding polarity for all scans
     try:
-        plot_title += " - {}".format(spectrum_metadata["polarity"])
+        plot_title += " - {} Polarity".format(spectrum_metadata["polarity"])
     except:
         pass
 
