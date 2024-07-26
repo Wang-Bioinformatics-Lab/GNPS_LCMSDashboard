@@ -1582,11 +1582,20 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
 
     # creating the plot title
     plot_title = "{}".format(ms2_identifier)
+
+    # adding polarity for all scans
     try:
-        # Adding energy and polarity
+        plot_title += " - {} Polarity".format(spectrum_metadata["polarity"])
+    except:
+        pass
+
+    try:
+        # Adding energy and precursor mz for MS2
         plot_title += " - {}eV - {} m/z".format(spectrum_metadata["collision_energy"], spectrum_metadata["precursor_mz"])
     except:
         pass
+
+    
 
     interactive_fig.update_layout(title=plot_title)
     interactive_fig.update_layout(template=plot_theme)
@@ -4775,6 +4784,9 @@ def downloadlink():
 def shorturlresolve():
     uuid = request.args.get("uuid")
     full_url = shorturl.get_shorturl(uuid, redis_client)
+
+    # making sure to cast this to a ascii string
+    full_url = full_url.decode("utf-8", "ignore")
 
     if full_url is None:
         return "UUID is not Found, it has likely expired", 404
