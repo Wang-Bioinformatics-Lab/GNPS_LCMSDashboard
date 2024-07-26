@@ -92,6 +92,13 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
         except:
             pass
 
+        # Adding collision of MS2
+        try:
+            if bs_spectrum_obj.find("cvParam", {"name": "beam-type collision-induced dissociation"}):
+                spectrum_metadata["collision_method"] = "CID"
+        except:
+            pass
+
         if len(spectrum.selected_precursors) > 0:
             precursor_mz = spectrum.selected_precursors[0]["mz"]
     except:
