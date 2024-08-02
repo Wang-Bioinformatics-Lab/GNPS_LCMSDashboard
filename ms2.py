@@ -46,6 +46,10 @@ def _get_ms_hover(mzs, ints):
     return hover_text
 
 def _get_ms2_peaks(usi, local_filename, scan_number):
+    # Printing out the USI
+    import sys
+    print(usi, file=sys.stderr)
+
     # Let's first try to get the spectrum from disk
     precursor_mz = 0
     peaks = []
