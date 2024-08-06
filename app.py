@@ -161,7 +161,7 @@ NAVBAR = dbc.Navbar(
         ),
         dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 2024-7-26", href="/")),
+                dbc.NavItem(dbc.NavLink("GNPS LCMS Dashboard - Version 2024-08-06", href="/")),
                 dbc.NavItem(dbc.NavLink("Documentation", href="https://ccms-ucsd.github.io/GNPSDocumentation/lcms-dashboard/")),
                 dbc.NavItem(dbc.NavLink("GNPS Datasets", href="https://gnps.ucsd.edu/ProteoSAFe/datasets.jsp#%7B%22query%22%3A%7B%7D%2C%22table_sort_history%22%3A%22createdMillis_dsc%22%2C%22title_input%22%3A%22GNPS%22%7D")),
                 dbc.NavItem(id="dataset_files_nav"),
@@ -1583,18 +1583,32 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
     # creating the plot title
     plot_title = "{}".format(ms2_identifier)
 
+    plot_title += "<br>"
+
     # adding polarity for all scans
     try:
-        plot_title += " - {} Polarity".format(spectrum_metadata["polarity"])
+        positive_string = None
+        if spectrum_metadata["polarity"] is "Positive":
+            positive_string = "+"
+        elif spectrum_metadata["polarity"] is "Negative":
+            positive_string = "-"
+        plot_title += "{} Polarity".format(positive_string)
+    except:
+        pass
+
+    # Adding MS2 precursor mz for MS2
+    try:
+        plot_title += " {} m/z".format(spectrum_metadata["precursor_mz"])
     except:
         pass
 
     try:
-        # Adding energy and precursor mz for MS2
-        plot_title += " - {}eV - {} m/z".format(spectrum_metadata["collision_energy"], spectrum_metadata["precursor_mz"])
+        if spectrum_metadata["collision_method"] == "EAD":
+            plot_title += " -- CID {}eV EAD {}eV".format(spectrum_metadata["collision_energy"], spectrum_metadata["electron_beam_energy"])
+        else:
+            plot_title += " -- {} {}eV".format(spectrum_metadata["collision_method"], spectrum_metadata["collision_energy"])
     except:
         pass
-
     
 
     interactive_fig.update_layout(title=plot_title)

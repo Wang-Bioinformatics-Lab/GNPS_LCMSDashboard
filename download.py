@@ -12,6 +12,10 @@ from download_workbench import _resolve_metabolomicsworkbench_usi
 import download_zenodo
 import download_glycopost
 
+try:
+    import utils_conversion
+except:
+    pass
 
 def _get_usi_display_filename(usi):
     usi_splits = usi.split(":")
@@ -425,7 +429,6 @@ def _convert_mzML(input_mzXML, output_mzML):
 
     if not os.path.exists(output_mzML) and file_extension == ".mzML":
         # Then we got an issue with the conversion, lets do a brute for conversion here
-        import utils_conversion
         utils_conversion._convert_mzml_to_mzml_bruteforce(input_mzXML, output_mzML)
 
         return
