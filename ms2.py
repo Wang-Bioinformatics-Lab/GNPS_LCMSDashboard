@@ -102,10 +102,6 @@ def _get_spectrum_metadata(spectrum, bs_spectrum_obj):
     return spectrum_metadata
 
 def _get_ms2_peaks(usi, local_filename, scan_number):
-    # Printing out the USI
-    import sys
-    print(usi, file=sys.stderr)
-
     # Let's first try to get the spectrum from disk
     precursor_mz = 0
     peaks = []
