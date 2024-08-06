@@ -48,20 +48,31 @@ def _get_ms_hover(mzs, ints):
 def _get_spectrum_metadata(spectrum, bs_spectrum_obj):
     spectrum_metadata = {}
 
+    # Collision Energy
     try:
         # find tag with the name "collision energy"
         collision_energy_value = bs_spectrum_obj.find("cvParam", {"name": "collision energy"}).get("value")
 
+        # trying to get the spectrum energy
+        spectrum_metadata["collision_energy"] = collision_energy_value
+    except:
+        pass
+
+    # precursors
+    try:
         try:
             precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "isolation window target m/z"}).get("value")
         except:
             precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "selected ion m/z"}).get("value")
-
-        # trying to get the spectrum energy
-        spectrum_metadata["collision_energy"] = collision_energy_value
-
-        # precursor m/z
+            
         spectrum_metadata["precursor_mz"] = precursor_mz
+    except:
+        pass
+
+    # electron beam energy
+    try:
+        electron_beam_energy = bs_spectrum_obj.find("cvParam", {"name": "electron beam energy"}).get("value")
+        spectrum_metadata["electron_beam_energy"] = electron_beam_energy
     except:
         pass
         
@@ -78,6 +89,9 @@ def _get_spectrum_metadata(spectrum, bs_spectrum_obj):
     # Adding collision of MS2
     try:
         if bs_spectrum_obj.find("cvParam", {"name": "beam-type collision-induced dissociation"}):
+            spectrum_metadata["collision_method"] = "HCD"
+
+        if bs_spectrum_obj.find("cvParam", {"name": "collision-induced dissociation"}):
             spectrum_metadata["collision_method"] = "CID"
 
         if bs_spectrum_obj.find("cvParam", {"name": "electron activated dissociation"}):

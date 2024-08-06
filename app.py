@@ -1583,18 +1583,32 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
     # creating the plot title
     plot_title = "{}".format(ms2_identifier)
 
+    plot_title += "<br>"
+
     # adding polarity for all scans
     try:
-        plot_title += " - {} Polarity".format(spectrum_metadata["polarity"])
+        positive_string = None
+        if spectrum_metadata["polarity"] is "Positive":
+            positive_string = "+"
+        elif spectrum_metadata["polarity"] is "Negative":
+            positive_string = "-"
+        plot_title += "{} Polarity".format(positive_string)
+    except:
+        pass
+
+    # Adding MS2 precursor mz for MS2
+    try:
+        plot_title += " {} m/z".format(spectrum_metadata["precursor_mz"])
     except:
         pass
 
     try:
-        # Adding energy and precursor mz for MS2
-        plot_title += " - {}eV - {} m/z".format(spectrum_metadata["collision_energy"], spectrum_metadata["precursor_mz"])
+        if spectrum_metadata["collision_method"] == "EAD":
+            plot_title += " -- CID {}eV EAD {}eV".format(spectrum_metadata["collision_energy"], spectrum_metadata["electron_beam_energy"])
+        else:
+            plot_title += " -- {} {}eV".format(spectrum_metadata["collision_method"], spectrum_metadata["collision_energy"])
     except:
         pass
-
     
 
     interactive_fig.update_layout(title=plot_title)
