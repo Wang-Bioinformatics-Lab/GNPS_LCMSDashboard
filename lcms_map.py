@@ -20,6 +20,18 @@ from utils import _get_scan_polarity
 POLARITY_POS = 1
 POLARITY_NEG = 2
 
+def _get_spectrum_identifier(spec, use_scans=True):
+    spectrum_identifier = spec.ID
+    if use_scans is False:
+        try:
+            # Keys that matter for Sciex Data
+            key_order = ['sample', 'period', 'cycle', 'experiment']
+            spectrum_identifier = " ".join(["{}={}".format(key, spec.id_dict[key]) for key in key_order])
+        except:
+            pass
+
+    return spectrum_identifier
+
 def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter="None", top_spectrum_peaks=100, include_polarity=False):
     all_mz = []
     all_rt = []
@@ -35,6 +47,15 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
     all_msn_polarity = []
     all_msn_scan = []
     all_msn_level = []
+
+    use_scans = True
+    # Checking the first spectrum to see if we should use scans or nativeIDs
+    for spec in _spectrum_generator(filename, min_rt, max_rt):
+        if "scan" in spec.id_dict:
+            use_scans = True
+        else:
+            use_scans = False
+        break
 
     # Iterating through all data with a custom scan iterator
     # It handles custom bounds on RT
@@ -78,11 +99,13 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
 
                 mz, intensity = zip(*peaks)
 
+                spectrum_identifier = _get_spectrum_identifier(spec, use_scans=use_scans)
+
                 all_mz += list(mz)
                 all_i += list(intensity)
                 all_rt += len(mz) * [rt]
-                all_scan += len(mz) * [spec.ID]
                 all_index += len(mz) * [number_spectra]
+                all_scan += len(mz) * [spectrum_identifier]
 
                 # Adding polarity
                 if include_polarity is True:
@@ -98,10 +121,13 @@ def _gather_lcms_data(filename, min_rt, max_rt, min_mz, max_mz, polarity_filter=
                 msn_mz = spec.selected_precursors[0]["mz"]
                 if msn_mz < min_mz or msn_mz > max_mz:
                     continue
+
+                spectrum_identifier = _get_spectrum_identifier(spec, use_scans=use_scans)
+
                 all_msn_mz.append(msn_mz)
                 all_msn_rt.append(rt)
-                all_msn_scan.append(spec.ID)
                 all_msn_level.append(spec.ms_level)
+                all_msn_scan.append(spectrum_identifier)
 
                 # Adding polarity
                 if include_polarity is True:

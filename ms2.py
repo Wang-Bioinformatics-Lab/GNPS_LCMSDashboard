@@ -45,6 +45,48 @@ def _get_ms_hover(mzs, ints):
     
     return hover_text
 
+def _get_spectrum_metadata(spectrum, bs_spectrum_obj):
+    spectrum_metadata = {}
+
+    try:
+        # find tag with the name "collision energy"
+        collision_energy_value = bs_spectrum_obj.find("cvParam", {"name": "collision energy"}).get("value")
+
+        try:
+            precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "isolation window target m/z"}).get("value")
+        except:
+            precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "selected ion m/z"}).get("value")
+
+        # trying to get the spectrum energy
+        spectrum_metadata["collision_energy"] = collision_energy_value
+
+        # precursor m/z
+        spectrum_metadata["precursor_mz"] = precursor_mz
+    except:
+        pass
+        
+    # adding in polarity
+    try:
+        positive_tag = bs_spectrum_obj.find("cvParam", {"name": "positive scan"})
+        if positive_tag:
+            spectrum_metadata["polarity"] = "Positive"
+        else:
+            spectrum_metadata["polarity"] = "Negative"
+    except:
+        pass
+
+    # Adding collision of MS2
+    try:
+        if bs_spectrum_obj.find("cvParam", {"name": "beam-type collision-induced dissociation"}):
+            spectrum_metadata["collision_method"] = "CID"
+
+        if bs_spectrum_obj.find("cvParam", {"name": "electron activated dissociation"}):
+            spectrum_metadata["collision_method"] = "EAD"
+    except:
+        pass
+
+    return spectrum_metadata
+
 def _get_ms2_peaks(usi, local_filename, scan_number):
     # Printing out the USI
     import sys
@@ -69,39 +111,7 @@ def _get_ms2_peaks(usi, local_filename, scan_number):
         bs_spectrum_obj = BeautifulSoup(xml_string.decode("ascii", "ignore"), "xml")
         spectrum_details_string = bs_spectrum_obj.prettify()
 
-        try:
-            # find tag with the name "collision energy"
-            collision_energy_value = bs_spectrum_obj.find("cvParam", {"name": "collision energy"}).get("value")
-
-            try:
-                precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "isolation window target m/z"}).get("value")
-            except:
-                precursor_mz = bs_spectrum_obj.find("cvParam", {"name": "selected ion m/z"}).get("value")
-
-            # trying to get the spectrum energy
-            spectrum_metadata["collision_energy"] = collision_energy_value
-
-            # precursor m/z
-            spectrum_metadata["precursor_mz"] = precursor_mz
-        except:
-            pass
-            
-        # adding in polarity
-        try:
-            positive_tag = bs_spectrum_obj.find("cvParam", {"name": "positive scan"})
-            if positive_tag:
-                spectrum_metadata["polarity"] = "Positive"
-            else:
-                spectrum_metadata["polarity"] = "Negative"
-        except:
-            pass
-
-        # Adding collision of MS2
-        try:
-            if bs_spectrum_obj.find("cvParam", {"name": "beam-type collision-induced dissociation"}):
-                spectrum_metadata["collision_method"] = "CID"
-        except:
-            pass
+        spectrum_metadata = _get_spectrum_metadata(spectrum, bs_spectrum_obj)
 
         if len(spectrum.selected_precursors) > 0:
             precursor_mz = spectrum.selected_precursors[0]["mz"]
