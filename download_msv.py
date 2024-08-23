@@ -1,6 +1,7 @@
 import requests
 import os
 import sys
+from urllib.parse import quote
 
 
 def _resolve_msv_usi(usi, force_massive=False):
@@ -45,12 +46,15 @@ def _resolve_msv_usi(usi, force_massive=False):
         # remote_link = f"ftp://massive.ucsd.edu/{remote_path[2:]}"
 
         # Format into HTTPS
-        remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={remote_path}"
+        fileparameters = quote(remote_path)
+        remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={fileparameters}"
     except:
         # We did not successfully look it up, this is the fallback try
         if force_massive:
             #return f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
-            remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file=f.{usi_splits[1]}/{usi_splits[2]}"
+            fileparameter = quote(f"f.{usi_splits[1]}/{usi_splits[2]}")
+
+            remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={fileparameter}"
         else:
             raise
 
