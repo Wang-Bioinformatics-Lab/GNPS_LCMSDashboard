@@ -53,7 +53,6 @@ def _resolve_msv_usi(usi, force_massive=False):
         if force_massive:
             #return f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
             fileparameter = quote(f"f.{usi_splits[1]}/{usi_splits[2]}")
-
             remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={fileparameter}"
         else:
             raise
