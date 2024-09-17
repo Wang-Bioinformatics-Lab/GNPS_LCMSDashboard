@@ -380,3 +380,15 @@ def determine_usi_to_use(usi_string, usi_select):
         plot_usi = usi_select
 
     return plot_usi
+
+def nativeid_to_usi_nativeid(native_id: str) -> str:
+    # Split the native_id string on space
+    parts = native_id.split(" ")
+    
+    # Split each part on '=' and get the last element
+    values = [part.split('=')[-1] for part in parts]
+    
+    # Join the values back with spaces to form the updated USI
+    updated_usi = ','.join(values)
+    
+    return updated_usi

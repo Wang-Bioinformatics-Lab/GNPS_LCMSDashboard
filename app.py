@@ -1527,6 +1527,7 @@ def click_plot(url_search, usi, usi_select,
 def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xic_mz):
     # Checking Values
     if ms2_identifier is None or len(ms2_identifier) < 2:
+        # TODO: We should actually blank everything out, instead of leaving it as is
         return [dash.no_update] * 6
 
     usi_first = utils.determine_usi_to_use(usi, usi_select)
@@ -1535,7 +1536,13 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
     dataset = usi_splits[1]
     filename = usi_splits[2]
     scan_number = str(ms2_identifier.split(":")[-1])
-    updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
+
+    if "=" in scan_number:
+        # we have a nativeID, so we should change the USI appropriately, need to split on space, then split on =, and get the last element
+        native_id_compressed = utils.nativeid_to_usi_nativeid(scan_number)
+        updated_usi = "mzspec:{}:{}:nativeId={}".format(dataset, filename, native_id_compressed)
+    else:
+        updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
 
     # For Drawing and Exporting
     graph_config = {
@@ -1628,11 +1635,14 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
         masst_dict["spectrum_string"] = "\n".join(["{}\t{}".format(peak[0], peak[1]) for peak in peaks])
 
         masst_url = "https://gnps.ucsd.edu/ProteoSAFe/index.jsp#{}".format(json.dumps(masst_dict))
-        masst_button = html.A(html.Div([dbc.Button("MASST Spectrum in GNPS", color="primary", className="mr-1")], className="d-grid gap-2"), href=masst_url, target="_blank")
+        masst_button = html.A(html.Div([dbc.Button("Classic MASST MS/MS", color="primary", className="mr-1")], className="d-grid gap-2"), href=masst_url, target="_blank")
 
-        #USI_button = html.A(dbc.Button("View Vector Metabolomics USI", color="primary", className="mr-1"), href=usi_url, target="_blank")
+        # TODO: Add link to FASST
 
-        button_elements = [masst_button]
+
+        USI_button = html.A(dbc.Button("View USI: ", color="primary", className="mr-1"), href=usi_url, target="_blank")
+
+        button_elements = [masst_button, html.Hr(), USI_button]
 
     if "MS1" in ms2_identifier:
         spectrum_type = "MS1"
@@ -1642,7 +1652,11 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
         button_elements = []
 
     return [spectrum_type, 
-            interactive_fig, graph_config, button_elements, html.Pre(spectrum_details_string), usi_url]
+            interactive_fig, 
+            graph_config, 
+            button_elements, 
+            html.Pre(spectrum_details_string), 
+            usi_url]
 
 @app.callback([
                 Output('advanced_librarysearchmassivekb_modal_button', 'children'),
