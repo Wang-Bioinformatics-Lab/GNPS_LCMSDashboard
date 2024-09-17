@@ -33,3 +33,5 @@ numpy==1.23.1
 remotezip
 beautifulsoup4
 joblib
+dask[complete]==2024.1.0
+tqdm
