@@ -1540,7 +1540,7 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
     if "=" in scan_number:
         # we have a nativeID, so we should change the USI appropriately, need to split on space, then split on =, and get the last element
         native_id_compressed = utils.nativeid_to_usi_nativeid(scan_number)
-        updated_usi = "mzspec:{}:{}:nativeId={}".format(dataset, filename, native_id_compressed)
+        updated_usi = "mzspec:{}:{}:nativeId:{}".format(dataset, filename, native_id_compressed)
     else:
         updated_usi = "mzspec:{}:{}:scan:{}".format(dataset, filename, scan_number)
 
