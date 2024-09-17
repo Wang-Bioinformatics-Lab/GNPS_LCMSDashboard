@@ -3,7 +3,6 @@ import os
 import pymzml
 import numpy as np
 import datashader as ds
-from tqdm import tqdm
 import json
 import pandas as pd
 import xarray

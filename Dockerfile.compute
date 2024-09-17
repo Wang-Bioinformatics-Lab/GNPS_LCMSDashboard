@@ -12,15 +12,17 @@ ENV PATH=$CONDA_DIR/bin:$PATH
 # Adding to bashrc
 RUN echo "export PATH=$CONDA_DIR:$PATH" >> ~/.bashrc
 
+# Forcing version of Python
+RUN mamba create -n py311 python=3.10 -y
+
 COPY requirements-compute.txt .
-RUN pip install -r requirements-compute.txt
+RUN /bin/bash -c 'source activate py311 && pip install -r requirements-compute.txt'
 
 # Installing MassQL
-RUN pip install git+https://github.com/mwang87/MassQueryLanguage.git
+RUN /bin/bash -c 'source activate py311 && pip install git+https://github.com/mwang87/MassQueryLanguage.git'
 
 # Datashader
-RUN mamba install -c conda-forge -y datashader
-RUN pip install dask[complete]
+RUN mamba install -c conda-forge -y datashader -n py311
 
 COPY . /app
 WORKDIR /app

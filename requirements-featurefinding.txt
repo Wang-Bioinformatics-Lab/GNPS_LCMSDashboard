@@ -5,4 +5,7 @@ werkzeug
 remotezip
 joblib
 scipy
+numpy==1.23.1
 requests
+dask[complete]==2024.1.0
+tqdm

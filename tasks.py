@@ -62,7 +62,15 @@ def task_xic(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, x
     all_xic_values = json.loads(all_xic_values)
 
     xic_df, ms2_data = xic_file(local_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, get_ms2=get_ms2)
-    return xic_df.to_dict(orient="records"), ms2_data
+
+    xic_json = xic_df.to_dict(orient="records")
+    # Making sure all fields are float
+    
+    for xic_data in xic_json:
+        for key in xic_data:
+            xic_data[key] = float(xic_data[key])
+            
+    return xic_json, ms2_data
 
 @celery_instance.task(time_limit=60)
 def task_chromatogram_options(local_filename):
