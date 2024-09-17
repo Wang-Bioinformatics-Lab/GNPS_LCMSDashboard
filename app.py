@@ -1639,8 +1639,7 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
 
         # TODO: Add link to FASST
 
-
-        USI_button = html.A(dbc.Button("View USI: ", color="primary", className="mr-1"), href=usi_url, target="_blank")
+        USI_button = html.A("Spectrum USI - {}".format(updated_usi), href=usi_url, target="_blank")
 
         button_elements = [masst_button, html.Hr(), USI_button]
 
