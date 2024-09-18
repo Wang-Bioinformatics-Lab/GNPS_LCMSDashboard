@@ -116,9 +116,9 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
     xic_df["rt"] = rt_trace
 
     ms2_data = {}
-    ms2_data["all_ms2_ms1_int"] = all_ms2_ms1_int
-    ms2_data["all_ms2_rt"] = all_ms2_rt
-    ms2_data["all_ms2_scan"] = all_ms2_scan
+    ms2_data["all_ms2_ms1_int"] = float(all_ms2_ms1_int)
+    ms2_data["all_ms2_rt"] = float(all_ms2_rt)
+    ms2_data["all_ms2_scan"] = float(all_ms2_scan)
 
     return xic_df, ms2_data
 
