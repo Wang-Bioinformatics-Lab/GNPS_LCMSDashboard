@@ -113,7 +113,7 @@ services:
           memory: 32000M
 
   gnpslcms-redis:
-    image: redis
+    image: valkey/valkey:alpine3.20
     restart: unless-stopped
     networks:
       - default
