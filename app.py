@@ -3416,14 +3416,14 @@ def render_initial_file_load(usi, usi_select, usi2):
             # Kicking off caching of data, asychronously
             tasks.massql_cache(local_filename)
         except:
-            status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
+            status = html.H6([dbc.Badge("USI1 Loading Error-Refresh window!", color="warning", className="ml-1")])
             return [status]
             
     if len(usi2_list) > 0:
         try:
             _resolve_usi(usi2_list[0])
         except:
-            status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
+            status = html.H6([dbc.Badge("USI1 Loading Error-Refresh window!", color="warning", className="ml-1")])
             return [status]
     
     
