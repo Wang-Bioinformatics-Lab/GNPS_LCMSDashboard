@@ -392,3 +392,4 @@ def nativeid_to_usi_nativeid(native_id: str) -> str:
     updated_usi = ','.join(values)
     
     return updated_usi
+    

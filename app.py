@@ -123,6 +123,7 @@ app.index_string = """<!DOCTYPE html>
 <html>
     <head>
         <script async defer data-website-id="89a8ef56-024b-44d6-9adb-bfad67f55a3d" src="https://analytics.gnps2.org/umami.js"></script>
+        <script async defer data-website-id="74bc9983-13c4-4da0-89ae-b78209c13aaf" src="https://analytics.gnps2.org/umami.js"></script>
         {%metas%}
         <title>{%title%}</title>
         {%favicon%}
@@ -454,7 +455,7 @@ DATASELECTION_CARD = [
                                         )
                                     )])
                         ])
-                    ], bordered=True, size="sm")
+                    ], bordered=True, size="sm"),
                 ], className="col-sm"),
                 ## Right Panel
                 dbc.Col([
@@ -745,8 +746,10 @@ DATASELECTION_CARD = [
                             dbc.Button("Replay Advance", color="success", id="replay_forward_button"),
                             dbc.Button("Replay Rewind", color="danger", id="replay_backward_button"),
                         ]),
-                    ])
-                ], className="col-sm")
+                    ]),
+                    html.Hr(),
+                    html.Div(id="full_loading_status")
+                ], className="col-sm"),
             ])
         ),
         id="data_selection_collapse",
@@ -1226,6 +1229,12 @@ BODY = dbc.Container(
         html.Div("", id="synchronization_type_dependency", style={"display":"none"}), # This is a hack to pass on a retrigger without causing infinite loops in the dependency chain
         html.Div("", id="page_parameters", style={"display":"none"}), # This is an intermediate dependency to hold the parameters so we make it easier to update them
         html.Div("", id="auto_import_parameters", style={"display":"none"}), # This is a hidden area to set parameters to be loaded into the interface
+        html.Div("", id="loading_progress_store", style={"display":"none"}),
+        dcc.Interval(
+            id='loading_progress_store_interval',
+            interval=5000,  # 1000 milliseconds (1 second)
+            n_intervals=60  # Counter that starts from 0
+        ),
 
         dbc.Row([
             dbc.Col(
@@ -1430,6 +1439,61 @@ def _save_redis(key, value, expiration_in_seconds):
 def _synchronize_collab_action(session_id, triggered_fields, full_params, synchronization_token=None):
     if _is_worker_up():
         result = tasks.task_collabsync.delay(session_id, triggered_fields, full_params, synchronization_token=synchronization_token)
+
+
+# Here we will look at the status of the loading
+@app.callback([
+            Output('loading_progress_store', 'children'),
+        ],
+        [
+            Input('usi', 'value'),
+            Input('loading_progress_store_interval', 'n_intervals'),
+        ],
+    prevent_initial_call=True  # This prevents the callback from firing at app startup
+)
+def calculate_load_progress(usi, n_interval):
+
+    import utils_progressbar
+    status_dict = utils_progressbar.determine_usi_progress(usi)
+
+    return [json.dumps(status_dict)]
+
+
+# Callback for drawing the status
+@app.callback([
+            Output('full_loading_status', 'children'),
+        ],
+        [
+            Input('loading_progress_store', 'children'),
+        ],
+    prevent_initial_call=True  # This prevents the callback from firing at app startup
+)
+def draw_loading_status(loading_status):
+    loading_status = json.loads(loading_status)
+
+    # Lets check if all the files are done
+    all_done = True
+    for usi in loading_status:
+        if loading_status[usi]["completionpercent"] != 100:
+            all_done = False
+
+    if all_done:
+        return ["USI Processing Completed"]
+    
+    import utils_progressbar
+
+    # We should filter to files that are not done:
+    loading_status = {usi: loading_status[usi] for usi in loading_status if loading_status[usi]["completionpercent"] != 100}
+
+    html_txt = utils_progressbar.generate_html_progress(loading_status)
+
+    height_px = 120 + 40 * len(loading_status)
+    html_status = html.Iframe(
+        srcDoc=html_txt,  
+        style={"width": "100%", "height": "{}px".format(height_px), "border": "none"},
+    )
+    
+    return [html_status]
 
 # This helps to update the ms2/ms1 plot
 @app.callback([
@@ -3416,19 +3480,17 @@ def render_initial_file_load(usi, usi_select, usi2):
             # Kicking off caching of data, asychronously
             tasks.massql_cache(local_filename)
         except:
-            status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
+            status = html.H6([dbc.Badge("Error - Refresh Page", color="warning", className="ml-1")])
             return [status]
             
     if len(usi2_list) > 0:
         try:
             _resolve_usi(usi2_list[0])
         except:
-            status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
+            status = html.H6([dbc.Badge("Error - Refresh Page", color="warning", className="ml-1")])
             return [status]
     
     
-
-
     return [status]
 
 
