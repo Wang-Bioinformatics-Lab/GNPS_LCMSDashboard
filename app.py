@@ -1475,18 +1475,22 @@ def draw_loading_status(loading_status):
     for usi in loading_status:
         if loading_status[usi]["completionpercent"] != 100:
             all_done = False
+
+    if all_done:
+        return ["USI Processing Completed"]
     
     import utils_progressbar
 
+    # We should filter to files that are not done:
+    loading_status = {usi: loading_status[usi] for usi in loading_status if loading_status[usi]["completionpercent"] != 100}
+
     html_txt = utils_progressbar.generate_html_progress(loading_status)
 
-    if all_done:
-        html_status = "USI Processing Completed"
-    else:
-        html_status = html.Iframe(
-            srcDoc=html_txt,  
-            style={"width": "100%", "height": "500px", "border": "none"},
-        )
+    height_px = 120 + 40 * len(loading_status)
+    html_status = html.Iframe(
+        srcDoc=html_txt,  
+        style={"width": "100%", "height": "{}px".format(height_px), "border": "none"},
+    )
     
     return [html_status]
 

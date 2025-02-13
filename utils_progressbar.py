@@ -20,8 +20,8 @@ def determine_usi_progress(usis):
     all_usi = usis.split("\n")
 
     # limit to 10
-    all_usi = all_usi[:10]
-    #limit_status = 10
+    #all_usi = all_usi[:10]
+    limit_status = 10
 
     status_dict = {}
 
@@ -34,8 +34,6 @@ def determine_usi_progress(usis):
         # This means its fully converted
         local_usi_filename = _usi_to_local_filename(usi)
         local_usi_filename = os.path.join("temp", local_usi_filename)        
-
-        # TODO: Check if there is the msconverted file
 
 
         full_percent_complete = 0
