@@ -123,6 +123,7 @@ app.index_string = """<!DOCTYPE html>
 <html>
     <head>
         <script async defer data-website-id="89a8ef56-024b-44d6-9adb-bfad67f55a3d" src="https://analytics.gnps2.org/umami.js"></script>
+        <script async defer data-website-id="74bc9983-13c4-4da0-89ae-b78209c13aaf" src="https://analytics.gnps2.org/umami.js"></script>
         {%metas%}
         <title>{%title%}</title>
         {%favicon%}
