@@ -75,6 +75,12 @@ def _usi_to_local_filename(usi):
 
     return converted_local_filename
 
+def _usi_to_temp_download_filename(usi, file_extension):
+    # doing a hash on the usi using uuid3
+    usi_hash = str(uuid.uuid3(uuid.NAMESPACE_DNS, usi))
+    temp_filename = usi_hash + file_extension
+
+    return temp_filename
 
 def _resolve_gnps_usi(usi):
     usi_splits = usi.split(':')
@@ -345,7 +351,9 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
     filename, file_extension = os.path.splitext(local_filename)
 
-    temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
+    # This is the download temporary filename
+    #temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
+    temp_filename = os.path.join(temp_folder, _usi_to_temp_download_filename(usi, file_extension))
     
     if resource_name == "GLYCOPOST":
         download_glycopost.download_glycopost(usi, remote_link, temp_filename)

@@ -408,8 +408,6 @@ DATASELECTION_CARD = [
                     html.Hr(),
                     dbc.Table([
                         html.Tbody([
-                            html.Tr([html.Td("Loading Status"), 
-                                    html.Td(html.Div(id="full_loading_status"))]),
                             html.Tr([html.Td("File Download/Conversion"), 
                                     html.Td(dcc.Loading(
                                             id="loading_file_download",
@@ -456,7 +454,9 @@ DATASELECTION_CARD = [
                                         )
                                     )])
                         ])
-                    ], bordered=True, size="sm")
+                    ], bordered=True, size="sm"),
+                    html.Hr(),
+                    html.Div(id="full_loading_status")
                 ], className="col-sm"),
                 ## Right Panel
                 dbc.Col([
@@ -1229,6 +1229,11 @@ BODY = dbc.Container(
         html.Div("", id="page_parameters", style={"display":"none"}), # This is an intermediate dependency to hold the parameters so we make it easier to update them
         html.Div("", id="auto_import_parameters", style={"display":"none"}), # This is a hidden area to set parameters to be loaded into the interface
         html.Div("", id="loading_progress_store", style={"display":"none"}),
+        dcc.Interval(
+            id='loading_progress_store_interval',
+            interval=1000,  # 1000 milliseconds (1 second)
+            n_intervals=180  # Counter that starts from 0
+        ),
 
         dbc.Row([
             dbc.Col(
@@ -1441,52 +1446,14 @@ def _synchronize_collab_action(session_id, triggered_fields, full_params, synchr
         ],
         [
             Input('usi', 'value'),
+            Input('loading_progress_store_interval', 'n_intervals'),
         ],
     prevent_initial_call=True  # This prevents the callback from firing at app startup
 )
-def calculate_load_progress(usi):
+def calculate_load_progress(usi, n_interval):
 
-    all_usi = usi.split("\n")
-
-    status_dict = {}
-
-    for usi in all_usi:
-        if len(usi) < 5:
-            continue
-        
-        status_dict[usi] = {}
-
-        local_usi_filename = download._usi_to_local_filename(usi)
-        local_usi_filename = os.path.join("temp", local_usi_filename)
-
-        # TODO: Check if the file size matches with GNPS Dataset Cache
-        # checking the full file size from gnpsdatasetcache
-        try:
-            url = "https://datasetcache.gnps2.org/datasette/datasette/database/filename.json?_sort=usi&usi__exact={}&_shape=array".format(usi.rstrip())
-            r = requests.get(url)
-            r.raise_for_status()
-
-            usi_information = r.json()
-
-            usi_size = usi_information[0]["size"]
-        except:
-            usi_size = 0
-
-        
-        if os.path.exists(local_usi_filename):
-            status_dict[usi]["downloadstatus"] = "done"
-        else:
-            status_dict[usi]["downloadstatus"] = "pending"
-            status_dict[usi]["downloadpercent"] = 10
-
-            # we should find the temp file
-        
-        # checking the feather file
-        local_feather_filename = local_usi_filename + ".ms1.feather"
-        if os.path.exists(local_feather_filename):
-            status_dict[usi]["readstatus"] = "done"
-        else:
-            status_dict[usi]["readstatus"] = "inprogress"
+    import utils_progressbar
+    status_dict = utils_progressbar.determine_usi_progress(usi)
 
     return [json.dumps(status_dict)]
 
@@ -1503,16 +1470,17 @@ def calculate_load_progress(usi):
 def draw_loading_status(loading_status):
     loading_status = json.loads(loading_status)
 
-    loading_status_html = []
-
-    #for usi, status in loading_status.items():
-    #    loading_status_html.append(html.H6([dbc.Badge(usi, color="primary", className="ml-1"), dbc.Badge(status["downloadstatus"], color="success", className="ml-1")]))
-
     import utils_progressbar
 
-    svg_txt = utils_progressbar.generate_svg_progress(loading_status)
+    html_txt = utils_progressbar.generate_html_progress(loading_status)
+
+    # Embedding the HTML file as an iframe
+    html_status = html.Iframe(
+        srcDoc=html_txt,  
+        style={"width": "100%", "height": "500px", "border": "none"},
+    )
     
-    return [[json.dumps(loading_status), svg_txt]]
+    return [[html_status]]
 
 # This helps to update the ms2/ms1 plot
 @app.callback([

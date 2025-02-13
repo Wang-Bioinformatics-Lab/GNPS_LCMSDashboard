@@ -1,50 +1,127 @@
-def generate_svg_progress(data):
-    svg_width = 400  # Total width of the SVG
-    bar_height = 30  # Height of the progress bar
-    spacing = 50     # Spacing between bars
-    svg_elements = []  # List to store SVG elements
-    
-    svg_elements.append('<svg width="500" height="300" xmlns="http://www.w3.org/2000/svg">')
+import os
+import requests
+from download import _usi_to_local_filename
 
-    y_position = 20  # Y position to start rendering
-    
-    for key, statuses in data.items():
-        text_y = y_position + 15  # Position text slightly above the bar
+def _determine_usi_size(usi):
+    try:
+        url = "https://datasetcache.gnps2.org/datasette/datasette/database/filename.json?_sort=usi&usi__exact={}&_shape=array".format(usi.rstrip())
+        r = requests.get(url)
+        r.raise_for_status()
+
+        usi_information = r.json()
+
+        usi_size = usi_information[0]["size"]
+    except:
+        usi_size = 0
+
+    return usi_size
+
+def determine_usi_progress(usis):
+    all_usi = usis.split("\n")
+
+    status_dict = {}
+
+    for usi in all_usi:
+        if len(usi) < 5:
+            continue
         
-        # Render the dataset name
-        svg_elements.append(f'<text x="10" y="{text_y}" font-size="16" fill="black">{key}</text>')
-        y_position += 20
+        status_dict[usi] = {}
 
-        # ---- Download Progress ----
-        download_status = statuses.get("downloadstatus", "unknown")
+        local_usi_filename = _usi_to_local_filename(usi)
+        local_usi_filename = os.path.join("temp", local_usi_filename)        
 
-        if isinstance(download_status, dict) and "percent" in download_status:
-            percent = download_status["percent"]
-            bar_fill_width = int((percent / 100) * svg_width)
-
-            # Background bar with grey color
-            svg_elements.append(f'<rect x="10" y="{y_position}" width="{svg_width}" height="{bar_height}" fill="#ddd" rx="5" ry="5"/>')
-            
-            # Filled progress bar
-            svg_elements.append(f'<rect x="10" y="{y_position}" width="{bar_fill_width}" height="{bar_height}" fill="green" rx="5" ry="5"/>')
-
-            # Percentage text
-            svg_elements.append(f'<text x="{svg_width + 20}" y="{y_position + 20}" font-size="16" fill="black">{percent}%</text>')
-
+        full_percent_complete = 0
+        
+        if os.path.exists(local_usi_filename):
+            status_dict[usi]["downloadstatus"] = "done"
+            full_percent_complete += 80
         else:
-            # Simply display text status if percentage is not present
-            svg_elements.append(f'<text x="10" y="{y_position + 20}" font-size="16" fill="black">Download Status: {download_status}</text>')
+            status_dict[usi]["downloadstatus"] = "pending"
+            
+            # we should find the temp file
+            import download
+            remote_link, resource_name = download._resolve_usi_remotelink(usi)
+            _, file_extension = os.path.splitext(remote_link)
+            temp_download_filename = os.path.join("temp", download._usi_to_temp_download_filename(usi, file_extension))
 
-        y_position += spacing
+            print(temp_download_filename)
 
-        # ---- Read Status ----
-        read_status = statuses.get("readstatus", "unknown")
 
-        color = "green" if read_status == "done" else "orange"
-        svg_elements.append(f'<text x="10" y="{y_position}" font-size="16" fill="{color}">Read Status: {read_status}</text>')
+            if os.path.exists(temp_download_filename):
+                usi_size = _determine_usi_size(usi)
 
-        y_position += spacing
+                status_dict[usi]["downloadstatus"] = "downloading"
 
-    svg_elements.append('</svg>')
+                if usi_size > 0:
+                    downloaded_size = os.path.getsize(temp_download_filename)
+                    status_dict[usi]["downloadpercent"] = int((downloaded_size / usi_size) * 100)
+                    full_percent_complete += int(status_dict[usi]["downloadpercent"] * 0.8)
+                else:
+                    # we couldnt figure out the full file size
+                    status_dict[usi]["downloadpercent"] = 50
+                    full_percent_complete += 40
+            else:
+                status_dict[usi]["downloadstatus"] = "pending"
+                status_dict[usi]["downloadpercent"] = 0
 
-    return "\n".join(svg_elements)
+        
+        # checking the feather file
+        local_feather_filename = local_usi_filename + ".ms1.feather"
+        if os.path.exists(local_feather_filename):
+            status_dict[usi]["readstatus"] = "done"
+            full_percent_complete += 20
+        else:
+            status_dict[usi]["readstatus"] = "pending"
+
+        status_dict[usi]["completionpercent"] = full_percent_complete
+
+    return status_dict
+
+def generate_html_progress(data):
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>USI Completion Progress</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; }
+            table { width: 80%; margin: 20px auto; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+            th { background-color: #f4f4f4; }
+            .progress-container { position: relative; width: 100%; background: #ddd; height: 25px; border-radius: 5px; }
+            .progress-bar { height: 100%; border-radius: 5px; background: green; text-align: center; color: white; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <h2>USI Completion Progress</h2>
+        <table>
+            <tr>
+                <th>USI</th>
+                <th>Completion Progress</th>
+            </tr>
+    """
+
+    for key, statuses in data.items():
+        # Use only `completionpercent`
+        percent = statuses.get("completionpercent", 100)  # Default to 100% if missing
+
+        # Add table row
+        html_content += f"""
+        <tr>
+            <td>{key}</td>
+            <td>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width:{percent}%;">{percent}%</div>
+                </div>
+            </td>
+        </tr>
+        """
+
+    html_content += """
+        </table>
+    </body>
+    </html>
+    """
+    return html_content
