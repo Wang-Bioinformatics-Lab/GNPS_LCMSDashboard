@@ -455,8 +455,6 @@ DATASELECTION_CARD = [
                                     )])
                         ])
                     ], bordered=True, size="sm"),
-                    html.Hr(),
-                    html.Div(id="full_loading_status")
                 ], className="col-sm"),
                 ## Right Panel
                 dbc.Col([
@@ -747,8 +745,10 @@ DATASELECTION_CARD = [
                             dbc.Button("Replay Advance", color="success", id="replay_forward_button"),
                             dbc.Button("Replay Rewind", color="danger", id="replay_backward_button"),
                         ]),
-                    ])
-                ], className="col-sm")
+                    ]),
+                    html.Hr(),
+                    html.Div(id="full_loading_status")
+                ], className="col-sm"),
             ])
         ),
         id="data_selection_collapse",
@@ -1231,8 +1231,8 @@ BODY = dbc.Container(
         html.Div("", id="loading_progress_store", style={"display":"none"}),
         dcc.Interval(
             id='loading_progress_store_interval',
-            interval=1000,  # 1000 milliseconds (1 second)
-            n_intervals=180  # Counter that starts from 0
+            interval=5000,  # 1000 milliseconds (1 second)
+            n_intervals=60  # Counter that starts from 0
         ),
 
         dbc.Row([
@@ -1470,17 +1470,25 @@ def calculate_load_progress(usi, n_interval):
 def draw_loading_status(loading_status):
     loading_status = json.loads(loading_status)
 
+    # Lets check if all the files are done
+    all_done = True
+    for usi in loading_status:
+        if loading_status[usi]["completionpercent"] != 100:
+            all_done = False
+    
     import utils_progressbar
 
     html_txt = utils_progressbar.generate_html_progress(loading_status)
 
-    # Embedding the HTML file as an iframe
-    html_status = html.Iframe(
-        srcDoc=html_txt,  
-        style={"width": "100%", "height": "500px", "border": "none"},
-    )
+    if all_done:
+        html_status = "USI Processing Completed"
+    else:
+        html_status = html.Iframe(
+            srcDoc=html_txt,  
+            style={"width": "100%", "height": "500px", "border": "none"},
+        )
     
-    return [[html_status]]
+    return [html_status]
 
 # This helps to update the ms2/ms1 plot
 @app.callback([
@@ -3467,19 +3475,17 @@ def render_initial_file_load(usi, usi_select, usi2):
             # Kicking off caching of data, asychronously
             tasks.massql_cache(local_filename)
         except:
-            status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
+            status = html.H6([dbc.Badge("Error - Refresh Page", color="warning", className="ml-1")])
             return [status]
             
     if len(usi2_list) > 0:
         try:
             _resolve_usi(usi2_list[0])
         except:
-            status = html.H6([dbc.Badge("USI1 Loading Error", color="warning", className="ml-1")])
+            status = html.H6([dbc.Badge("Error - Refresh Page", color="warning", className="ml-1")])
             return [status]
     
     
-
-
     return [status]
 
 

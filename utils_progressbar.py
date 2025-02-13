@@ -19,6 +19,10 @@ def _determine_usi_size(usi):
 def determine_usi_progress(usis):
     all_usi = usis.split("\n")
 
+    # limit to 10
+    all_usi = all_usi[:10]
+    #limit_status = 10
+
     status_dict = {}
 
     for usi in all_usi:
@@ -27,8 +31,12 @@ def determine_usi_progress(usis):
         
         status_dict[usi] = {}
 
+        # This means its fully converted
         local_usi_filename = _usi_to_local_filename(usi)
         local_usi_filename = os.path.join("temp", local_usi_filename)        
+
+        # TODO: Check if there is the msconverted file
+
 
         full_percent_complete = 0
         
@@ -43,9 +51,6 @@ def determine_usi_progress(usis):
             remote_link, resource_name = download._resolve_usi_remotelink(usi)
             _, file_extension = os.path.splitext(remote_link)
             temp_download_filename = os.path.join("temp", download._usi_to_temp_download_filename(usi, file_extension))
-
-            print(temp_download_filename)
-
 
             if os.path.exists(temp_download_filename):
                 usi_size = _determine_usi_size(usi)
@@ -95,7 +100,6 @@ def generate_html_progress(data):
         </style>
     </head>
     <body>
-        <h2>USI Completion Progress</h2>
         <table>
             <tr>
                 <th>USI</th>

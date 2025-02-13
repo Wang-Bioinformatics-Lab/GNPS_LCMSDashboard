@@ -78,7 +78,7 @@ def _usi_to_local_filename(usi):
 def _usi_to_temp_download_filename(usi, file_extension):
     # doing a hash on the usi using uuid3
     usi_hash = str(uuid.uuid3(uuid.NAMESPACE_DNS, usi))
-    temp_filename = usi_hash + file_extension
+    temp_filename = "download_" + usi_hash + file_extension
 
     return temp_filename
 
@@ -353,38 +353,36 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
 
     # This is the download temporary filename
     #temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + file_extension)
-    temp_filename = os.path.join(temp_folder, _usi_to_temp_download_filename(usi, file_extension))
+    temp_download_filename = os.path.join(temp_folder, _usi_to_temp_download_filename(usi, file_extension))
     
     if resource_name == "GLYCOPOST":
-        download_glycopost.download_glycopost(usi, remote_link, temp_filename)
+        download_glycopost.download_glycopost(usi, remote_link, temp_download_filename)
 
     elif resource_name == "ZENODO":
-        download_zenodo.download_zenodo(usi, remote_link, temp_filename)
+        download_zenodo.download_zenodo(usi, remote_link, temp_download_filename)
         
     elif "https://ftp.pride.ebi.ac.uk/" in remote_link:
         # We are getting it from PRIDE, so lets try to do it in parallel
-        wget_cmd = "lftp -e 'pget -n 15 -c \"{}\" -o {};; exit'".format(remote_link, temp_filename)
+        wget_cmd = "lftp -e 'pget -n 15 -c \"{}\" -o {};; exit'".format(remote_link, temp_download_filename)
 
         os.system(wget_cmd)
     else:
-        wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_filename)
+        wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_download_filename)
         
         os.system(wget_cmd)
 
-    os.rename(temp_filename, local_filename)
-
-    temp_filename = os.path.join(temp_folder, str(uuid.uuid4()) + ".mzML")
+    temp_msconvert_filename = os.path.join(temp_folder, "msconvert_out_" + str(uuid.uuid4()) + ".mzML")
     # Lets do a conversion
     # TODO: Setting timeouts to kill child processes
     if file_extension.lower() == ".cdf":
-        _convert_cdf_to_mzML(local_filename, temp_filename)
+        _convert_cdf_to_mzML(temp_download_filename, temp_msconvert_filename)
     elif file_extension.lower() == ".raw":
-        _convert_raw_to_mzML(local_filename, temp_filename)
+        _convert_raw_to_mzML(temp_download_filename, temp_msconvert_filename)
     else:
-        _convert_mzML(local_filename, temp_filename)
+        _convert_mzML(temp_download_filename, temp_msconvert_filename)
 
     # Renaming the temp
-    os.rename(temp_filename, converted_local_filename)
+    os.rename(temp_msconvert_filename, converted_local_filename)
 
     # Cleanup
     try:
