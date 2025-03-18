@@ -47,13 +47,19 @@ def _resolve_msv_usi(usi, force_massive=False):
 
         # Format into HTTPS
         fileparameters = quote(remote_path)
-        remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={fileparameters}"
+        #remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={fileparameters}"
+
+        # We will use the massive proxy when downloading via HTTPS
+        remote_link = f"https://massiveproxy.gnps2.org/massiveproxy/{fileparameters[2:]}"
     except:
         # We did not successfully look it up, this is the fallback try
         if force_massive:
             #return f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
             fileparameter = quote(f"f.{usi_splits[1]}/{usi_splits[2]}")
-            remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={fileparameter}"
+            #remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={fileparameter}"
+
+            # We will use the massive proxy when downloading via HTTPS
+            remote_link = f"https://massiveproxy.gnps2.org/massiveproxy/{fileparameters[2:]}"
         else:
             raise
 
