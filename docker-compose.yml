@@ -21,10 +21,17 @@ services:
       VIRTUAL_PORT: 5000
       LETSENCRYPT_HOST: ${HOSTNAME:-dashboard.gnps2.org}
       LETSENCRYPT_EMAIL: mwang87@gmail.com
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"      # Maximum size of a single log file
+        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
     deploy:
       resources:
         limits:
           memory: 32000M
+    
+          
       
   gnpslcms-worker-conversion:
     build:
@@ -42,6 +49,11 @@ services:
     networks:
       - default
       - nginx-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"      # Maximum size of a single log file
+        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
     deploy:
       resources:
         limits:
@@ -64,6 +76,11 @@ services:
     networks:
       - default
       - nginx-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"      # Maximum size of a single log file
+        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
     deploy:
       resources:
         limits:
@@ -86,6 +103,11 @@ services:
     networks:
       - default
       - nginx-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"      # Maximum size of a single log file
+        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
     deploy:
       resources:
         limits:
@@ -107,20 +129,32 @@ services:
     networks:
       - default
       - nginx-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"      # Maximum size of a single log file
+        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
     deploy:
       resources:
         limits:
           memory: 32000M
+    
 
   gnpslcms-redis:
     image: valkey/valkey:alpine3.20
     restart: unless-stopped
     networks:
       - default
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"      # Maximum size of a single log file
+        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
     deploy:
       resources:
         limits:
           memory: 8000M
+          
 
 networks:
   nginx-net:
