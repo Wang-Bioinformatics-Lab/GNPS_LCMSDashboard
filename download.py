@@ -11,6 +11,7 @@ from download_msv import _resolve_msv_usi
 from download_workbench import _resolve_metabolomicsworkbench_usi
 import download_zenodo
 import download_glycopost
+import download_norman
 
 try:
     import utils_conversion
@@ -68,6 +69,9 @@ def _usi_to_local_filename(usi):
     elif "ZENODO" in usi_splits[1]:
         converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3])) + ".mzML"
         converted_local_filename = converted_local_filename.replace(".mzML.mzML", ".mzML")
+
+    elif "NORMAN" in usi_splits[1]:
+        converted_local_filename = werkzeug.utils.secure_filename(":".join(usi_splits[:3]).split("?")[0]) + ".mzML"
 
     # Cleaning it up
     if len(converted_local_filename) > 250:
@@ -220,6 +224,9 @@ def _resolve_usi_remotelink(usi):
     elif "ZENODO" in usi_splits[1]:
         remote_link = download_zenodo._resolve_zenodo_usi(usi)
         resource = "ZENODO"
+    elif "NORMAN" in usi_splits[1]:
+        remote_link = download_norman._resolve_norman_usi(usi)
+        resource = "NORMAN"
     elif "PXD" in usi_splits[1]:
         # First lets try resolving it at MSV
         remote_link = ""
@@ -348,7 +355,12 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
     print("DEBUG: Remote Link", remote_link, file=sys.stderr, flush=True)
 
     # Getting Data Local, TODO: likely should serialize it
-    local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
+    if "NORMAN" in usi_splits[1]:
+        # remove all the url parmaeters from url
+        remote_link_stripped = remote_link.split("?")[0]
+        local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link_stripped)[-150:])
+    else:
+        local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
     filename, file_extension = os.path.splitext(local_filename)
 
     # This is the download temporary filename
@@ -372,6 +384,7 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         os.system(wget_cmd)
 
     temp_msconvert_filename = os.path.join(temp_folder, "msconvert_out_" + str(uuid.uuid4()) + ".mzML")
+
     # Lets do a conversion
     # TODO: Setting timeouts to kill child processes
     if file_extension.lower() == ".cdf":
