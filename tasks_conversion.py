@@ -33,6 +33,9 @@ def _download_convert_file(usi, temp_folder="temp"):
     """
 
     return_val = download._resolve_usi(usi, temp_folder=temp_folder)
+    import sys
+    print("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
     _convert_file_feather.delay(usi, temp_folder=temp_folder)
 
     return return_val

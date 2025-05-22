@@ -22,7 +22,7 @@ def _resolve_msv_usi(usi, force_massive=False):
         msv_usi = "{}:scan:1".format(usi)
     
     lookup_url = f'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum?id={msv_usi}'
-    lookup_request = requests.get(lookup_url)
+    lookup_request = requests.get(lookup_url, verify=False) # we don't verify because massive always goes down on TLS
 
     try:
         resolution_json = lookup_request.json()
