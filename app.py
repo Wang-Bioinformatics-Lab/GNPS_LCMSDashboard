@@ -2518,15 +2518,23 @@ def _create_map_fig(filename,
     print("GETTING LCMS AGG", time.time() - start, file=sys.stderr, flush=True)
 
     start = time.time()
-    lcms_fig = lcms_map._create_map_fig(agg_dict, msn_results, 
-                                            map_selection=map_selection, 
-                                            show_ms2_markers=show_ms2_markers, 
-                                            polarity_filter=polarity_filter, 
-                                            highlight_box=highlight_box,
-                                            color_scale=map_plot_color_scale, 
-                                            template=template,
-                                            ms2marker_color=ms2marker_color,
-                                            ms2marker_size=int(ms2marker_size))
+    # lcms_fig = lcms_map._create_map_fig(agg_dict, msn_results, 
+    #                                         map_selection=map_selection, 
+    #                                         show_ms2_markers=show_ms2_markers, 
+    #                                         polarity_filter=polarity_filter, 
+    #                                         highlight_box=highlight_box,
+    #                                         color_scale=map_plot_color_scale, 
+    #                                         template=template,
+    #                                         ms2marker_color=ms2marker_color,
+    #                                         ms2marker_size=int(ms2marker_size))
+
+    import xarray
+
+    agg = xarray.DataArray.from_dict(agg_dict)
+    df = agg.to_pandas()
+    print(pd.melt(df.head(), id_vars="mz", value_vars=df.columns()))
+    lcms_fig = go.Figure(data=[go.Surface(z=agg)])
+
 
     print("DRAWING LCMS MAP", time.time() - start, file=sys.stderr, flush=True)
     return lcms_fig
@@ -3606,10 +3614,10 @@ def draw_file(url_search, usi, usi_select,
                                 ms2marker_size=ms2marker_size)
 
     # Adding on Feature Finding data
-    map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
+    #map_fig, features_df = _integrate_feature_finding(local_filename, map_fig, map_selection=current_map_selection, feature_finding=feature_finding_params)
 
     # Adding on Overlay Data
-    map_fig = _integrate_overlay(overlay_usi, map_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=current_map_selection, overlay_tabular_data=overlay_tabular_data)
+    #map_fig = _integrate_overlay(overlay_usi, map_fig, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, map_selection=current_map_selection, overlay_tabular_data=overlay_tabular_data)
 
     feature_finding_figures = []
     try:
