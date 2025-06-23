@@ -13,3 +13,4 @@ psims
 netcdf4
 dask[complete]==2024.1.0
 tqdm
+pyteomics==4.7.5
