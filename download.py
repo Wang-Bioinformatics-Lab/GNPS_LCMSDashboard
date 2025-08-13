@@ -379,9 +379,21 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
 
         os.system(wget_cmd)
     else:
-        wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_download_filename)
+        # lets try to get it locally first
+
+        try:
+            if resource_name == "MASSIVEDATASET":
+                local_dataset_path = "/data/datasets/server/{}/{}".format(usi_splits[1], usi_splits[2])
+                if os.path.exists(local_dataset_path):
+                    os.system("cp {} {}".format(local_dataset_path, temp_download_filename))
+                else:
+                    raise Exception("Dataset not found locally")
+            else:
+                raise Exception("Not supported resource")
+        except:
+            wget_cmd = "wget '{}' --referer '{}' -O {} 2> /dev/null".format(remote_link, remote_link, temp_download_filename)
         
-        os.system(wget_cmd)
+            os.system(wget_cmd)
 
     temp_msconvert_filename = os.path.join(temp_folder, "msconvert_out_" + str(uuid.uuid4()) + ".mzML")
 

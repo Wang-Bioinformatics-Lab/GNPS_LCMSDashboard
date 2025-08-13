@@ -42,6 +42,7 @@ services:
       - ./output:/app/output:rw
       - ./logs:/app/logs:rw
       - ./temp:/app/temp
+      - /data/datasets:/data/datasets:ro
     command: /app/run_worker_conversion.sh
     restart: unless-stopped
     depends_on: 
