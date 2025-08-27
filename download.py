@@ -385,7 +385,7 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
                 local_dataset_path = "/data/datasets/server/MassIVE/{}/{}".format(usi_splits[1], usi_splits[2])
                 print("DEBUG: TRYING LOCAL", local_dataset_path, file=sys.stderr, flush=True)
                 if os.path.exists(local_dataset_path):
-                    os.system("cp {} {}".format(local_dataset_path, temp_download_filename))
+                    os.system("cp '{}' '{}'".format(local_dataset_path, temp_download_filename))
                 else:
                     raise Exception("Dataset not found locally")
             else:
