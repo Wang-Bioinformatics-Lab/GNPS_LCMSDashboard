@@ -359,6 +359,8 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         # remove all the url parmaeters from url
         remote_link_stripped = remote_link.split("?")[0]
         local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link_stripped)[-150:])
+    elif "ZENODO" in usi_splits[1]:
+        local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link.replace("/content", ""))[-150:])
     else:
         local_filename = os.path.join(temp_folder, "temp_" + str(uuid.uuid4()) + "_" + werkzeug.utils.secure_filename(remote_link)[-150:])
     filename, file_extension = os.path.splitext(local_filename)
@@ -371,6 +373,7 @@ def _resolve_usi(usi, temp_folder="temp", cleanup=True):
         download_glycopost.download_glycopost(usi, remote_link, temp_download_filename)
 
     elif resource_name == "ZENODO":
+        print("temp_download_filename", temp_download_filename, file=sys.stderr, flush=True)
         download_zenodo.download_zenodo(usi, remote_link, temp_download_filename)
         
     elif "https://ftp.pride.ebi.ac.uk/" in remote_link:

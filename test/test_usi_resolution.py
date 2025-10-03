@@ -3,7 +3,6 @@ import os
 sys.path.insert(0, "..")
 import pandas as pd
 
-import xic
 import download
 import lcms_map
 
@@ -51,9 +50,13 @@ def test_resolve_filename():
 
 def test_resolve_specific():
     usi = "mzspec:ZENODO-8338511:CCE_P1706_78_MSMS.mzXML"
+    usi = "mzspec:ZENODO-4989929:T2.zip-T2/T2_lysate_ETHCD_1D_2.raw"
+    usi = "mzspec:ZENODO-16286015:Bigelow_mzML.zip-Bigelow_mzML/Bigelow_245.mzML"
+    #usi = "mzspec:MSV000099355:peak/SDS_M914_media2_5_1.mzML"
+    
 
     converted_filename = download._usi_to_local_filename(usi)
-    print(converted_filename)
+    print("converted_filename we expect eventually", converted_filename)
     remote_link, local_filename = download._resolve_usi(usi)
     print(remote_link, local_filename)
 
