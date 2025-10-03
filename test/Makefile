@@ -5,7 +5,9 @@ all:
 resolve:
 	pytest test_usi_resolution.py::test_resolve_remote_url -v --capture=tee-sys
 	pytest test_usi_resolution.py -v
-	
+
+resolve_specific:
+	pytest test_usi_resolution.py::test_resolve_specific -v --capture=tee-sys
 
 benchmark:
 	pytest --durations=0 -n 4 speed_test.py -v --profile-svg

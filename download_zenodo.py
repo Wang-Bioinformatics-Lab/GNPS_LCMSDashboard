@@ -20,7 +20,10 @@ def download_zenodo(usi, remote_link, output_filename):
         with RemoteZip(remote_link) as zip:
             for zip_info in zip.infolist():
                 if zip_info.filename == target_filename:
-                    zip.extract(zip_info, output_filename)
+                    #zip.extract(zip_info, output_filename) # not using because it makes nested folders
+                    with open(output_filename, 'wb') as f:
+                        file_content = zip.read(zip_info)
+                        f.write(file_content)
                     break
     else:
         wget_cmd = "wget '{}' --referer '{}' -O {} --no-check-certificate 2> /dev/null".format(remote_link, remote_link, output_filename)
