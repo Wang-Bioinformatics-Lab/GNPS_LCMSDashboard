@@ -157,7 +157,7 @@ MAX_LCMS_FILES = 500
 NAVBAR = dbc.Navbar(
     children=[
         dbc.NavbarBrand(
-            html.Img(src="logo.png", width="120px"),
+            html.Img(src="https://gnps2.org/static/img/gnps2logo.png", width="120px"),
             href="https://gnps2.org"
         ),
         dbc.Nav(
