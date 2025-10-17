@@ -329,11 +329,19 @@ def _spectrum_generator(filename, min_rt, max_rt):
 def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=""):
     # Let's try the UDI
     try:
-        overlay_usi_splits = overlay_usi.split(":")
-        file_path = overlay_usi_splits[2].split("-")[-1]
-        task = overlay_usi_splits[2].split("-")[1]
-        url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
-        overlay_df = pd.read_csv(url, sep=None, nrows=400000)
+        if "GNPS2" in overlay_usi:
+            overlay_usi_splits = overlay_usi.split(":")
+            file_path = overlay_usi_splits[2].split("-")[-1]
+            task = overlay_usi_splits[2].split("-")[1]
+
+            url = "https://gnps2.org/resultfile?task={}&file={}".format(task, file_path)
+            overlay_df = pd.read_csv(url, sep=None, nrows=400000)
+        else:
+            overlay_usi_splits = overlay_usi.split(":")
+            file_path = overlay_usi_splits[2].split("-")[-1]
+            task = overlay_usi_splits[2].split("-")[1]
+            url = "http://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?task={}&block=main&file={}".format(task, file_path)
+            overlay_df = pd.read_csv(url, sep=None, nrows=400000)
     except:
         if len(overlay_tabular_data) > 0:
             # if this fails, we can try parsing overlay_tabular_data
