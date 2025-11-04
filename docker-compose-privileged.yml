@@ -5,3 +5,27 @@ services:
       NUMBA_CACHE_DIR: "/tmp/numba_cache"
     user: ${UID:-1000}:${GID:-1000}
     privileged: true
+
+  gnpslcms-worker-conversion:
+    environment:
+      NUMBA_CACHE_DIR: "/tmp/numba_cache"
+    user: ${UID:-1000}:${GID:-1000}
+    privileged: true
+
+  gnpslcms-worker-compute:
+    environment:
+      NUMBA_CACHE_DIR: "/tmp/numba_cache"
+    user: ${UID:-1000}:${GID:-1000}
+    privileged: true
+  
+  gnpslcms-worker-featurefinding:
+    environment:
+      NUMBA_CACHE_DIR: "/tmp/numba_cache"
+    user: ${UID:-1000}:${GID:-1000}
+    privileged: true
+
+  gnpslcms-worker-sync:
+    environment:
+      NUMBA_CACHE_DIR: "/tmp/numba_cache"
+    user: ${UID:-1000}:${GID:-1000}
+    privileged: true
