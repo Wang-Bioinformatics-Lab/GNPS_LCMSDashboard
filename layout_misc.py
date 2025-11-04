@@ -30,6 +30,8 @@ EXAMPLE_DASHBOARD = [
             html.Br(),
             html.A("LCMS auto zoomed by scan in USI", style={"text-decoration": "none"}, href="/?usi=mzspec:MSV000085852:QC_0:scan:2277"),
             html.Br(),
+            html.A("LCMS in GNPS2 with Overlay", style={"text-decoration": "none"}, href="/??usi=mzspec:GNPS2:TASK-cfffc62ef53541c682c2025cce84a8e2-input_spectra/A10_GA10_01_2609.mzML&overlay_usi=mzspec:GNPS2:TASK-cfffc62ef53541c682c2025cce84a8e2-nf_output/networking/merged_features.tsv&overlay_mz=feature_mz&overlay_rt=feature_rt"),
+            html.Br(),
             html.Br(),
 
             html.H5("Various Vendor Examples - LC/MS Metabolomics"),

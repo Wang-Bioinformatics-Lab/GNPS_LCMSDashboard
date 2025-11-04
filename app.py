@@ -1659,9 +1659,9 @@ def draw_spectrum(usi, usi_select, ms2_identifier, export_format, plot_theme, xi
     # adding polarity for all scans
     try:
         positive_string = None
-        if spectrum_metadata["polarity"] is "Positive":
+        if spectrum_metadata["polarity"] == "Positive":
             positive_string = "+"
-        elif spectrum_metadata["polarity"] is "Negative":
+        elif spectrum_metadata["polarity"] == "Negative":
             positive_string = "-"
         plot_title += "{} Polarity".format(positive_string)
     except:
@@ -2709,6 +2709,7 @@ def _integrate_overlay(overlay_usi, lcms_fig, overlay_mz, overlay_rt, overlay_fi
 
         lcms_fig.add_trace(_intermediate_fig)
     except:
+        #raise #DEBUG
         pass
 
     return lcms_fig
@@ -4889,5 +4890,13 @@ def shorturlresolve():
 def logo():
     return send_from_directory("assets", "dashboard_logo_final_transparent.png")
 
+# DEBUGGING
+@server.route("/overlayresolve")
+def resolveoverlay():
+    usi = request.args.get("usi")
+    overlay_df = _resolve_overlay(usi, "", "", "", "", "", "", "", overlay_tabular_data="")
+
+    return overlay_df.to_json(index=False)
+
 if __name__ == "__main__":
-    app.run_server(debug=True, port=5000, host="0.0.0.0")
+    app.run(debug=True, port=5000, host="0.0.0.0")

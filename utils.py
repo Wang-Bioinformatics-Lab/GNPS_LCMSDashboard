@@ -328,6 +328,7 @@ def _spectrum_generator(filename, min_rt, max_rt):
 # Getting the Overlay data
 def _resolve_overlay(overlay_usi, overlay_mz, overlay_rt, overlay_filter_column, overlay_filter_value, overlay_size, overlay_color, overlay_hover, overlay_tabular_data=""):
     # Let's try the UDI
+
     try:
         if "GNPS2" in overlay_usi:
             overlay_usi_splits = overlay_usi.split(":")
