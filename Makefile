@@ -20,6 +20,9 @@ server-compose-production:
 	docker compose --compatibility build
 	docker compose --compatibility up -d
 
+server-compose-privileged-server:
+	docker-compose -f docker-compose.yml -f docker-compose-privileged.yml --compatibility up -d
+
 clear-cache:
 	sudo rm temp/* || true
 	sudo rm temp/flask-cache/* || true
@@ -38,3 +41,5 @@ attach:
 
 attach-conversion:
 	docker exec -i -t gnpslcms-worker-conversion /bin/bash
+
+##### For image deployment

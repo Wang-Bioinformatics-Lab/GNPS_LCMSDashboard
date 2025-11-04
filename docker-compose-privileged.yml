@@ -1,0 +1,7 @@
+version: '3'
+services:
+  gnpslcms-dash:
+    environment:
+      NUMBA_CACHE_DIR: "/tmp/numba_cache"
+    user: ${UID:-1000}:${GID:-1000}
+    privileged: true
