@@ -7,7 +7,7 @@ import dash_html_components as html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
-import dash_uploader as du
+
 
 # Plotly Imports
 import plotly.express as px

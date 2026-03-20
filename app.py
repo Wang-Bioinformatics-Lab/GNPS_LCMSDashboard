@@ -9,7 +9,6 @@ from dash import html
 from dash import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
-import dash_uploader as du
 
 # Plotly Imports
 import plotly.express as px
@@ -82,8 +81,6 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.title = 'GNPS - LCMS Browser'
 TEMPFOLDER = "./temp"
-TEMP_UPLOADFOLDER = "./temp/dash-uploader"
-du.configure_upload(app, TEMP_UPLOADFOLDER)
 
 server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
 
@@ -2179,23 +2176,6 @@ def _handle_file_upload_small(filename , filecontent):
 
     return usi, upload_message
 
-def _handle_file_upload_big(filename, uploadid):
-    uploaded_filename = os.path.join(TEMP_UPLOADFOLDER, uploadid, filename)
-
-    extension = os.path.splitext(filename)[1]
-    original_filename = os.path.splitext(filename)[0]
-    safe_filename = werkzeug.utils.secure_filename(original_filename) + "_" + str(uuid.uuid4()).replace("-", "")
-
-    acceptable_extensions = [".mzML", ".mzXML", ".cdf", ".mzml", "mzxml", ".CDF", ".raw", ".RAW"]
-
-    if extension in acceptable_extensions:
-        temp_filename = os.path.join("temp", "{}{}".format(safe_filename, extension))
-        shutil.move(uploaded_filename, temp_filename)
-
-        usi = "mzspec:LOCAL:{}".format(os.path.basename(temp_filename))
-    
-    return usi, ""
-
 
 def _parse_usis(usi_string):
     """
@@ -2233,7 +2213,6 @@ def _parse_usis(usi_string):
                 Input('url', 'search'), 
                 Input('url', 'hash'), 
                 Input('upload-data1', 'contents'),
-                Input('upload-data2', 'isCompleted'),
                 Input('sychronization_load_session_button', 'n_clicks'),
                 Input('sychronization_interval', 'n_intervals'),
                 Input('advanced_import_update_button', "n_clicks"),
@@ -2241,8 +2220,6 @@ def _parse_usis(usi_string):
               ],
               [
                   State('upload-data1', 'filename'),
-                  State('upload-data2', 'fileNames'),
-                  State('upload-data2', 'upload_id'),
                   State('sychronization_session_id', 'value'),
 
                   State('setting_json_area', 'value'),
@@ -2251,11 +2228,10 @@ def _parse_usis(usi_string):
                   State('usi_select', 'value'), 
                   State('usi2', 'value'),
               ])
-def update_usi(search, url_hash, 
+def update_usi(search, url_hash,
                 uploadfile1_filecontent_list,
-                uploadfile2_iscompleted, 
-                sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters, 
-                uploadfile1_filename_list, uploadfile2_filenames, uploadfile2_uploadid, 
+                sychronization_load_session_button_clicks, sychronization_interval, advanced_import_update_button, auto_import_parameters,
+                uploadfile1_filename_list,
                 sychronization_session_id,
                 setting_json_area, 
                 existing_usi,
@@ -2266,30 +2242,19 @@ def update_usi(search, url_hash,
 
     triggered_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
 
-    if (uploadfile1_filename_list is not None or uploadfile2_filenames is not None) and "upload-data" in triggered_id:
+    if uploadfile1_filename_list is not None and "upload-data1" in triggered_id:
         total_files_uploaded = 0
         usi = existing_usi
         usi2 = existing_usi2
         upload_message = ""
 
-        # Handling the small many files upload
-        if uploadfile1_filename_list is not None and "upload-data1" in triggered_id:
-            for i, filename in enumerate(uploadfile1_filename_list):
-                filecontent = uploadfile1_filecontent_list[i]
-                new_usi, new_upload_message = _handle_file_upload_small(filename , filecontent)
-                
-                if new_usi is not None:
-                    total_files_uploaded += 1
-                    usi = new_usi + "\n" + usi
+        for i, filename in enumerate(uploadfile1_filename_list):
+            filecontent = uploadfile1_filecontent_list[i]
+            new_usi, new_upload_message = _handle_file_upload_small(filename , filecontent)
 
-        # Uploading Big Files
-        if uploadfile2_filenames is not None and "upload-data2" in triggered_id:
-            for i, filename in enumerate(uploadfile2_filenames):
-                new_usi, new_upload_message = _handle_file_upload_big(filename, uploadfile2_uploadid)
-
-                if new_usi is not None:
-                    total_files_uploaded += 1
-                    usi = new_usi + "\n" + usi
+            if new_usi is not None:
+                total_files_uploaded += 1
+                usi = new_usi + "\n" + usi
 
         upload_message += "{} Files Uploaded".format(total_files_uploaded)
 

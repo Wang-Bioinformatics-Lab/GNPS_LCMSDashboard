@@ -1,3 +1,4 @@
+setuptools<81
 Flask>2.0.0
 flask_limiter
 gunicorn
@@ -13,7 +14,6 @@ dash-core-components
 dash-html-components
 dash-renderer
 dash-table
-dash-uploader==0.5.0
 dash_daq
 idna==2.8
 libarchive-c==2.8

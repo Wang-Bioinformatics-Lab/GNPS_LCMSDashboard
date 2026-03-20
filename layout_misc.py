@@ -7,7 +7,6 @@ from dash import html
 import dash_table
 from dash.dependencies import Input, Output, State
 import dash_daq as daq
-import dash_uploader as du
 
 # Plotly Imports
 import plotly.express as px
@@ -483,28 +482,6 @@ UPLOAD_MODAL = [
                         )
                     ]),
                     dbc.Col([
-                        html.H3("Upload One Big File"),
-                        html.Hr(),
-                        html.Div(
-                            du.Upload(
-                                id="upload-data2",
-                                max_file_size=2048, 
-                                filetypes=['mzML', 'mzml', 'mzXML', 'mzxml', 'cdf', 'CDF', 'RAW', 'raw'],
-                                max_files=1,
-                                pause_button=True,
-                                text="Drag and Drop your own files (up to 2GB)",
-                            ),
-                            style={
-                                'width': '95%',
-                                'height': '100px',
-                                'lineHeight': '100px',
-                                'borderWidth': '1px',
-                                'display': 'inline-block',
-                                'borderRadius': '5px',
-                                'textAlign': 'center',
-                                'margin': '10px'
-                            },
-                        )
                     ]),
                 ]),
                 html.Hr(),

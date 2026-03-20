@@ -24,6 +24,9 @@ RUN /bin/bash -c 'source activate py311 && pip install git+https://github.com/mw
 # Datashader
 RUN mamba install -c conda-forge -y datashader -n py311
 
+# Ensure setuptools is available (needed by celery for pkg_resources)
+RUN /bin/bash -c 'source activate py311 && pip install "setuptools<81"'
+
 COPY . /app
 WORKDIR /app
 
