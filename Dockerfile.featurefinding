@@ -15,20 +15,23 @@ RUN echo "export PATH=$CONDA_DIR:$PATH" >> ~/.bashrc
 # Forcing version of Python
 RUN mamba create -n py311 python=3.10 -y
 
+# Bootstrap uv for fast installs
+RUN /bin/bash -c 'source activate py311 && pip install uv'
+
 COPY requirements-featurefinding.txt .
-RUN /bin/bash -c 'source activate py311 && pip install -r requirements-featurefinding.txt'
+RUN /bin/bash -c 'source activate py311 && uv pip install --system -r requirements-featurefinding.txt'
 
 # Installing MassQL
-RUN /bin/bash -c 'source activate py311 && pip install git+https://github.com/mwang87/MassQueryLanguage.git'
+RUN /bin/bash -c 'source activate py311 && uv pip install --system git+https://github.com/mwang87/MassQueryLanguage.git'
 
 # Installing Java
 RUN mamba install -c conda-forge -y openjdk=11.0.9.1 -n py311
 
 # Datashader
-RUN mamba install -c conda-forge -y datashader=0.15 'xarray<2024.10' -n py311
+RUN mamba install -c conda-forge -y datashader -n py311
 
 # Ensure setuptools is available (needed by celery for pkg_resources)
-RUN /bin/bash -c 'source activate py311 && pip install "setuptools<81"'
+RUN /bin/bash -c 'source activate py311 && uv pip install --system "setuptools<81"'
 
 COPY . /app
 WORKDIR /app

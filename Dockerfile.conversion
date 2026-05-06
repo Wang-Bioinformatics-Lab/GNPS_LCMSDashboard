@@ -14,6 +14,9 @@ RUN echo "export PATH=$CONDA_DIR:$PATH" >> ~/.bashrc
 # Forcing version of Python
 RUN mamba create -n py311 python=3.10 -y
 
+# Bootstrap uv for fast installs
+RUN /bin/bash -c 'source activate py311 && pip install uv'
+
 ################## METADATA ######################
 LABEL base_image="mono:latest"
 LABEL version="1"
@@ -37,7 +40,7 @@ RUN xbuild
 
 
 COPY requirements-conversion.txt .
-RUN /bin/bash -c 'source activate py311 && pip install -r requirements-conversion.txt'
+RUN /bin/bash -c 'source activate py311 && uv pip install --system -r requirements-conversion.txt'
 
 
 # Install Aspera
@@ -46,10 +49,10 @@ RUN /bin/bash -c 'source activate py311 && pip install -r requirements-conversio
 # RUN ./ibm-aspera-connect_4.1.0.46-linux_x86_64.sh
 
 # Datashader
-RUN mamba install -c conda-forge -y datashader=0.15 'xarray<2024.10' -n py311
+RUN mamba install -c conda-forge -y datashader -n py311
 
 # Ensure setuptools is available (needed by celery for pkg_resources)
-RUN /bin/bash -c 'source activate py311 && pip install "setuptools<81"'
+RUN /bin/bash -c 'source activate py311 && uv pip install --system "setuptools<81"'
 
 COPY . /app
 WORKDIR /app

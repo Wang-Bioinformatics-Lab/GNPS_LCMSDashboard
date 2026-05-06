@@ -1,12 +1,11 @@
 setuptools<81
 celery==5.2.2
 celery_once==3.0.1
-pandas
+pandas>=2.1
 werkzeug
 remotezip
 joblib
 scipy
-numpy==1.23.1
 requests
 dask[complete]==2024.1.0
 tqdm

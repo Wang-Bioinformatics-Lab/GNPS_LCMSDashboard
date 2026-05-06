@@ -3,7 +3,7 @@ Flask>2.0.0
 flask_limiter
 gunicorn
 plotly
-pandas
+pandas>=2.1
 requests
 tqdm
 Werkzeug
@@ -15,10 +15,7 @@ dash-html-components
 dash-renderer
 dash-table
 dash_daq
-idna==2.8
 libarchive-c==2.8
-python-dateutil==2.8.1
-pytz==2019.3
 Pillow>=9.0.1
 Flask-Caching==1.10.1
 scipy
@@ -35,5 +32,4 @@ qrcode
 pyarrow
 celery==5.2.2
 celery_once==3.0.1
-numpy==1.23.1
 remotezip
