@@ -23,7 +23,7 @@ RUN /bin/bash -c 'source activate py311 && pip install -r requirements-dash.txt'
 RUN /bin/bash -c 'source activate py311 && pip install git+https://github.com/mwang87/MassQueryLanguage.git'
 
 # Datashader
-RUN mamba install -c conda-forge -y datashader=0.15 -n py311
+RUN mamba install -c conda-forge -y datashader=0.15 'xarray<2024.10' -n py311
 
 # Ensure setuptools is available (needed by celery for pkg_resources)
 RUN /bin/bash -c 'source activate py311 && pip install "setuptools<81"'

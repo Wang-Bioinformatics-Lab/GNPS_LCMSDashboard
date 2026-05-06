@@ -25,7 +25,7 @@ RUN /bin/bash -c 'source activate py311 && pip install git+https://github.com/mw
 RUN mamba install -c conda-forge -y openjdk=11.0.9.1 -n py311
 
 # Datashader
-RUN mamba install -c conda-forge -y datashader=0.15 -n py311
+RUN mamba install -c conda-forge -y datashader=0.15 'xarray<2024.10' -n py311
 
 # Ensure setuptools is available (needed by celery for pkg_resources)
 RUN /bin/bash -c 'source activate py311 && pip install "setuptools<81"'
