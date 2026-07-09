@@ -132,18 +132,12 @@ def _resolve_mtbls_usi(usi):
 
     dataset_accession = usi_splits[1]
     filename = usi_splits[2]
-    
-    # FTP Deprecated
-    #remote_link = "ftp://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, filename)
-    #r = requests.get("https://www.ebi.ac.uk/metabolights/ws/studies/{}/files?include_raw_data=false".format(dataset_accession))
-    
-    # HTTPS Download
-    # Getting obfuscation code
-    
-    remote_link = "https://www.ebi.ac.uk:443/metabolights/ws/studies/{}/download?file={}".format(dataset_accession, urllib.parse.quote(filename))
-    
-    # obfuscation_code = r.json()["obfuscationCode"]
-    # remote_link = "https://www.ebi.ac.uk/metabolights/ws/studies/{}/download/{}?file={}".format(dataset_accession, obfuscation_code, filename)
+
+    # The ws/studies/<id>/download endpoint is deprecated for public data (it now
+    # returns 403 with a message pointing to the FTP mirror). Public study files
+    # are served from EBI's FTP mirror over HTTPS - one GET per file, no auth.
+    # urllib.parse.quote keeps "/" safe by default, so path separators pass through.
+    remote_link = "https://ftp.ebi.ac.uk/pub/databases/metabolights/studies/public/{}/{}".format(dataset_accession, urllib.parse.quote(filename))
 
     return remote_link
 
