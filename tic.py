@@ -79,3 +79,6 @@ def _tic_file_fast(input_filename, temp_folder="temp"):
     shutil.rmtree(temp_result_folder)
 
     return tic_df
+
+def tic_average(input_filename, start_rt, end_rt):
+    return None
