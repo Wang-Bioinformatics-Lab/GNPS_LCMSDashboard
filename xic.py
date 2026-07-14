@@ -124,6 +124,74 @@ def _xic_file_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
 
     return xic_df, ms2_data
 
+def _xic_file_mrm_slow(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter):
+    # Saving out MS2 locations
+    all_ms2_ms1_int = []
+    all_ms2_rt = []
+    all_ms2_scan = []
+
+    # Performing XIC Plot
+    xic_trace = defaultdict(list)
+    rt_trace = []
+    
+    sum_i = 0 # Used by MS2 height
+    for spec in _spectrum_generator(input_filename, rt_min, rt_max):
+        if spec.scan_time_in_minutes() < rt_min:
+            continue
+
+        if spec.scan_time_in_minutes() > rt_max:
+            continue
+
+        # Saving out the MS2 scans for the XIC
+        if spec.ms_level == 2:
+            scan_polarity = _get_scan_polarity(spec)
+
+            if polarity_filter == "None":
+                pass
+            elif polarity_filter == "Positive":
+                if scan_polarity != "Positive":
+                    continue
+            elif polarity_filter == "Negative":
+                if scan_polarity != "Negative":
+                    continue
+
+            try:
+                for target_mz in all_xic_values:
+                    ms1_target_mz = float(target_mz[1].split(":")[0])
+                    ms2_target_mz = float(target_mz[1].split(":")[1])
+
+                    lower_tolerance_ms1, upper_tolerance_ms1 = _calculate_upper_lower_tolerance(ms1_target_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
+                    lower_tolerance_ms2, upper_tolerance_ms2 = _calculate_upper_lower_tolerance(ms2_target_mz, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit)
+
+                    ms2_mz_precursor = spec.selected_precursors[0]["mz"]
+
+                    if ms2_mz_precursor < lower_tolerance_ms1 or ms2_mz_precursor > upper_tolerance_ms1:
+                        xic_trace[target_mz[0]].append(0)
+                        continue
+
+                    # Filtering peaks by mz
+                    peaks_full = spec.peaks("raw")
+                    peaks = peaks_full[
+                        np.where(np.logical_and(peaks_full[:, 0] >= lower_tolerance_ms2, peaks_full[:, 0] <= upper_tolerance_ms2))
+                    ]
+
+                    # summing intensity
+                    sum_i = sum([peak[1] for peak in peaks])
+                    xic_trace[target_mz[0]].append(sum_i)
+            except:
+                pass
+
+            rt_trace.append(spec.scan_time_in_minutes())
+
+    # Formatting Data Frame
+    xic_df = pd.DataFrame()
+    for target_xic in xic_trace:
+        target_name = "XIC {}".format(target_xic)
+        xic_df[target_name] = xic_trace[target_xic]
+    xic_df["rt"] = rt_trace
+
+    return xic_df, {}
+
 def _xic_file_fast(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolerance, xic_tolerance_unit, rt_min, rt_max, polarity_filter, temp_folder="temp"):
     """
         xic values are tuples where the first value is the string and the second is the value
@@ -137,7 +205,6 @@ def _xic_file_fast(input_filename, all_xic_values, xic_tolerance, xic_ppm_tolera
 
         cmd = 'export LC_ALL=C && ./bin/msaccess {} -o {} -x "tic mz={},{} delimiter=tab" --filter "msLevel 1" --filter "scanTime ["{},{}"]"'.format(input_filename, temp_result_folder, lower_tolerance, upper_tolerance, rt_min*60, rt_max*60)
         os.system(cmd)
-        print(cmd)
 
         # Reading output file
         result_filename = glob.glob(os.path.join(temp_result_folder, "*"))[0]
