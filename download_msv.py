@@ -23,13 +23,13 @@ def _resolve_msv_usi(usi, force_massive=False):
     
     # Pass id via params= so requests URL-encodes special chars (e.g. '+' → '%2B').
     # Interpolating raw lets MassIVE's tomcat decode '+' as space and silently mismatch.
-    lookup_request = requests.get(
-        'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum',
-        params={'id': msv_usi},
-        verify=False,  # massive frequently has TLS issues
-    )
-
     try:
+        lookup_request = requests.get(
+            'https://massive.ucsd.edu/ProteoSAFe/QuerySpectrum',
+            params={'id': msv_usi},
+            verify=False,  # massive frequently has TLS issues
+            timeout=(3.05, 10),
+        )
         resolution_json = lookup_request.json()
 
         remote_path = None
@@ -72,6 +72,14 @@ def _resolve_msv_usi(usi, force_massive=False):
     except:
         # We did not successfully look it up, this is the fallback try
         if force_massive:
+            requested_path = usi_splits[2]
+            path_extension = os.path.splitext(requested_path)[1]
+            if "/" not in requested_path and not path_extension:
+                # A short USI only names a file and relies on QuerySpectrum to
+                # discover its full in-dataset path. Do not return a guessed
+                # proxy URL when that lookup is unavailable.
+                raise
+
             #return f"ftp://massive.ucsd.edu/{usi_splits[1]}/{usi_splits[2]}"
             fileparameter = quote(f"f.{usi_splits[1]}/{usi_splits[2]}")
             #remote_link = f"https://massive.ucsd.edu/ProteoSAFe/DownloadResultFile?forceDownload=true&file={fileparameter}"
