@@ -1,142 +1,90 @@
-## GNPS LCMS Visualization Dashboard
+## GNPS LCMS Dashboard — maintenance shim
 
-### Example Sources of Data
+The interactive GNPS LCMS Dashboard has been retired. It is replaced by a
+rewritten service at **https://dashboard2.gnps2.org**.
 
-1. GNPS Analysis Tasks - [mzspec:GNPS:TASK-d93bdbb5cdda40e48975e6e18a45c3ce-f.mwang87/data/Yao_Streptomyces/roseosporus/0518_s_BuOH.mzXML:scan:171](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AGNPS%3ATASK-d93bdbb5cdda40e48975e6e18a45c3ce-f.mwang87%2Fdata%2FYao_Streptomyces%2Froseosporus%2F0518_s_BuOH.mzXML%3Ascan%3A171&xicmz=841.3170166%3B842.3170166&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier=MS2%3A1176)
-1. GNPS/MassIVE public datasets - [mzspec:MSV000084951:AH22](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000084951%3AAH22&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
-1. MassiVE Proteomics datasets - mzspec:MSV000079514:Adult_CD4Tcells_bRP_Elite_28_f01
-1. MassiVE Proteomics dataset large - mzspec:MSV000083508:ccms_peak_centroided/pituitary_hypophysis/Trypsin_HCD_QExactiveplus/01697_A01_P018020_S00_N01_R2.mzML:scan:62886
-1. Metabolights public datasets - [mzspec:MTBLS1124:QC07.mzML](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMTBLS1124%3AQC07.mzML&xicmz=&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier=)
+What remains in this repository is a small Flask app whose only jobs are:
 
-### Instrument Vendors for Metabolomics
+1. Keep serving `/downloadlink`, the USI → remote URL resolver that other tools
+   call directly.
+2. Forward every other request to the replacement service.
 
-1. Thermo - [mzspec:MSV000084951:AH22](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000084951%3AAH22&xicmz=870.9543493652343&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
-1. Thermo MS3 - [mzspec:MSV000084765:Leptocheline_MS3_DDA_IT_5](https://gnps-lcms.ucsd.edu/?usi=mzspec:MSV000084765:Leptocheline_MS3_DDA_IT_5)
-1. Sciex - [mzspec:MSV000085042:QC1_pos-QC1](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000085042%3AQC1_pos-QC1&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
-1. Bruker - [mzspec:MSV000086015:StdMix_02__GA2_01_55623](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000086015%3AStdMix_02__GA2_01_55623&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
-1. Waters - [mzspec:MSV000084977:OEPKS7_B_1_neg](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000084977%3AOEPKS7_B_1_neg&xicmz=&xic_tolerance=0.5&xic_norm=False&show_ms2_markers=True&ms2_identifier=None)
-1. Agilent - [mzspec:MSV000084060:KM0001](https://gnps-lcms.ucsd.edu/?usi=mzspec:MSV000084060:KM0001)
+Everything else — the Dash UI, XIC/TIC/2D-map computation, MS2 rendering, feature
+finding, MassQL, overlays, collaborative sync, file download and conversion, the
+Celery workers, Redis, and the bundled ProteoWizard binaries — has been removed.
 
-### Data Types for Proteomics
+### API
 
-1. Sciex - SWATH - [mzspec:MSV000085570:170425_01_Edith_120417_CCF_01](https://gnps-lcms.ucsd.edu/?usi=mzspec:MSV000085570:170425_01_Edith_120417_CCF_01)
-
-### Example Use Cases
-
-**Quick analysis of QC data**
-
-Here is the USI for a QC run
-
-mzspec:MSV000085852:QC_0
-
-What we can easily do is paste in the QC molecules and pull them out in one fell swoop:
-
-271.0315;278.1902;279.0909;285.0205;311.0805;314.1381
-
-You can try it out at this [URL](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000085852%3AQC_0&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=No&show_ms2_markers=1&ms2_identifier=) 
-
-**Quickly Compare Multiple files**
-
-mzspec:MSV000085852:QC_0
-mzspec:MSV000085852:QC_1
-mzspec:MSV000085852:QC_2
-
-271.0315;278.1902;279.0909;285.0205;311.0805;314.1381
-
-[Test Link](https://gnps-lcms.ucsd.edu/?usi=mzspec%3AMSV000085852%3AQC_DOM_2%0Amzspec%3AMSV000085852%3AQC_DOM_3%3Ascan%3A62886%0Amzspec%3AMSV000085852%3AQC_DOM_4%3Ascan%3A62886%0Amzspec%3AMSV000085852%3AQC_DOM_5%3Ascan%3A62886%0A&usi2=mzspec%3AMSV000085852%3AQC_DOM_0%3Ascan%3A62886%0Amzspec%3AMSV000085852%3AQC_DOM_1%3Ascan%3A62886%0A%0A&xicmz=271.0315%3B278.1902%3B279.0909%3B285.0205%3B311.0805%3B314.1381&xic_tolerance=0.5&xic_norm=False&xic_file_grouping=FILE&show_ms2_markers=True&ms2_identifier=None)
-
-## API
-
-We aim to provide several APIs to programmatically get data.
-
-
-### Image Preview of MS run
-```
-/mspreview?usi=<usi>
-```
-
-## Development
-
-There are several ways to get GNPS Dashboard working locally, our preferred and recommended way is using docker/docker-compose as it provides a more consistent experience. 
-
-The initial steps are identical:
-
-1. Fork the GNPS Dashboard repository
-1. Clone down to your system
-1. Download Feature Finding tools (Dinosaur and MZmine 2) with get scripts
-
-### Docker 
-
-To get everything up and running, we've created a make target for you to get docker up and running:
+#### Resolve a USI to a download URL
 
 ```
-make server-compose-interactive
+GET /downloadlink?usi=<usi>
 ```
 
-The requirements on your local system are:
+Returns the bare URL as `text/plain`. This is unchanged from the previous
+implementation.
 
-1. Docker
-2. Docker Compose
+```
+$ curl 'https://dashboard.gnps2.org/downloadlink?usi=mzspec:MSV000084951:AH22'
+https://massiveproxy.gnps2.org/massiveproxy/MSV000084951/ccms_peak/AH22.mzML
+```
 
-This will bring the server up on http://localhost:6548. 
+| Status | Meaning |
+| --- | --- |
+| `200` | Body is the remote URL |
+| `400` | Missing or malformed `usi` |
+| `404` | Well-formed USI that resolves to nothing |
+| `502` | Upstream repository lookup failed |
 
-### Conda
+Supported collections: MassIVE (`MSV`), GNPS/GNPS2 tasks, MetaboLights
+(`MTBLS`), Metabolomics Workbench (`ST`), GlycoPost (`GPST`), Zenodo
+(`ZENODO-`), NORMAN (`NORMAN-`), ProteomeXchange (`PXD`).
 
-1. Install Python3 within conda
-3. Install all packages from the requirements.txt
-4. Install packages via conda
-5. Start the dashboard locally (defaults to http://localhost:5000)
+#### Health
 
-**Example shell**
+```
+GET /health   ->   200 "ok"
+```
+
+### Everything else
+
+Any other path is answered with a **302** to `dashboard2.gnps2.org`, preserving
+the path and the full query string, so existing deep links
+(`/?usi=...&xicmz=...&xic_tolerance=...`) keep working as long as the
+replacement accepts the same parameters.
+
+The redirect is deliberately temporary rather than permanent — a `301` would be
+cached by browsers indefinitely and could not be rolled back.
+
+### Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `FORWARD_BASE` | `https://dashboard2.gnps2.org` | Redirect target |
+| `DOWNLOADLINK_RATELIMIT` | unset (no limit) | e.g. `120 per minute` |
+| `HOSTNAME` | `dashboard.gnps2.org` | Virtual host for the nginx proxy |
+
+### Running
 
 ```shell
-# make sure to have Python3 installed via conda (preferably 3.8)
-conda install -c conda-forge datashader
-conda install -c conda-forge openjdk
-
-# install requirements
-pip install -r requirements.txt
-
-# run or debug the GNPS Dashboard with Python 3 on http://localhost:5000
-python ./app.py
-
-# on problem, maybe install the following (tested on Windows 10 with WSL2 Ubuntu) 
-sudo apt-get install libffi-dev
+make server-compose-production     # single container, port 6548 -> 5000
 ```
 
-### Supporting new data sources
+Or without Docker:
 
-Since we utilize a USI to find datasets, there are a limited number of locations we can grab data from. If you want to provide a new data source, you'll have to implement the following
+```shell
+pip install -r requirements.txt
+./run_server.sh                    # http://localhost:5000
+```
 
-1. USI Specification that denotes what the resource is and how to get data
-1. Update the code in ```download.py```, specifically in ```_resolve_usi_remotelink``` to implement how to get the remote URL for your new USI. 
+Note that `docker compose up` will not remove the retired worker and Redis
+containers on a host that previously ran the full stack. Run
+`make server-compose-down` there once before bringing this up.
 
 ### Testing
 
-To run our unit tests, 
-
-```
+```shell
 cd test
-pip install pytest
-pip install pytest-xdist
-pip install pytest-profiling
-make all
+make app        # offline: routing, redirects, input validation
+make resolve    # hits live upstream repositories
 ```
-
-### Useful links for developers
-**Dash and plotly documentations**
-
-- Components: https://dash.plotly.com/dash-core-components 
-- Callbacks: https://dash.plotly.com/basic-callbacks 
-- Plotly express: https://plotly.com/python/plotly-express/ 
-- Plotly: https://plotly.com/python/ 
-
-
-## Production Deployment
-
-One major thing about production deployemnts is the DNS routing. You want to do the following steps to have everything route properly:
-
-1. Create a DNS entry in your DNS server for the domain you want to use (e.g. dashboard.gnps2.org) and point it to the server you're running this on
-1. Copy .env_template to .env and update the domain name to the one you want to use
-1. Run a reverse proxy (https://github.com/mwang87/GNPS_ExtensionsReverseProxy)
-1. Run in production mode ```make server-compose-production```

@@ -1,44 +1,21 @@
-server-compose-build-nocache:
-	docker compose --compatibility build --no-cache
-
 server-compose-build:
 	docker compose --compatibility build
-
-server-compose-dev:
-	docker compose --compatibility build
-	docker compose -f docker-compose.yml -f docker-compose-dev.yml --compatibility up
 
 server-compose-interactive:
 	docker compose --compatibility build
 	docker compose --compatibility up
 
-server-compose:
-	docker compose --compatibility build
-	docker compose --compatibility up -d
-
 server-compose-production:
 	docker compose --compatibility build
 	docker compose --compatibility up -d
 
-server-compose-privileged-server:
-	docker-compose -f docker-compose.yml -f docker-compose-privileged.yml --compatibility up -d
-
-clear-cache:
-	sudo rm temp/* || true
-	sudo rm temp/flask-cache/* || true
-	sudo rm temp/memory-cache/joblib/ -rf || true
-	sudo rm temp/image_previews/*.png || true
-
-clear-flaskcache:
-	sudo rm temp/flask-cache/*
-
-clear-memorycache:
-	sudo rm temp/memory-cache/joblib/ -rf || true
+# Tears down the retired services (workers, redis). Run once on the host that
+# used to serve the full dashboard - `up` alone will not remove them.
+server-compose-down:
+	docker compose --compatibility down --remove-orphans
 
 attach:
 	docker exec -i -t gnpslcms-dash /bin/bash
 
-attach-conversion:
-	docker exec -i -t gnpslcms-worker-conversion /bin/bash
-
-##### For image deployment
+test:
+	cd test && python -m pytest test_app.py -v

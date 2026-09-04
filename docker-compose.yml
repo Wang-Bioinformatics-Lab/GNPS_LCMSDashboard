@@ -3,159 +3,32 @@ services:
   gnpslcms-dash:
     build:
       context: .
-      dockerfile: Dockerfile.dash
+      dockerfile: Dockerfile
     container_name: gnpslcms-dash
-    volumes:
-      - ./output:/app/output:rw
-      - ./logs:/app/logs:rw
-      - ./temp:/app/temp
     ports:
     - "6548:5000"
     networks:
       - default
       - nginx-net
     restart: unless-stopped
-    command: /app/run_server.sh
+    read_only: true
     environment:
       VIRTUAL_HOST: ${HOSTNAME:-dashboard.gnps2.org}
       VIRTUAL_PORT: 5000
       LETSENCRYPT_HOST: ${HOSTNAME:-dashboard.gnps2.org}
       LETSENCRYPT_EMAIL: mwang87@gmail.com
+      FORWARD_BASE: ${FORWARD_BASE:-https://dashboard2.gnps2.org}
+      # Unset by default so existing API consumers are not throttled at cutover.
+      DOWNLOADLINK_RATELIMIT: ${DOWNLOADLINK_RATELIMIT:-}
     logging:
       driver: json-file
       options:
-        max-size: "10m"      # Maximum size of a single log file
-        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:
-          memory: 32000M
-    
-          
-      
-  gnpslcms-worker-conversion:
-    build:
-      context: .
-      dockerfile: Dockerfile.conversion
-    container_name: gnpslcms-worker-conversion
-    volumes:
-      - ./output:/app/output:rw
-      - ./logs:/app/logs:rw
-      - ./temp:/app/temp
-      - /data/datasets:/data/datasets:ro
-    command: /app/run_worker_conversion.sh
-    restart: unless-stopped
-    depends_on: 
-      - gnpslcms-redis
-    networks:
-      - default
-      - nginx-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"      # Maximum size of a single log file
-        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
-    deploy:
-      resources:
-        limits:
-          memory: 32000M
-
-  gnpslcms-worker-compute:
-    build:
-      context: .
-      dockerfile: Dockerfile.compute
-    container_name: gnpslcms-worker-compute
-    volumes:
-      - ./output:/app/output:rw
-      - ./logs:/app/logs:rw
-      - ./temp:/app/temp:rw
-      - ./feature_finding:/app/feature_finding:ro
-    command: /app/run_worker_compute.sh
-    restart: unless-stopped
-    depends_on: 
-      - gnpslcms-redis
-    networks:
-      - default
-      - nginx-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"      # Maximum size of a single log file
-        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
-    deploy:
-      resources:
-        limits:
-          memory: 32000M
-
-  gnpslcms-worker-featurefinding:
-    build:
-      context: .
-      dockerfile: Dockerfile.featurefinding
-    container_name: gnpslcms-worker-featurefinding
-    volumes:
-      - ./output:/app/output:rw
-      - ./logs:/app/logs:rw
-      - ./temp:/app/temp:rw
-      - ./feature_finding:/app/feature_finding:ro
-    command: /app/run_worker_featurefinding.sh
-    restart: unless-stopped
-    depends_on: 
-      - gnpslcms-redis
-    networks:
-      - default
-      - nginx-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"      # Maximum size of a single log file
-        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
-    deploy:
-      resources:
-        limits:
-          memory: 32000M
-
-  gnpslcms-worker-sync:
-    build:
-      context: .
-      dockerfile: Dockerfile.dash
-    container_name: gnpslcms-worker-sync
-    volumes:
-      - ./output:/app/output:rw
-      - ./logs:/app/logs:rw
-      - ./temp:/app/temp:rw
-    command: /app/run_worker_sync.sh
-    restart: unless-stopped
-    depends_on: 
-      - gnpslcms-redis
-    networks:
-      - default
-      - nginx-net
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"      # Maximum size of a single log file
-        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
-    deploy:
-      resources:
-        limits:
-          memory: 32000M
-    
-
-  gnpslcms-redis:
-    image: valkey/valkey:alpine3.20
-    restart: unless-stopped
-    networks:
-      - default
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"      # Maximum size of a single log file
-        max-file: "3"        # Maximum number of log files to keep (rotates after 3 files)
-    deploy:
-      resources:
-        limits:
-          memory: 8000M
-          
+          memory: 512M
 
 networks:
   nginx-net:

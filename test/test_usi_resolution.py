@@ -1,67 +1,22 @@
-import sys
+import csv
 import os
+import sys
+
+import pytest
+
 sys.path.insert(0, "..")
-import pandas as pd
 
 import download
-import lcms_map
 
-# Testing remote link calculation
-def test_resolve_remote_url():
-    df = pd.read_csv("usi_list.tsv", sep='\t')
-    for record in df.to_dict(orient="records"):
-        print(record["usi"])
-        remote_link, resource_name = download._resolve_usi_remotelink(record["usi"])
-        print("RESOLVED URL", remote_link, resource_name)
-        assert(len(remote_link) > 0)
 
-# Testing conversion
-def test_resolve_download_convert():
-    df = pd.read_csv("usi_list.tsv", sep='\t')
-    for record in df.to_dict(orient="records"):
-        print(record["usi"])
-        remote_link, local_filename = download._resolve_usi(record["usi"])
+def _usi_list():
+    with open(os.path.join(os.path.dirname(__file__), "usi_list.tsv")) as f:
+        return [row["usi"] for row in csv.DictReader(f, delimiter="\t")]
 
-        assert(os.path.exists(local_filename))
 
-# Testing we can make a feather file
-def test_feather_download_convert():
-    df = pd.read_csv("usi_list.tsv", sep='\t')
-    for record in df.to_dict(orient="records"):
-        print(record["usi"])
-        remote_link, local_filename = download._resolve_usi(record["usi"])
-        output_ms1_filename, output_msn_filename = lcms_map._get_feather_filenames(local_filename)
-        lcms_map._save_lcms_data_feather(local_filename)
-
-        # Making sure the filename exists
-        assert(os.path.exists(output_ms1_filename))
-
-        # Making sure it includes polarity
-        ms1_results = pd.read_feather(output_ms1_filename)
-        assert("polarity" in ms1_results)
-        
-
-# Testing to local filenames
-def test_resolve_filename():
-    df = pd.read_csv("usi_list.tsv", sep='\t')
-    for record in df.to_dict(orient="records"):
-        converted_filename = download._usi_to_local_filename(record["usi"])
-        print(record["usi"], converted_filename)
-
-def test_resolve_specific():
-    usi = "mzspec:ZENODO-8338511:CCE_P1706_78_MSMS.mzXML"
-    usi = "mzspec:ZENODO-4989929:T2.zip-T2/T2_lysate_ETHCD_1D_2.raw"
-    usi = "mzspec:ZENODO-16286015:Bigelow_mzML.zip-Bigelow_mzML/Bigelow_245.mzML"
-    #usi = "mzspec:MSV000099355:peak/SDS_M914_media2_5_1.mzML"
-    
-
-    converted_filename = download._usi_to_local_filename(usi)
-    print("converted_filename we expect eventually", converted_filename)
-    remote_link, local_filename = download._resolve_usi(usi)
-    print(remote_link, local_filename)
-
-def main():
-    test_resolve_specific()
-
-if __name__ == "__main__":
-    main()
+# Hits live upstream repositories, so it is the slow test in this suite.
+@pytest.mark.parametrize("usi", _usi_list())
+def test_resolve_remote_url(usi):
+    remote_link, resource_name = download._resolve_usi_remotelink(usi)
+    print("RESOLVED URL", remote_link, resource_name)
+    assert len(remote_link) > 0

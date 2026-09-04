@@ -1,6 +1,6 @@
 temp
 test
 logs
-notebook
-feature_finding
+output
 __pycache__*
+.git
