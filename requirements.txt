@@ -2,4 +2,3 @@ Flask>2.0.0
 Werkzeug
 requests
 gunicorn
-flask_limiter

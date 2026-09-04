@@ -61,9 +61,8 @@ cached by browsers indefinitely and could not be rolled back.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `FORWARD_BASE` | `https://dashboard2.gnps2.org` | Redirect target |
-| `DOWNLOADLINK_RATELIMIT` | unset (no limit) | e.g. `120 per minute` |
-| `RATELIMIT_EXEMPT_CIDRS` | unset | Comma-separated CIDRs that bypass the limit, e.g. `137.110.0.0/16,10.0.0.0/8` |
-| `HOSTNAME` | `dashboard.gnps2.org` | Virtual host for the nginx proxy |
+| `HOST_PORT` | `6548` | Published host port (Cloudflare proxies to this) |
+| `BIND_ADDRESS` | `0.0.0.0` | Set to `127.0.0.1` when using a cloudflared tunnel |
 
 ### Running
 
