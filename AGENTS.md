@@ -51,3 +51,18 @@ Single container. On a host that previously ran the full stack, the old worker
 and Redis containers are *not* removed by `docker compose up`; run
 `make server-compose-down` there first, or they keep running with their old
 `/data/datasets` mounts.
+
+## Rate limiting
+
+Off unless `DOWNLOADLINK_RATELIMIT` is set. `RATELIMIT_EXEMPT_CIDRS` lists
+networks that bypass it (lab and infrastructure ranges) — the exemption is
+enforced via `limiter.request_filter`, and an unparseable CIDR is dropped rather
+than treated as match-all.
+
+Client IP comes from `ProxyFix(x_for=1)`, i.e. one trusted proxy hop. **If a
+second proxy or CDN is ever put in front of this, that count must go up** — with
+it wrong, every request appears to come from the proxy, which either exempts
+everyone or limits everyone as a single client.
+
+Both the enforcement and the exemption have regression tests in `test_app.py`;
+the limiter is easy to wire up in a way that looks correct and does nothing.

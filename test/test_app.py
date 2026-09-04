@@ -109,3 +109,92 @@ def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
     assert r.get_data(as_text=True) == "ok"
+
+
+def test_ratelimit_actually_enforces(monkeypatch):
+    """The limiter is opt-in, so it is easy for it to be wired up but inert.
+
+    Applying limiter.limit() to an already-registered view silently does
+    nothing; this catches that regression.
+    """
+    import importlib
+
+    monkeypatch.setenv("DOWNLOADLINK_RATELIMIT", "3 per minute")
+    limited = importlib.reload(app_module)
+    try:
+        with limited.server.test_client() as c:
+            codes = [c.get("/downloadlink?usi=garbage").status_code for _ in range(6)]
+        assert 429 in codes, codes
+    finally:
+        # Restore the unlimited module for the rest of the session.
+        monkeypatch.delenv("DOWNLOADLINK_RATELIMIT")
+        importlib.reload(app_module)
+
+
+def test_no_ratelimit_by_default(client):
+    # Default must not throttle - existing consumers were never rate limited.
+    codes = [client.get("/downloadlink?usi=garbage").status_code for _ in range(15)]
+    assert set(codes) == {400}, codes
+
+
+def _reload_with(monkeypatch, **env):
+    import importlib
+
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    return importlib.reload(app_module)
+
+
+def test_exempt_network_bypasses_ratelimit(monkeypatch):
+    import importlib
+
+    limited = _reload_with(
+        monkeypatch,
+        DOWNLOADLINK_RATELIMIT="3 per minute",
+        RATELIMIT_EXEMPT_CIDRS="137.110.0.0/16, 10.0.0.0/8",
+    )
+    try:
+        with limited.server.test_client() as c:
+            def hit(ip):
+                return [
+                    c.get("/downloadlink?usi=garbage",
+                          headers={"X-Forwarded-For": ip}).status_code
+                    for _ in range(6)
+                ]
+
+            assert 429 not in hit("137.110.5.9")
+            assert 429 not in hit("10.1.2.3")
+            # A host outside the exempt space must still be limited.
+            assert 429 in hit("8.8.8.8")
+    finally:
+        monkeypatch.delenv("DOWNLOADLINK_RATELIMIT")
+        monkeypatch.delenv("RATELIMIT_EXEMPT_CIDRS")
+        importlib.reload(app_module)
+
+
+def test_bad_cidr_is_dropped_not_treated_as_match_all(monkeypatch):
+    # A typo must never widen the exemption to everyone.
+    nets = app_module._parse_cidrs("137.110.0.0/16, not-a-cidr, , 999.999.0.0/16")
+    assert [str(n) for n in nets] == ["137.110.0.0/16"]
+
+    monkeypatch.setattr(app_module, "EXEMPT_NETWORKS", nets)
+    assert app_module._is_exempt("137.110.5.9") is True
+    assert app_module._is_exempt("8.8.8.8") is False
+
+
+def test_empty_exempt_config_exempts_nobody(monkeypatch):
+    monkeypatch.setattr(app_module, "EXEMPT_NETWORKS", app_module._parse_cidrs(""))
+    assert app_module._is_exempt("137.110.5.9") is False
+
+
+@pytest.mark.parametrize("address,expected", [
+    ("137.110.5.9", True),
+    ("8.8.8.8", False),
+    ("", False),
+    ("not-an-ip", False),
+    (None, False),
+])
+def test_is_exempt(monkeypatch, address, expected):
+    monkeypatch.setattr(app_module, "EXEMPT_NETWORKS",
+                        app_module._parse_cidrs("137.110.0.0/16"))
+    assert app_module._is_exempt(address) is expected

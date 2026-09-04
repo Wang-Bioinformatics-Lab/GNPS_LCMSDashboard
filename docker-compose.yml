@@ -20,6 +20,8 @@ services:
       FORWARD_BASE: ${FORWARD_BASE:-https://dashboard2.gnps2.org}
       # Unset by default so existing API consumers are not throttled at cutover.
       DOWNLOADLINK_RATELIMIT: ${DOWNLOADLINK_RATELIMIT:-}
+      # Comma-separated CIDRs that bypass the limit entirely (lab + infra).
+      RATELIMIT_EXEMPT_CIDRS: ${RATELIMIT_EXEMPT_CIDRS:-}
     logging:
       driver: json-file
       options:

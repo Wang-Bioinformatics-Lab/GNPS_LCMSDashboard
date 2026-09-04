@@ -12,6 +12,7 @@ Deliberately kept small: no Dash, no Celery workers, no Redis, no file
 downloads, no conversion, no subprocess execution.
 """
 
+import ipaddress
 import os
 import urllib.parse
 
@@ -26,7 +27,46 @@ FORWARD_BASE = os.environ.get("FORWARD_BASE", "https://dashboard2.gnps2.org").rs
 # Longest USI we will even attempt to resolve.
 MAX_USI_LENGTH = 2000
 
+
+def _parse_cidrs(raw):
+    """Parse a comma-separated CIDR list, ignoring anything unparseable.
+
+    A typo here must not take the service down, and must not silently widen the
+    exemption either - bad entries are dropped, not treated as match-all.
+    """
+
+    networks = []
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        try:
+            networks.append(ipaddress.ip_network(entry, strict=False))
+        except ValueError:
+            print("Ignoring unparseable exempt CIDR: {!r}".format(entry))
+    return networks
+
+
+# Networks that bypass the rate limit entirely - our own infrastructure and lab
+# machines, which legitimately make bulk resolution requests.
+EXEMPT_NETWORKS = _parse_cidrs(os.environ.get("RATELIMIT_EXEMPT_CIDRS", ""))
+
+
+def _is_exempt(address):
+    if not address:
+        return False
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    return any(ip in network for network in EXEMPT_NETWORKS)
+
+
 server = Flask(__name__)
+# x_for=1 trusts exactly one proxy hop, so request.remote_addr is the real client
+# rather than nginx. The exemption check depends on that being right - if another
+# proxy is ever put in front, this count has to go up or every client looks like
+# the proxy.
 server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
 
 # Optional throttle for the one endpoint that makes outbound requests. Unset by
@@ -38,8 +78,19 @@ if _ratelimit:
     from flask_limiter.util import get_remote_address
 
     limiter = Limiter(get_remote_address, app=server, default_limits=[])
+
+    @limiter.request_filter
+    def _exempt_known_networks():
+        return _is_exempt(get_remote_address())
+
+    # Must decorate the view at definition time. Calling limiter.limit() on an
+    # already-registered view does nothing, and does it silently.
+    ratelimit = limiter.limit(_ratelimit)
 else:
     limiter = None
+
+    def ratelimit(view):
+        return view
 
 
 def _text(body, status=200):
@@ -65,6 +116,7 @@ def _validate_usi(usi):
 
 
 @server.route("/downloadlink")
+@ratelimit
 def downloadlink():
     """Resolve a USI to the remote URL its data can be fetched from.
 
@@ -119,11 +171,6 @@ def forward(path):
         target = "{}?{}".format(target, query_string)
 
     return redirect(target, code=302)
-
-
-if _ratelimit:
-    # Applied after the view exists so the decorator order stays readable.
-    limiter.limit(_ratelimit)(server.view_functions["downloadlink"])
 
 
 if __name__ == "__main__":

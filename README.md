@@ -62,6 +62,7 @@ cached by browsers indefinitely and could not be rolled back.
 | --- | --- | --- |
 | `FORWARD_BASE` | `https://dashboard2.gnps2.org` | Redirect target |
 | `DOWNLOADLINK_RATELIMIT` | unset (no limit) | e.g. `120 per minute` |
+| `RATELIMIT_EXEMPT_CIDRS` | unset | Comma-separated CIDRs that bypass the limit, e.g. `137.110.0.0/16,10.0.0.0/8` |
 | `HOSTNAME` | `dashboard.gnps2.org` | Virtual host for the nginx proxy |
 
 ### Running
