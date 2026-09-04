@@ -16,8 +16,18 @@ services:
     - "${BIND_ADDRESS:-0.0.0.0}:${HOST_PORT:-6548}:5000"
     restart: unless-stopped
     read_only: true
+    # The root filesystem is read-only, so give the container a writable /tmp.
+    # gunicorn puts each worker's heartbeat file there; without it the arbiter
+    # dies with "No usable temporary directory found". It is a bind mount of
+    # ./temp rather than a tmpfs so the contents are inspectable from the host.
+    # The image runs as uid 1000, so ./temp must be writable by uid 1000.
+    volumes:
+    - ./temp:/tmp
     environment:
       FORWARD_BASE: ${FORWARD_BASE:-https://dashboard2.gnps2.org}
+      # gunicorn's control server writes under $HOME/.gunicorn, and the user's
+      # home lives on the read-only root filesystem. Point HOME at ./temp too.
+      HOME: /tmp
     logging:
       driver: json-file
       options:

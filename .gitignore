@@ -1,6 +1,7 @@
 *pyc
 __pycache__/
 .env
-temp/
+temp/*
 output/
 logs/
+!temp/.gitkeep
